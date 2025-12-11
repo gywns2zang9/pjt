@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { AuthButton } from "@/components/auth-button";
 import { Container } from "./container";
+import { NavLinks } from "./nav-links";
 
 const navItems = [
   { href: "/profile", label: "프로필" },
@@ -19,17 +20,7 @@ export function SiteHeader() {
           >
             홈
           </Link>
-          <nav className="hidden items-center gap-4 text-sm text-muted-foreground md:flex">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="transition hover:text-foreground"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+          <NavLinks items={navItems} />
         </div>
         <div className="flex items-center gap-2">
           <Suspense>
