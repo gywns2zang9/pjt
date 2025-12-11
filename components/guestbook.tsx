@@ -1,7 +1,14 @@
 "use client";
 
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
-import { Flame, ChevronLeft, ChevronRight, Trash } from "lucide-react";
+import {
+  Flame,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  ThumbsUp,
+  ThumbsDown,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +23,8 @@ type Entry = {
   user_id: string | null;
   created_at: string;
 };
+
+type ReactionType = "like" | "dislike";
 
 type Props = {
   initialEntries: Entry[];
@@ -43,6 +52,13 @@ export function Guestbook({
   const [totalCount, setTotalCount] = useState(initialCount);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [reactingId, setReactingId] = useState<number | null>(null);
+  const [reactionCounts, setReactionCounts] = useState<
+    Record<number, { like: number; dislike: number }>
+  >({});
+  const [userReactions, setUserReactions] = useState<
+    Record<number, ReactionType | null>
+  >({});
   const [user, setUser] = useState<{
     id: string | null;
     email: string | null;
@@ -163,6 +179,107 @@ export function Guestbook({
     await loadPage(targetPage);
   };
 
+  // Reactions: fetch counts and user reaction for visible entries
+  useEffect(() => {
+    const loadReactions = async () => {
+      if (entries.length === 0) return;
+      const entryIds = entries.map((e) => e.id);
+      const { data, error } = await supabase
+        .from("guestbook_reactions")
+        .select("entry_id,type,user_id")
+        .in("entry_id", entryIds);
+      if (error || !data) return;
+
+      const counts: Record<number, { like: number; dislike: number }> = {};
+      const mine: Record<number, ReactionType | null> = {};
+
+      entryIds.forEach((id) => {
+        counts[id] = { like: 0, dislike: 0 };
+        mine[id] = null;
+      });
+
+      data.forEach((row: { entry_id: number; type: ReactionType; user_id: string }) => {
+        if (!counts[row.entry_id]) {
+          counts[row.entry_id] = { like: 0, dislike: 0 };
+        }
+        counts[row.entry_id][row.type] += 1;
+        if (row.user_id === user?.id) {
+          mine[row.entry_id] = row.type;
+        }
+      });
+
+      setReactionCounts(counts);
+      setUserReactions(mine);
+    };
+
+    loadReactions();
+  }, [entries, supabase, user?.id]);
+
+  const toggleReaction = async (entryId: number, type: ReactionType) => {
+    if (!user?.id) return;
+    const current = userReactions[entryId];
+    setReactingId(entryId);
+    try {
+      // If same reaction, remove
+      if (current === type) {
+        const { error } = await supabase
+          .from("guestbook_reactions")
+          .delete()
+          .eq("entry_id", entryId)
+          .eq("user_id", user.id);
+        if (error) throw error;
+        setUserReactions((prev) => ({ ...prev, [entryId]: null }));
+        setReactionCounts((prev) => ({
+          ...prev,
+          [entryId]: {
+            like:
+              (prev[entryId]?.like ?? 0) -
+              (type === "like" ? 1 : 0),
+            dislike:
+              (prev[entryId]?.dislike ?? 0) -
+              (type === "dislike" ? 1 : 0),
+          },
+        }));
+        return;
+      }
+
+      // Otherwise upsert new reaction (delete old then insert)
+      await supabase
+        .from("guestbook_reactions")
+        .delete()
+        .eq("entry_id", entryId)
+        .eq("user_id", user.id);
+
+      const { error } = await supabase
+        .from("guestbook_reactions")
+        .insert({
+          entry_id: entryId,
+          user_id: user.id,
+          type,
+        });
+      if (error) throw error;
+
+      setUserReactions((prev) => ({ ...prev, [entryId]: type }));
+      setReactionCounts((prev) => ({
+        ...prev,
+        [entryId]: {
+          like:
+            (prev[entryId]?.like ?? 0) +
+            (type === "like" ? 1 : 0) -
+            (current === "like" ? 1 : 0),
+          dislike:
+            (prev[entryId]?.dislike ?? 0) +
+            (type === "dislike" ? 1 : 0) -
+            (current === "dislike" ? 1 : 0),
+        },
+      }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setReactingId(null);
+    }
+  };
+
   return (
     <Card className="border-border/70 bg-card/70">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -224,14 +341,14 @@ export function Guestbook({
                 key={entry.id}
                 className="rounded-lg border border-border/60 bg-muted/40 p-3"
               >
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-start justify-between text-xs text-muted-foreground">
                   <span className="flex items-center gap-2">
                     <span className="font-medium text-foreground">
                       {entry.display_name ??
                         entry.user_email ??
                         (entry.user_id ? "알 수 없음" : "익명")}
                     </span>
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-[11px] text-muted-foreground flex items-center gap-0">
                       {new Date(entry.created_at).toLocaleString("ko-KR", {
                         timeZone: "Asia/Seoul",
                         year: "numeric",
@@ -241,18 +358,48 @@ export function Guestbook({
                         minute: "2-digit",
                       })}
                     </span>
-                  </span>
-                  <div className="flex items-center gap-2">
                     {user?.id && (isAdmin || entry.user_id === user.id) ? (
                       <Button
                         variant="ghost"
                         size="icon-sm"
+                        className="hover:bg-transparent text-muted-foreground hover:text-destructive p-0 h-4 w-4"
                         onClick={() => handleDelete(entry.id)}
                         disabled={deletingId === entry.id}
+                        aria-label="삭제"
                       >
-                        <Trash size={14} />
+                        <X size={14} className="text-current" />
                       </Button>
                     ) : null}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`hover:bg-transparent ${
+                        userReactions[entry.id] === "like"
+                          ? "text-primary"
+                          : "text-muted-foreground hover:text-primary"
+                      }`}
+                      onClick={() => toggleReaction(entry.id, "like")}
+                      disabled={!isLoggedIn || reactingId === entry.id}
+                    >
+                      <ThumbsUp size={14} className="text-current" />
+                      <span>{reactionCounts[entry.id]?.like ?? 0}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`hover:bg-transparent ${
+                        userReactions[entry.id] === "dislike"
+                          ? "text-destructive"
+                          : "text-muted-foreground hover:text-destructive"
+                      }`}
+                      onClick={() => toggleReaction(entry.id, "dislike")}
+                      disabled={!isLoggedIn || reactingId === entry.id}
+                    >
+                      <ThumbsDown size={14} className="text-current" />
+                      <span>{reactionCounts[entry.id]?.dislike ?? 0}</span>
+                    </Button>
                   </div>
                 </div>
                 <p className="mt-1 whitespace-pre-line text-sm text-foreground">
