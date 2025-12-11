@@ -60,17 +60,17 @@ const activities: TimelineItem[] = [
   {
     title: "2025 금융 AI Challenge",
     period: "2025.07.14 ~ 2025.09.19",
-    description: "금융보안원 주최 - 맞춤형 금융 서비스 아이디어 공모전 참가",
+    description: "맞춤형 금융 서비스 아이디어 공모전",
   },
   {
     title: "SK AI Leader Academy (SKALA)",
     period: "2025.02.03 ~ 2025.07.08",
-    description: "AI 서비스 개발 과정",
+    description: "AI 서비스 개발 과정 (908시간)",
   },
   {
     title: "삼성 청년 SW 아카데미 (SSAFY)",
     period: "2024.01.02 ~ 2024.12.31",
-    description: "1학기 집중 코딩교육(800시간)\n2학기 심화 프로젝트 (800시간)",
+    description: "1학기 집중 코딩교육 (800시간)\n2학기 심화 프로젝트 (800시간)",
   },
   {
     title: "삼성생명 금융 아카데미",
@@ -84,25 +84,25 @@ const certifications: TimelineItem[] = [
   {
     title: "SQLD",
     subtitle: "한국데이터산업진흥원",
-    period: "2025.06.27",
+    period: "2025.06.27 ~ 2027.06.27",
     meta: "SQLD-057014283",
   },
   {
     title: "ADsP",
     subtitle: "한국데이터산업진흥원",
-    period: "2025.06.13",
+    period: "2025.06.13 ~ ",
     meta: "ADsP-045014578",
   },
   {
     title: "OPIc (영어) IM1",
     subtitle: "ACTFL",
-    period: "2024.09.07",
+    period: "2024.09.07 ~ 2026.09.06",
     meta: "2A0251225458",
   },
   {
-    title: "은행 FP",
+    title: "자산관리사(FP)",
     subtitle: "한국금융연수원",
-    period: "2023.04.28",
+    period: "2023.04.28 ~ 2026.12.31",
     meta: "2304035545",
   },
 ];
