@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { AuthButton } from "@/components/auth-button";
 import { Container } from "./container";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 import { NavLinks } from "./nav-links";
 
 const navItems = [
@@ -23,6 +24,7 @@ export function SiteHeader() {
           <NavLinks items={navItems} />
         </div>
         <div className="flex items-center gap-2">
+          <ThemeSwitcher />
           <Suspense>
             <AuthButton />
           </Suspense>

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
 
-import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Container } from "./container";
 
 
@@ -30,12 +29,8 @@ function IconButton({
 export function SiteFooter() {
   return (
     <footer className="border-t border-border/80">
-      <Container className="flex flex-col gap-6 py-8 text-sm text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <div className="flex items-center">
-          <ThemeSwitcher />
-        </div>
-
-        <div className="flex items-center gap-3">
+      <Container className="flex flex-col gap-6 py-8 text-sm text-muted-foreground md:flex-row md:items-center md:justify-end">
+        <div className="flex items-center justify-center gap-3 md:justify-end">
           <IconButton href="mailto:gywns2zang9@naver.com" label="이메일">
             <Mail className="h-5 w-5" />
           </IconButton>

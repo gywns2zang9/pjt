@@ -15,7 +15,7 @@ export async function AuthButton() {
 
   return user ? (
     <div className="flex items-center gap-4">
-      반갑다! {displayName}
+      {displayName}
       <LogoutButton />
     </div>
   ) : (
