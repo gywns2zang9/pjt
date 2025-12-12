@@ -341,14 +341,14 @@ export function Guestbook({
                 key={entry.id}
                 className="rounded-lg border border-border/60 bg-muted/40 p-3"
               >
-                <div className="flex items-start justify-between text-xs text-muted-foreground">
-                  <span className="flex items-center gap-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">
                       {entry.display_name ??
                         entry.user_email ??
                         (entry.user_id ? "알 수 없음" : "익명")}
                     </span>
-                    <span className="text-[11px] text-muted-foreground flex items-center gap-0">
+                    <span className="text-[11px] text-muted-foreground">
                       {new Date(entry.created_at).toLocaleString("ko-KR", {
                         timeZone: "Asia/Seoul",
                         year: "numeric",
@@ -371,12 +371,12 @@ export function Guestbook({
                         <X size={14} className="text-current" />
                       </Button>
                     ) : null}
-                  </span>
-                  <div className="flex items-center gap-2">
+                  </div>
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className={`hover:bg-transparent ${
+                      size="icon-sm"
+                      className={`h-7 w-auto px-2 hover:bg-transparent ${
                         userReactions[entry.id] === "like"
                           ? "text-primary"
                           : "text-muted-foreground hover:text-primary"
@@ -389,8 +389,8 @@ export function Guestbook({
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className={`hover:bg-transparent ${
+                      size="icon-sm"
+                      className={`h-7 w-auto px-2 hover:bg-transparent ${
                         userReactions[entry.id] === "dislike"
                           ? "text-destructive"
                           : "text-muted-foreground hover:text-destructive"
@@ -403,7 +403,7 @@ export function Guestbook({
                     </Button>
                   </div>
                 </div>
-                <p className="mt-1 whitespace-pre-line text-sm text-foreground">
+                <p className="whitespace-pre-line text-sm text-foreground">
                   {entry.content}
                 </p>
               </div>
