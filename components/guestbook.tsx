@@ -356,6 +356,7 @@ export function Guestbook({
                         day: "2-digit",
                         hour: "2-digit",
                         minute: "2-digit",
+                        hour12: false,
                       })}
                     </span>
                     {user?.id && (isAdmin || entry.user_id === user.id) ? (
