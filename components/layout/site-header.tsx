@@ -12,7 +12,11 @@ export async function SiteHeader() {
   const { data } = await supabase.auth.getUser();
   const user = data.user;
 
-  const navItems = [{ href: "/profile", label: "프로필" }];
+  const navItems = [
+    { href: "/profile", label: "프로필" },
+    { href: "/ai", label: "AI" },
+    { href: "/finance", label: "금융" },
+  ];
   if (user) {
     navItems.push({ href: "/games", label: "게임" });
   }
