@@ -5,12 +5,18 @@ import { AuthButton } from "@/components/auth-button";
 import { Container } from "./container";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { NavLinks } from "./nav-links";
+import { createClient } from "@/lib/supabase/server";
 
-const navItems = [
-  { href: "/profile", label: "프로필" },
-];
+export async function SiteHeader() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  const user = data.user;
 
-export function SiteHeader() {
+  const navItems = [{ href: "/profile", label: "프로필" }];
+  if (user) {
+    navItems.push({ href: "/games", label: "게임" });
+  }
+
   return (
     <header className="border-b border-border/80 bg-background/80 backdrop-blur">
       <Container className="flex h-16 items-center justify-between gap-4">
