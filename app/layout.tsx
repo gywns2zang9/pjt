@@ -10,7 +10,7 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "김효준",
-  description: "효준남의 개인 웹사이트",
+  description: "나만의 서비스 만들기",
 };
 
 const geistSans = Geist({
