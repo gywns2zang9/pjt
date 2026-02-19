@@ -2,7 +2,7 @@
 
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import {
-  Flame,
+  NotebookPen,
   ChevronLeft,
   ChevronRight,
   X,
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { maskName } from "@/lib/utils/mask-name";
 
 type Entry = {
   id: number;
@@ -22,6 +23,7 @@ type Entry = {
   user_email: string | null;
   user_id: string | null;
   created_at: string;
+  is_anonymous: boolean;
 };
 
 type ReactionType = "like" | "dislike";
@@ -35,7 +37,7 @@ type Props = {
 };
 
 const PAGE_SIZE = 5;
-const ADMIN_UID = "9226f976-72f8-43b0-bb0d-76ef6de1f14e";
+const ADMIN_UID = process.env.NEXT_PUBLIC_ADMIN_UID;
 
 export function Guestbook({
   initialEntries,
@@ -100,22 +102,22 @@ export function Guestbook({
 
     setSubmitting(true);
     try {
-      const displayName = isAnonymous
-        ? "익명"
-        : user?.name ?? user?.email ?? "알 수 없음";
+      // 항상 실제 이름 저장, 익명 여부는 is_anonymous 플래그로 관리
+      const realName = user?.name ?? user?.email ?? "알 수 없음";
+
       const { data, error } = await supabase
         .from("guestbook")
         .insert({
           content: trimmed,
           user_email: user?.email ?? null,
           user_id: user?.id ?? null,
-          display_name: displayName,
+          display_name: realName,
+          is_anonymous: isAnonymous,
         })
         .select()
         .single();
       if (error) throw error;
       if (data) {
-        // 새 글이 가장 앞에 오므로 첫 페이지로 재조회
         await loadPage(1);
         setContent("");
         setTotalCount((prev) => prev + 1);
@@ -123,7 +125,6 @@ export function Guestbook({
       }
     } catch (err) {
       console.error(err);
-      // Optional: toast
     } finally {
       setSubmitting(false);
     }
@@ -162,7 +163,7 @@ export function Guestbook({
     setPage(1);
   }, [initialEntries, initialCount]);
 
-  const isLoggedIn = Boolean(user?.email);
+  const isLoggedIn = Boolean(user?.id);
   const isAdmin = user?.id === ADMIN_UID;
   const maxLength = 200;
   const currentLength = content.length;
@@ -284,8 +285,8 @@ export function Guestbook({
     <Card className="border-border/70 bg-card/70">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
-          <Flame size={18} />
-          관심주기
+          <NotebookPen size={18} />
+          방명록
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -334,7 +335,7 @@ export function Guestbook({
 
         <div className="space-y-3">
           {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">아직 없어요...</p>
+            <p className="text-sm text-muted-foreground">방명록이 비었네요...</p>
           ) : (
             entries.map((entry) => (
               <div
@@ -344,9 +345,24 @@ export function Guestbook({
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-foreground">
-                      {entry.display_name ??
-                        entry.user_email ??
-                        (entry.user_id ? "알 수 없음" : "익명")}
+                      {(() => {
+                        const realName = entry.display_name ??
+                          entry.user_email ??
+                          (entry.user_id ? "알 수 없음" : "익명");
+
+                        // 관리자: 익명이면 "익명(실명)", 아니면 실명
+                        if (isAdmin) {
+                          return entry.is_anonymous ? `익명(${realName})` : realName;
+                        }
+
+                        // 일반 로그인: 익명이면 "익명", 아니면 실명
+                        if (isLoggedIn) {
+                          return entry.is_anonymous ? "익명" : realName;
+                        }
+
+                        // 비로그인: 익명이면 "익명", 아니면 마스킹
+                        return entry.is_anonymous ? "익명" : maskName(realName);
+                      })()}
                     </span>
                     <span className="text-[11px] text-muted-foreground">
                       {new Date(entry.created_at).toLocaleString("ko-KR", {
@@ -376,11 +392,10 @@ export function Guestbook({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      className={`h-7 w-auto px-2 hover:bg-transparent ${
-                        userReactions[entry.id] === "like"
-                          ? "text-primary"
-                          : "text-muted-foreground hover:text-primary"
-                      }`}
+                      className={`h-7 w-auto px-2 hover:bg-transparent ${userReactions[entry.id] === "like"
+                        ? "text-primary"
+                        : "text-muted-foreground hover:text-primary"
+                        }`}
                       onClick={() => toggleReaction(entry.id, "like")}
                       disabled={!isLoggedIn || reactingId === entry.id}
                     >
@@ -390,11 +405,10 @@ export function Guestbook({
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      className={`h-7 w-auto px-2 hover:bg-transparent ${
-                        userReactions[entry.id] === "dislike"
-                          ? "text-destructive"
-                          : "text-muted-foreground hover:text-destructive"
-                      }`}
+                      className={`h-7 w-auto px-2 hover:bg-transparent ${userReactions[entry.id] === "dislike"
+                        ? "text-destructive"
+                        : "text-muted-foreground hover:text-destructive"
+                        }`}
                       onClick={() => toggleReaction(entry.id, "dislike")}
                       disabled={!isLoggedIn || reactingId === entry.id}
                     >

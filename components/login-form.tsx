@@ -10,35 +10,27 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleKakaoLogin = async () => {
     const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "kakao",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       if (error) throw error;
-      router.push("/");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
-    } finally {
+      setError(error instanceof Error ? error.message : "로그인 중 오류가 발생했습니다");
       setIsLoading(false);
     }
   };
@@ -46,57 +38,38 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">로그인</CardTitle>
-          <CardDescription>이메일과 비밀번호로 로그인하세요.</CardDescription>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">🛠️ 뚝딱실</CardTitle>
+          <CardDescription>
+            카카오톡으로 간편하게 로그인하세요
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">이메일</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="abc123@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">비밀번호</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+          <div className="flex flex-col gap-4">
+            <Button
+              onClick={handleKakaoLogin}
+              disabled={isLoading}
+              className="w-full bg-[#FEE500] hover:bg-[#FDD835] text-[#000000] font-semibold"
+              size="lg"
+            >
+              {isLoading ? (
+                "로그인 중..."
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
                   >
-                    비밀번호를 잊으셨나요?
-                  </Link>
+                    <path d="M12 3C6.477 3 2 6.58 2 11.02c0 2.64 1.75 4.96 4.4 6.35-.14.53-.9 3.35-.93 3.57 0 0-.02.17.09.24.11.07.24.02.24.02.32-.05 3.72-2.45 4.31-2.86.6.09 1.21.14 1.84.14 5.523 0 10-3.58 10-8.02C22 6.58 17.523 3 12 3Z" />
+                  </svg>
+                  카카오 로그인
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "로그인 중..." : "로그인"}
-              </Button>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              아직 계정이 없으신가요?{" "}
-              <Link
-                href="/auth/sign-up"
-                className="underline underline-offset-4"
-              >
-                회원가입
-              </Link>
-            </div>
-          </form>
+              )}
+            </Button>
+            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          </div>
         </CardContent>
       </Card>
     </div>
