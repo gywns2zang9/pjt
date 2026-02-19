@@ -13,8 +13,8 @@ export async function SiteHeader() {
   const user = data.user;
 
   const navItems = [
-    // { href: "/profile", label: "프로필" }, // 임시 비활성화
-    { href: "/labs", label: "뚝딱실" },
+    { href: "/works", label: "뚝-딱!" },
+    { href: "/labs", label: "뚝딱~ing" },
   ];
 
   return (
