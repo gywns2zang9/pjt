@@ -21,9 +21,16 @@ export default async function Home() {
 
   const userEmail = sessionData.user?.email ?? null;
   const userId = sessionData.user?.id ?? null;
+
+  // 카카오 로그인 사용자의 닉네임 추출
+  const userMetadata = sessionData.user?.user_metadata;
   const userName =
-    (sessionData.user?.user_metadata as { full_name?: string } | null)?.full_name ??
+    userMetadata?.full_name ??
+    userMetadata?.name ??
+    userMetadata?.preferred_username ??
+    userEmail?.split('@')[0] ??
     null;
+
   const initialEntries = entriesData ?? [];
   const initialCount = count ?? initialEntries.length;
 

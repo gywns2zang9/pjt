@@ -13,13 +13,9 @@ export async function SiteHeader() {
   const user = data.user;
 
   const navItems = [
-    { href: "/profile", label: "프로필" },
-    { href: "/ai", label: "AI" },
-    { href: "/finance", label: "금융" },
+    // { href: "/profile", label: "프로필" }, // 임시 비활성화
+    { href: "/labs", label: "뚝딱실" },
   ];
-  if (user) {
-    navItems.push({ href: "/games", label: "게임" });
-  }
 
   return (
     <header className="border-b border-border/80 bg-background/80 backdrop-blur">

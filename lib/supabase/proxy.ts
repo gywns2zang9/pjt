@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
 
-const PROTECTED_PREFIXES = ["/protected"];
+const PROTECTED_PREFIXES: string[] = [];
 
 type CookieToSet = {
   name: string;

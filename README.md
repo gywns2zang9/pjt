@@ -1,71 +1,94 @@
+# 🛠️ 뚝딱실 (Ddukddak Lab)
+
+> 뚝딱뚝딱 만들고, 뚝딱거리며 실험하는 공간
+
 ## 소개
 
-개인 웹서비스(도메인 `gywns2zang9.dev`)를 위한 Next.js + Supabase 프로젝트입니다.  
-Vercel(앱 호스팅)과 Cloudflare(도메인/DNS)를 사용하며, Tailwind + shadcn/ui로 스타일을 맞춥니다.
+**뚝딱실**은 다양한 아이디어를 빠르게 구현하고 실험하는 개인 웹 프로젝트입니다.  
+"뚝딱" 만들어보고, 때론 "뚝딱거리며" 배우는 과정을 즐깁니다.
+
+- 🌐 도메인: `gywns2zang9.dev`
+- 🚀 호스팅: Vercel
+- 🔐 인증/DB: Supabase
+- 🎨 스타일: Tailwind CSS + shadcn/ui
+
+## 🎯 프로젝트 철학
+
+- **빠른 실험**: 아이디어를 빠르게 구현하고 테스트
+- **지속적인 학습**: 새로운 기술과 패턴 시도
+- **실용적 접근**: 완벽함보다 작동하는 것을 우선
 
 ## 주요 기능
-- 홈 + 방명록: 익명/이름으로 글 남기기, 좋아요/싫어요, 삭제(작성자/관리자), 페이지네이션.
-- 프로필: 학력/군복무/대외활동/자격증 타임라인.
-- 게임: 대기열 + 실시간 대결 요청(진행 중), 로그인 필요.
-- AI / 금융: 섹션용 페이지(현재 안내 문구만 노출).
-- 인증: 이메일/비밀번호, 가입 시 이름(full_name) 저장, 로그인/가입 성공 시 홈으로 이동.
+
+### 🏠 홈 + 방명록
+- 카카오톡 로그인으로 간편하게 글 남기기
+- 익명/실명 선택 가능
+- 좋아요/싫어요 반응
+- 실시간 업데이트
+
+### 🧪 Labs (실험실)
+뚝딱뚝딱 만든 다양한 실험적 기능들이 모이는 공간
+- 새로운 아이디어 프로토타입
+- 재미있는 미니 프로젝트
+- 유용한 도구들
+
+### 👤 프로필
+개인 이력 및 활동 타임라인
 
 ## 기술 스택
-- 프론트엔드: Next.js App Router, TypeScript, React Server/Client Components 혼용
-- 스타일: Tailwind CSS, shadcn/ui, 커스텀 네이비·스카이 톤 팔레트
-- 인증/데이터: Supabase Auth, PostgreSQL, Realtime(`postgres_changes`)
-- 배포/인프라: Vercel(앱), Cloudflare(DNS), Supabase(백엔드)
-- 기타: Supabase SSR 클라이언트(@supabase/ssr), Radix 기반 UI 컴포넌트
+
+- **Frontend**: Next.js 15 (App Router), TypeScript, React Server/Client Components
+- **Styling**: Tailwind CSS, shadcn/ui
+- **Auth**: Supabase Auth (Kakao OAuth)
+- **Database**: Supabase PostgreSQL + Realtime
+- **Deployment**: Vercel
+- **DNS**: Cloudflare
 
 ## 환경 변수 (.env.local)
-```
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=your-publishable-or-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key   # 서버 작업/로컬 스크립트 시 필요
-```
 
-> 보안 주의
-> - `SUPABASE_SERVICE_ROLE_KEY`는 절대 클라이언트/브라우저나 퍼블릭 저장소에 노출하지 마세요.
-> - 퍼블릭 레포에 `.env*` 파일을 올리지 마세요. `.gitignore`로 제외되어 있는지 확인.
-> - Vercel 환경변수에만 서비스 롤 키를 넣고, 클라이언트에서는 `NEXT_PUBLIC_*` 키만 사용.
-
-## 데이터베이스 개요 (Supabase)
-- `guestbook`
-  - 열: id (identity), user_id (uuid), display_name, user_email, content (<=200), created_at
-  - RLS: select 모두 허용, insert/update/delete 작성자만 허용
-- `guestbook_reactions` (좋아요/싫어요)
-  - 열: id (uuid), entry_id (fk guestbook), user_id, reaction ("like"/"dislike"), created_at
-  - RLS: select 모두 허용, insert/update/delete 작성자만
-- `game_waiting`
-  - 열: id (uuid), game_id (text), user_id (uuid, not null), display_name, created_at
-  - Unique index: (user_id, game_id)
-  - RLS: select 모두 허용, insert/update/delete 작성자만
-  - 클라이언트 heartbeat 로 존재 갱신, 일정 시간 미응답 시 숨김
-- `game_challenges`
-  - 열: id (uuid), game_id, from_user, to_user, from_display_name, to_display_name, status (pending/accepted/declined), created_at
-  - RLS: select 모두 허용, insert/update/delete 본인(from/to)만
-
-> Realtime: `game_waiting`, `game_challenges` 테이블에서 `postgres_changes` 토글을 켜야 실시간 반영됩니다.
-
-## 개발/실행
 ```bash
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+```
+
+## 개발 시작하기
+
+```bash
+# 의존성 설치
 npm install
+
+# 개발 서버 실행
 npm run dev
 ```
-http://localhost:3000
 
-## 배포 (Vercel)
-- Supabase 프로젝트를 Vercel에 연동하면 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY`가 자동 주입됩니다.
-- 필요 시 `SUPABASE_SERVICE_ROLE_KEY`는 수동으로 Vercel 환경변수에 설정하세요(서버 작업용).
+http://localhost:3000 에서 확인
 
-## 도메인 (Cloudflare)
-- Cloudflare에서 `gywns2zang9.dev` DNS를 Vercel에 CNAME/ANAME으로 연결합니다.
-- Vercel 도메인 설정에서 커스텀 도메인을 추가 후 소유권 검증을 완료하세요.
+## 데이터베이스 스키마
 
-## 라우트 요약
-- `/` 홈 + 방명록 (로그인 없이 읽기, 작성은 로그인)
-- `/profile` 프로필
-- `/ai`, `/finance` 안내 섹션
-- `/games` 게임 목록 (로그인 필요, 현재 카드는 비활성화)
-- `/games/[id]` 대기방 + 대결 요청 (로그인 필요)
-- `/auth/login`, `/auth/signup`
+### guestbook
+방명록 데이터
+- `id`, `user_id`, `display_name`, `user_email`, `content`, `created_at`
+
+### guestbook_reactions
+좋아요/싫어요 반응
+- `id`, `entry_id`, `user_id`, `type` (like/dislike), `created_at`
+
+## 라우트 구조
+
+```
+/                 # 홈 + 방명록
+/labs             # 실험실 (다양한 프로젝트들)
+/profile          # 개인 프로필
+/auth/login       # 카카오 로그인
+```
+
+## 📝 라이선스
+
+개인 프로젝트 - 학습 및 실험 목적
+
+---
+
+**만든 사람**: gywns2zang9  
+**연락**: gywns2zang9@naver.com
+
