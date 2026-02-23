@@ -202,25 +202,17 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
     useEffect(() => {
         if (phase === "checking") {
             if (roundScore === 0) {
-                setLives((prev) => {
-                    const next = prev - 1;
-                    if (next <= 0) {
-                        endGame();
-                        return 0;
-                    }
-                    setFeedback("💔 무득점! 목숨 -1");
-                    setTimeout(() => {
-                        setPhase("break");
-                        setTimeout(() => startRound(), cfg.breakDuration);
-                    }, 1000);
-                    return next;
-                });
+                setFeedback("� 시간 초과! 다음 라운드 준비!");
+                setTimeout(() => {
+                    setPhase("break");
+                    setTimeout(() => startRound(), cfg.breakDuration);
+                }, 1000);
             } else {
                 setPhase("break");
                 setTimeout(() => startRound(), cfg.breakDuration);
             }
         }
-    }, [phase, roundScore, endGame, startRound, cfg.breakDuration]);
+    }, [phase, roundScore, startRound, cfg.breakDuration]);
 
     const handleSubmit = useCallback(
         async (e: React.FormEvent) => {
@@ -351,43 +343,41 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
             <div className="flex-1 min-w-0">
                 <div
                     className={`relative rounded-2xl border border-border bg-card overflow-hidden transition-all ${shake ? "animate-shake" : ""}`}
-                    style={{ minHeight: 480 }}
                 >
                     {/* 임팩트 단어 */}
                     <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
                         {impactWords.map((w) => (
                             <span
                                 key={w.id}
-                                className={`absolute text-2xl font-black animate-impact-word select-none ${impactColors[w.type]}`}
-                                style={{ left: `${w.x}%`, top: "30%" }}
+                                className={`absolute text-xl md:text-2xl font-black animate-impact-word select-none ${impactColors[w.type]}`}
+                                style={{ left: `${w.x}%`, top: "25%" }}
                             >
                                 {impactPrefix[w.type]}{w.text}{impactSuffix[w.type]}
                             </span>
                         ))}
                     </div>
 
-                    <div className="flex flex-col h-full p-6 gap-5">
-                        {/* 상단: 타이머 + 하트 + 점수 */}
+                    <div className="flex flex-col h-full p-4 md:p-6 gap-3 md:gap-5">
+                        {/* 상단: 타이머 + 점수 */}
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 md:gap-4">
                                 {/* 타이머 */}
-                                <div className={`flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${timerBg} border border-border/50`}>
-                                    <span className="text-xs text-muted-foreground font-medium">TIME</span>
-                                    <span className={`inline-block w-[4.5rem] text-center text-2xl font-black tabular-nums ${timerColor} transition-colors duration-300`}>
+                                <div className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-gradient-to-r ${timerBg} border border-border/50`}>
+                                    <span className="text-[10px] md:text-xs text-muted-foreground font-medium">TIME</span>
+                                    <span className={`inline-block w-[3.5rem] md:w-[4.5rem] text-center text-lg md:text-2xl font-black tabular-nums ${timerColor} transition-colors duration-300`}>
                                         {phase === "idle" ? cfg.gameDuration.toFixed(2) : timeLeft.toFixed(2)}
                                     </span>
                                 </div>
-
                             </div>
 
-                            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
-                                <span className="text-xs text-muted-foreground font-medium">SCORE</span>
-                                <span className="text-2xl font-black text-primary tabular-nums">{score}</span>
+                            <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 border border-primary/20">
+                                <span className="text-[10px] md:text-xs text-muted-foreground font-medium">SCORE</span>
+                                <span className="text-lg md:text-2xl font-black text-primary tabular-nums">{score}</span>
                             </div>
                         </div>
 
                         {/* 타이머 바 */}
-                        <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                        <div className="w-full h-1.5 md:h-2 rounded-full bg-muted overflow-hidden">
                             <div
                                 className="h-full rounded-full transition-all duration-[50ms] ease-linear"
                                 style={{
@@ -398,21 +388,18 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         </div>
 
                         {/* 초성 박스 */}
-                        <div className="flex gap-4 justify-center my-2">
+                        <div className="flex gap-2 md:gap-4 justify-center my-1 md:my-2">
                             {(phase === "idle" ? Array(cfg.numConsonants).fill("?") : currentChosung).map((ch, i) => (
                                 <div
                                     key={i}
-                                    className={`w-28 h-28 rounded-2xl border-2 flex items-center justify-center transition-all duration-300 ${phase === "break"
-                                        ? "border-muted bg-muted/30 opacity-50"
-                                        : chosungPulse
-                                            ? "border-primary bg-primary/15 scale-105"
-                                            : "border-border bg-secondary/40"
+                                    className={`w-16 h-16 md:w-28 md:h-28 rounded-xl md:rounded-2xl border-2 flex items-center justify-center transition-all duration-300 ${phase === "break"
+                                        ? "bg-muted/30 border-muted-foreground/20 scale-95 opacity-50"
+                                        : phase === "playing"
+                                            ? `bg-background border-primary/30 shadow-lg shadow-primary/5 ${chosungPulse ? "scale-105 border-primary ring-4 ring-primary/10" : "scale-100"}`
+                                            : "bg-muted/10 border-border"
                                         }`}
                                 >
-                                    <span
-                                        className={`font-black select-none transition-all duration-300 ${phase === "idle" ? "text-5xl text-muted-foreground/30" : "text-6xl text-foreground"
-                                            }`}
-                                    >
+                                    <span className={`text-3xl md:text-6xl font-black tracking-tighter ${phase === "playing" ? "text-foreground" : "text-muted-foreground"}`}>
                                         {ch}
                                     </span>
                                 </div>
@@ -436,8 +423,8 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                         <span
                                             key={i}
                                             className={`text-base transition-all duration-300 ${i <= lives
-                                                    ? "grayscale-0 scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.4)]"
-                                                    : "grayscale opacity-20 scale-90"
+                                                ? "grayscale-0 scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.4)]"
+                                                : "grayscale opacity-20 scale-90"
                                                 }`}
                                         >
                                             ❤️
@@ -557,8 +544,48 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
             </div>
 
             {/* ── 사이드바: 랭킹 및 히스토리 ── */}
-            <div className="w-full lg:w-64 shrink-0">
-                <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+            {/* ── 사이드바: 랭킹 및 히스토리 ── */}
+            <div className="w-full lg:w-64 shrink-0 flex flex-col gap-4">
+                {/* 단어 히스토리 (누적) - 모바일에서 위로 */}
+                {sessionWords.length > 0 && (
+                    <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Word History</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{sessionWords.length}</span>
+                        </div>
+                        <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                            {sessionWords.map((item, idx) => (
+                                <div
+                                    key={idx}
+                                    className={`p-3 rounded-xl border transition-all animate-in slide-in-from-left-2 duration-300
+                                                ${item.type === "correct"
+                                            ? "bg-emerald-500/5 border-emerald-500/10"
+                                            : "bg-destructive/5 border-destructive/10"
+                                        }`}
+                                >
+                                    <div className="flex items-center justify-between mb-1">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`text-sm font-bold ${item.type === "correct" ? "text-emerald-500" : "text-destructive"}`}>
+                                                    {item.realWord || item.word}
+                                                </span>
+                                                {item.pos && <span className="text-[8px] text-muted-foreground opacity-70">({item.pos})</span>}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {item.description && (
+                                        <div className="mt-1 border-l-2 border-muted pl-2 py-0.5">
+                                            <ExpandableText text={item.description} maxLength={80} />
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 랭킹 보드 - 모바일에서 아래로 */}
+                <div className="order-2 lg:order-1 rounded-2xl border border-border bg-card p-5 space-y-4">
                     <div className="flex items-center gap-2">
                         <span className="text-lg">🏆</span>
                         <h2 className="font-bold text-sm tracking-wide text-foreground uppercase">TOP 3</h2>
@@ -599,44 +626,6 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         <span className="text-xs font-semibold text-foreground truncate">{userName}</span>
                     </div>
                 </div>
-
-                {/* 단어 히스토리 (누적) */}
-                {sessionWords.length > 0 && (
-                    <div className="mt-4 p-4 rounded-2xl border border-border bg-card/50">
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Word History</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{sessionWords.length}</span>
-                        </div>
-                        <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                            {sessionWords.map((item, idx) => (
-                                <div
-                                    key={idx}
-                                    className={`p-3 rounded-xl border transition-all animate-in slide-in-from-left-2 duration-300
-                                                ${item.type === "correct"
-                                            ? "bg-emerald-500/5 border-emerald-500/10"
-                                            : "bg-destructive/5 border-destructive/10"
-                                        }`}
-                                >
-                                    <div className="flex items-center justify-between mb-1">
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-1.5">
-                                                <span className={`text-sm font-bold ${item.type === "correct" ? "text-emerald-500" : "text-destructive"}`}>
-                                                    {item.realWord || item.word}
-                                                </span>
-                                                {item.pos && <span className="text-[8px] text-muted-foreground opacity-70">({item.pos})</span>}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {item.description && (
-                                        <div className="mt-1 border-l-2 border-muted pl-2 py-0.5">
-                                            <ExpandableText text={item.description} maxLength={80} />
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* CSS */}
