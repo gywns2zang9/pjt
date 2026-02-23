@@ -378,14 +378,6 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                     </span>
                                 </div>
 
-                                {/* 목숨(하트) */}
-                                <div className="flex items-center gap-1 bg-muted/40 px-3 py-2 rounded-full border border-border/50">
-                                    {[1, 2, 3].map((i) => (
-                                        <span key={i} className={`text-lg transition-all duration-300 ${i <= lives ? "grayscale-0 scale-110" : "grayscale opacity-30 scale-90"}`}>
-                                            ❤️
-                                        </span>
-                                    ))}
-                                </div>
                             </div>
 
                             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
@@ -427,15 +419,40 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                             ))}
                         </div>
 
-                        {/* 상태 정보 (브레이크/피드백) */}
-                        <div className="min-h-[40px] flex items-center justify-center">
+                        {/* 상태 정보 (브레이크/피드백/목숨/게임종료) */}
+                        <div className="min-h-[60px] flex flex-col items-center justify-center gap-2">
+                            {phase === "gameover" && (
+                                <div className="text-center animate-in zoom-in duration-300">
+                                    <div className="inline-flex flex-col items-center gap-1 px-6 py-2 rounded-xl bg-destructive/10 border border-destructive/20">
+                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-tighter">Game Over</span>
+                                        <span className="text-2xl font-black text-foreground">{finalScore}점</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {phase === "playing" && (
+                                <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2">
+                                    {[1, 2, 3].map((i) => (
+                                        <span
+                                            key={i}
+                                            className={`text-base transition-all duration-300 ${i <= lives
+                                                    ? "grayscale-0 scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.4)]"
+                                                    : "grayscale opacity-20 scale-90"
+                                                }`}
+                                        >
+                                            ❤️
+                                        </span>
+                                    ))}
+                                </div>
+                            )}
+
                             {phase === "break" && (
                                 <span className="inline-flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 rounded-full bg-muted/50 animate-pulse">
                                     ✨ 다음 초성 준비 중...
                                 </span>
                             )}
                             {feedback && phase === "playing" && (
-                                <span className={`inline-flex items-center gap-2 text-sm px-4 py-1.5 rounded-full bg-muted/60 text-foreground animate-pulse ${feedback.includes("❌") || feedback.includes("🔁") || feedback.includes("💔") ? "text-red-400" : ""}`}>
+                                <span className={`inline-flex items-center gap-2 text-xs px-4 py-1.5 rounded-full bg-muted/60 text-foreground animate-pulse ${feedback.includes("❌") || feedback.includes("🔁") || feedback.includes("💔") ? "text-red-400" : ""}`}>
                                     {feedback}
                                 </span>
                             )}
@@ -473,10 +490,13 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                     Enter
                                 </kbd>
                             </div>
+
                             {phase === "playing" && roundScore > 0 && (
-                                <p className="text-xs text-emerald-400 mt-2 ml-1 font-medium">
-                                    이번 라운드 +{roundScore}점 획득 중 🔥
-                                </p>
+                                <div className="mt-2 text-right">
+                                    <p className="text-xs text-emerald-400 font-medium">
+                                        이번 라운드 +{roundScore}점 획득 중 🔥
+                                    </p>
+                                </div>
                             )}
                         </form>
 
@@ -504,14 +524,10 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         {/* 게임 컨트롤 */}
                         <div className="mt-4">
                             {phase === "gameover" && (
-                                <div className="text-center space-y-3 animate-in zoom-in duration-300">
-                                    <div className="inline-flex flex-col items-center gap-1 px-6 py-3 rounded-xl bg-destructive/10 border border-destructive/20">
-                                        <span className="text-sm text-muted-foreground">게임 종료</span>
-                                        <span className="text-3xl font-black text-foreground">{finalScore}점</span>
-                                    </div>
+                                <div className="animate-in zoom-in duration-300">
                                     <button
                                         onClick={handleStart}
-                                        className="block w-full py-3 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 active:scale-95 transition-all"
+                                        className="block w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20"
                                     >
                                         다시 시작
                                     </button>
@@ -646,6 +662,6 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
                 .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
             `}</style>
-        </div>
+        </div >
     );
 }
