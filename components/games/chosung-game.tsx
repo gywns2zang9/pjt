@@ -102,7 +102,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
     );
     const [timeLeft, setTimeLeft] = useState(cfg.gameDuration);
     const [score, setScore] = useState(0);
-    const [lives, setLives] = useState(3);
+    const [lives, setLives] = useState(1);
     const [input, setInput] = useState("");
     const [impactWords, setImpactWords] = useState<ImpactWord[]>([]);
     const [ranking, setRanking] = useState<RankEntry[]>([]);
@@ -201,18 +201,23 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
 
     useEffect(() => {
         if (phase === "checking") {
+            // 현재 단어 검증 중이라면 검증이 끝날 때까지 대기
+            if (isValidating) return;
+
             if (roundScore === 0) {
-                setFeedback("� 시간 초과! 다음 라운드 준비!");
+                setFeedback("💔 정답을 맞추지 못했습니다!");
+                setShake(true);
                 setTimeout(() => {
-                    setPhase("break");
-                    setTimeout(() => startRound(), cfg.breakDuration);
-                }, 1000);
+                    setShake(false);
+                    endGame(currentScoreRef.current);
+                }, 600);
             } else {
+                // 점수를 획득한 경우(또는 막판 검증 성공으로 획득한 경우) 정상 진행
                 setPhase("break");
                 setTimeout(() => startRound(), cfg.breakDuration);
             }
         }
-    }, [phase, roundScore, startRound, cfg.breakDuration]);
+    }, [phase, roundScore, startRound, cfg.breakDuration, endGame, isValidating]);
 
     const handleSubmit = useCallback(
         async (e: React.FormEvent) => {
@@ -225,12 +230,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
             const matchesChosung = wordMatchesChosung(word, currentChosung);
             if (!matchesChosung) {
                 addImpact(word, "wrong");
-                setLives((prev) => {
-                    const next = prev - 1;
-                    if (next <= 0) endGame(currentScoreRef.current);
-                    return next;
-                });
-                setFeedback("❌ 초성 불일치! 목숨 -1");
+                setFeedback("❌ 초성이 일치하지 않습니다!");
                 setShake(true);
                 setSessionWords((prev) => [{ word, type: "wrong", description: "초성이 일치하지 않습니다." }, ...prev]);
                 setTimeout(() => { setShake(false); setFeedback(null); }, 600);
@@ -239,12 +239,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
 
             if (usedWordsRef.current.has(word)) {
                 addImpact(word, "duplicate");
-                setLives((prev) => {
-                    const next = prev - 1;
-                    if (next <= 0) endGame(currentScoreRef.current);
-                    return next;
-                });
-                setFeedback("🔁 중복 단어! 목숨 -1");
+                setFeedback("🔁 이미 입력한 단어입니다!");
                 setShake(true);
                 setSessionWords((prev) => [{ word, type: "duplicate", description: "이미 입력한 단어입니다." }, ...prev]);
                 setTimeout(() => { setShake(false); setFeedback(null); }, 600);
@@ -274,12 +269,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                 setSessionWords((prev) => [{ word, realWord: realW, pos: posInfo, description: desc, type: "correct" }, ...prev]);
             } else {
                 addImpact(word, "notword");
-                setLives((prev) => {
-                    const next = prev - 1;
-                    if (next <= 0) endGame(currentScoreRef.current);
-                    return next;
-                });
-                setFeedback("📖 사전에 없는 단어입니다 (목숨 -1)");
+                setFeedback("📖 사전에 없는 단어입니다");
                 setShake(true);
                 setSessionWords((prev) => [{ word, type: "notword", description: "표준국어대사전에 등록되지 않은 단어입니다." }, ...prev]);
                 setTimeout(() => { setShake(false); setFeedback(null); }, 600);
@@ -300,7 +290,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
 
     const handleStart = () => {
         setScore(0);
-        setLives(3);
+        setLives(1);
         currentScoreRef.current = 0;
         setFinalScore(0);
         setImpactWords([]);
@@ -406,47 +396,22 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                             ))}
                         </div>
 
-                        {/* 상태 정보 (브레이크/피드백/목숨/게임종료) */}
-                        <div className="min-h-[60px] flex flex-col items-center justify-center gap-2">
-                            {phase === "gameover" && (
-                                <div className="text-center animate-in zoom-in duration-300">
-                                    <div className="inline-flex flex-col items-center gap-1 px-6 py-2 rounded-xl bg-destructive/10 border border-destructive/20">
-                                        <span className="text-xs text-muted-foreground font-bold uppercase tracking-tighter">Game Over</span>
-                                        <span className="text-2xl font-black text-foreground">{finalScore}점</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {phase === "playing" && (
-                                <div className="flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2">
-                                    {[1, 2, 3].map((i) => (
-                                        <span
-                                            key={i}
-                                            className={`text-base transition-all duration-300 ${i <= lives
-                                                ? "grayscale-0 scale-110 drop-shadow-[0_0_8px_rgba(239,68,68,0.4)]"
-                                                : "grayscale opacity-20 scale-90"
-                                                }`}
-                                        >
-                                            ❤️
-                                        </span>
-                                    ))}
-                                </div>
-                            )}
-
+                        {/* 상태 정보 (브레이크/피드백) */}
+                        <div className="flex flex-col items-center justify-center -my-1">
                             {phase === "break" && (
-                                <span className="inline-flex items-center gap-2 text-sm text-muted-foreground px-4 py-2 rounded-full bg-muted/50 animate-pulse">
+                                <span className="inline-flex items-center gap-2 text-sm text-muted-foreground px-4 py-1 rounded-full bg-muted/50 animate-pulse">
                                     ✨ 다음 초성 준비 중...
                                 </span>
                             )}
                             {feedback && phase === "playing" && (
-                                <span className={`inline-flex items-center gap-2 text-xs px-4 py-1.5 rounded-full bg-muted/60 text-foreground animate-pulse ${feedback.includes("❌") || feedback.includes("🔁") || feedback.includes("💔") ? "text-red-400" : ""}`}>
+                                <span className={`inline-flex items-center gap-2 text-xs px-4 py-1 rounded-full bg-muted/60 text-foreground animate-pulse ${feedback.includes("❌") || feedback.includes("🔁") || feedback.includes("💔") ? "text-red-400" : ""}`}>
                                     {feedback}
                                 </span>
                             )}
                         </div>
 
                         {/* 입력 영역 */}
-                        <form onSubmit={handleSubmit} className="mt-auto">
+                        <form onSubmit={handleSubmit}>
                             <div className="relative">
                                 <input
                                     ref={inputRef}
@@ -509,7 +474,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         )}
 
                         {/* 게임 컨트롤 */}
-                        <div className="mt-4">
+                        <div className="mt-2">
                             {phase === "gameover" && (
                                 <div className="animate-in zoom-in duration-300">
                                     <button
@@ -535,7 +500,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                     onClick={() => endGame()}
                                     className="w-full py-3 rounded-xl border border-destructive/30 text-destructive font-bold text-sm hover:bg-destructive/10 active:scale-95 transition-all mt-2"
                                 >
-                                    게임 종료 (그만하기)
+                                    게임 종료
                                 </button>
                             )}
                         </div>
@@ -621,10 +586,15 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         </ol>
                     )}
 
-                    <div className="pt-3 border-t border-border flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">User</span>
-                        <span className="text-xs font-semibold text-foreground truncate">{userName}</span>
-                    </div>
+
+                    {phase === "gameover" && (
+                        <div className="pt-3 border-t border-border animate-in slide-in-from-top-2 duration-300">
+                            <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+                                <span className="text-[10px] text-destructive font-bold uppercase tracking-tighter">Game Over</span>
+                                <span className="text-xl font-black text-foreground">{finalScore}점</span>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
