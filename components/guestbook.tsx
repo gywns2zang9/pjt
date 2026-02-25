@@ -102,21 +102,21 @@ export function Guestbook({
 
     setSubmitting(true);
     try {
-      // 항상 실제 이름 저장, 익명 여부는 is_anonymous 플래그로 관리
-      const realName = user?.name ?? user?.email ?? "알 수 없음";
-
-      const { data, error } = await supabase
-        .from("guestbook")
-        .insert({
+      const res = await fetch("/api/guestbook", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           content: trimmed,
-          user_email: user?.email ?? null,
-          user_id: user?.id ?? null,
-          display_name: realName,
           is_anonymous: isAnonymous,
-        })
-        .select()
-        .single();
-      if (error) throw error;
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to submit");
+      }
+
+      const data = await res.json();
       if (data) {
         await loadPage(1);
         setContent("");
@@ -293,7 +293,7 @@ export function Guestbook({
         <div className="space-y-2">
           <Textarea
             placeholder={
-              isLoggedIn ? "감사합니다" : "로그인이 필요합니다."
+              isLoggedIn ? "의견을 남겨주세요!" : "로그인이 필요합니다."
             }
             value={content}
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
