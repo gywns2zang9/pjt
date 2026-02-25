@@ -383,10 +383,11 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         {/* 타이머 바 */}
                         <div className="w-full h-1.5 md:h-2 rounded-full bg-muted overflow-hidden">
                             <div
-                                className="h-full rounded-full transition-all duration-[50ms] ease-linear"
+                                className="h-full rounded-full"
                                 style={{
-                                    width: phase === "idle" ? "100%" : `${progressPct}%`,
+                                    width: (phase === "idle" || phase === "break") ? "100%" : `${progressPct}%`,
                                     backgroundColor: progressColor,
+                                    transition: phase === "playing" ? "width 10ms linear" : "none"
                                 }}
                             />
                         </div>
