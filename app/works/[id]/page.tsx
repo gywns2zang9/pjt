@@ -90,13 +90,12 @@ export default async function WorksProjectPage({ params }: Props) {
                     ) : (
                         <div className="flex flex-col items-center justify-center py-32 bg-background border rounded-2xl border-dashed">
                             <div className="text-5xl mb-6 opacity-30">🚧</div>
-                            <h2 className="text-xl font-semibold mb-2">접근 제한됨</h2>
+                            <h2 className="text-xl font-semibold mb-2">제한됨</h2>
                             <p className="text-muted-foreground text-center max-w-sm px-6">
-                                현재 <span className="font-bold text-foreground">[{statusStyle.label}]</span> 상태인 프로젝트입니다.<br />
-                                프로젝트가 <span className="font-bold text-emerald-500">완성</span>된 후에만 플레이할 수 있습니다.
+                                현재 <span className="font-bold text-foreground">[{statusStyle.label}]</span>인 프로젝트입니다.<br />
                             </p>
                             <Link href="/works" className="mt-8 px-5 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-all text-sm">
-                                다른 프로젝트 탐색하기
+                                다른 프로젝트 보기
                             </Link>
                         </div>
                     )}
