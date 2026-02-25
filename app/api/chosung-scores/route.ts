@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { unstable_noStore as noStore } from "next/cache";
+
+export const dynamic = "force-dynamic";
 
 // GET: 상위 10개 랭킹 조회 (중복 제거된 최고 점수 기준)
 export async function GET() {
+    noStore();
     const supabase = await createClient();
     const { data, error } = await supabase
         .from("chosung_scores")
@@ -42,31 +46,42 @@ export async function POST(req: Request) {
         "익명";
 
     // 현재 저장된 최고 점수 확인
-    const { data: existing } = await supabase
+    const { data: existingData } = await supabase
         .from("chosung_scores")
         .select("score")
         .eq("user_id", user.id)
         .order("score", { ascending: false })
-        .single();
+        .limit(1);
+
+    const existing = existingData?.[0];
 
     if (existing && existing.score >= score) {
         return NextResponse.json({ ok: true, message: "Not a personal record" });
     }
 
     // 새 기록이거나 더 높은 점수인 경우 저장
-    // 1인 1행 체제로 운영하고 싶다면 upsert를 사용할 수 있습니다.
-    const { error } = await supabase
+    // upsert를 시도하되, 실패하면 내 점수보다 낮은 기록들을 삭제하고 새로 insert하는 방식으로 대응
+    const { error: upsertError } = await supabase
         .from("chosung_scores")
         .upsert(
-            { user_id: user.id, user_name: userName, score, updated_at: new Date().toISOString() },
-            { onConflict: 'user_id' } // user_id 컬럼에 유니크 제약이 있어야 함
+            {
+                user_id: user.id,
+                user_name: userName,
+                score: score,
+                updated_at: new Date().toISOString()
+            },
+            { onConflict: 'user_id' }
         );
 
-    // 유니크 제약이 없을 경우를 대비해 그냥 insert (기존 GET에서 중복 제거 로직 가동)
-    if (error) {
+    if (upsertError) {
+        console.error("Upsert failed, falling back to delete-insert:", upsertError);
+        // upsert가 실패하는 주된 원인은 unique 제약조건 부재입니다.
+        // 이 경우 기존 내 점수들을 삭제하고 새 점수를 넣습니다.
+        await supabase.from("chosung_scores").delete().eq("user_id", user.id);
         const { error: insertError } = await supabase
             .from("chosung_scores")
             .insert({ user_id: user.id, user_name: userName, score });
+
         if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
 

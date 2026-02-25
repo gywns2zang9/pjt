@@ -121,6 +121,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
     const roundScoredRef = useRef(false);
     const currentScoreRef = useRef(0);
     const usedWordsRef = useRef<Set<string>>(new Set());
+    const breakTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const loadRanking = useCallback(async () => {
         try {
@@ -147,6 +148,8 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
 
     const endGame = useCallback(async (latestScore?: number) => {
         if (timerRef.current) clearInterval(timerRef.current);
+        if (breakTimeoutRef.current) clearTimeout(breakTimeoutRef.current);
+
         const scoreToSave = latestScore ?? currentScoreRef.current;
         setFinalScore(scoreToSave);
         setPhase("gameover");
@@ -213,7 +216,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
             } else {
                 // 점수를 획득한 경우(또는 막판 검증 성공으로 획득한 경우) 정상 진행
                 setPhase("break");
-                setTimeout(() => startRound(), cfg.breakDuration);
+                breakTimeoutRef.current = setTimeout(() => startRound(), cfg.breakDuration);
             }
         }
     }, [phase, roundScore, startRound, cfg.breakDuration, endGame, isValidating]);
@@ -247,33 +250,43 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
 
             setIsValidating(true);
 
-            let retryCount = 0;
-            let res = null;
+            // 1차 시도
+            let res = await isValidKoreanWord(word);
 
-            while (retryCount < 2) {
+            if (res.error) {
+                // 1차 실패 기록
+                setSessionWords(prev => [{
+                    word,
+                    type: "notword",
+                    description: "⚠️ 연결에 실패했습니다. 다시 시도합니다.",
+                }, ...prev]);
+                setFeedback("⚠️ 연결에 실패했습니다. 다시 시도합니다.");
+
+                await new Promise(r => setTimeout(r, 600));
+
+                // 2차 시도
                 res = await isValidKoreanWord(word);
-                if (!res.error) break;
-
-                retryCount++;
-                if (retryCount < 2) {
-                    setFeedback("⚠️ 연결에 실패했습니다. 다시 시도합니다.");
-                    await new Promise(r => setTimeout(r, 500)); // 0.5초 대기 후 재시도
-                }
             }
 
             setIsValidating(false);
 
             if (res?.error) {
+                // 최종 실패 기록
                 setFeedback("❌ 오류가 발생했습니다. 죄송합니다.");
                 setShake(true);
-                setTimeout(() => { setShake(false); setFeedback(null); }, 1500);
+                const dictionaryLink = `https://stdict.korean.go.kr/search/searchResult.do?searchKeyword=${encodeURIComponent(word)}`;
+                setSessionWords((prev) => [{
+                    word,
+                    type: "notword",
+                    description: "❌ 오류가 발생했습니다. 죄송합니다.",
+                    link: dictionaryLink
+                }, ...prev]);
+                setTimeout(() => { setFeedback(null); setShake(false); }, 1500);
                 return;
             }
 
             if (res?.valid) {
                 usedWordsRef.current.add(word);
-
-                // 1. 점수 및 상태 업데이트
                 setScore((prev) => {
                     const next = prev + 1;
                     currentScoreRef.current = next;
@@ -291,12 +304,11 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                 setWordMeta({ word, realWord: realW, pos: posInfo, description: desc, link: dictionaryLink });
                 setSessionWords((prev) => [{ word, realWord: realW, pos: posInfo, description: desc, type: "correct", link: dictionaryLink }, ...prev]);
 
-                // 2. 즉시 라운드 종료 및 다음 라운드 준비
                 setPhase("break");
-                setTimeout(() => startRound(), cfg.breakDuration);
+                breakTimeoutRef.current = setTimeout(() => startRound(), cfg.breakDuration);
             } else {
                 addImpact(word, "notword");
-                setFeedback("📖 사전에 없는 단어입니다");
+                setFeedback("📖 표준국어대사전에 등록되지 않은 단어입니다.");
                 setShake(true);
                 const dictionaryLink = `https://stdict.korean.go.kr/search/searchResult.do?searchKeyword=${encodeURIComponent(word)}`;
                 setSessionWords((prev) => [{

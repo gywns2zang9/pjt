@@ -26,10 +26,21 @@ export async function GET(req: NextRequest) {
                 }, { status: 502 });
             }
 
-            const data = await res.json();
+            let data;
+            try {
+                const text = await res.text();
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error("Failed to parse dictionary response as JSON:", e);
+                return NextResponse.json({
+                    valid: false,
+                    reason: "stdict-malformed-response"
+                });
+            }
+
             const items = data.channel?.item || [];
 
-            if (items.length > 0) {
+            if (items && items.length > 0) {
                 const firstItem = items[0];
                 const senseList = Array.isArray(firstItem.sense) ? firstItem.sense : [firstItem.sense];
                 const bestSense = senseList[0];
@@ -48,19 +59,19 @@ export async function GET(req: NextRequest) {
                         reason: "stdict-found"
                     });
                 }
-            } else {
-                // 정말로 검색 결과가 없는 경우
-                return NextResponse.json({
-                    valid: false,
-                    reason: "stdict-not-found"
-                });
             }
+
+            // 검색 결과가 없거나 뜻풀이가 없는 경우
+            return NextResponse.json({
+                valid: false,
+                reason: "stdict-not-found"
+            });
         } catch (e) {
-            console.error("Dictionary API Error:", e);
+            console.error("Dictionary API Exception:", e);
             return NextResponse.json({
                 valid: false,
                 reason: "stdict-exception"
-            }, { status: 503 });
+            });
         }
     }
 
