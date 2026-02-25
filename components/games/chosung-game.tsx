@@ -246,10 +246,31 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
             }
 
             setIsValidating(true);
-            const res = await isValidKoreanWord(word);
+
+            let retryCount = 0;
+            let res = null;
+
+            while (retryCount < 2) {
+                res = await isValidKoreanWord(word);
+                if (!res.error) break;
+
+                retryCount++;
+                if (retryCount < 2) {
+                    setFeedback("⚠️ 연결에 실패했습니다. 다시 시도합니다.");
+                    await new Promise(r => setTimeout(r, 500)); // 0.5초 대기 후 재시도
+                }
+            }
+
             setIsValidating(false);
 
-            if (res.valid) {
+            if (res?.error) {
+                setFeedback("❌ 오류가 발생했습니다. 죄송합니다.");
+                setShake(true);
+                setTimeout(() => { setShake(false); setFeedback(null); }, 1500);
+                return;
+            }
+
+            if (res?.valid) {
                 usedWordsRef.current.add(word);
 
                 // 1. 점수 및 상태 업데이트

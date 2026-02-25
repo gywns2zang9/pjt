@@ -18,43 +18,54 @@ export async function GET(req: NextRequest) {
             const apiUrl = `https://stdict.korean.go.kr/api/search.do?key=${dictionaryKey}&q=${encodeURIComponent(word)}&req_type=json&type_search=search&method=exact`;
             const res = await fetch(apiUrl, { method: "GET" });
 
-            if (res.ok) {
-                const data = await res.json();
-                const items = data.channel?.item || [];
+            if (!res.ok) {
+                return NextResponse.json({
+                    valid: false,
+                    reason: "stdict-api-error",
+                    status: res.status
+                }, { status: 502 });
+            }
 
-                if (items.length > 0) {
-                    const firstItem = items[0];
+            const data = await res.json();
+            const items = data.channel?.item || [];
 
-                    // 국립국어원 JSON 명세: 뜻풀이(definition)는 sense 객체 또는 배열 내부에 숨어있습니다.
-                    const senseList = Array.isArray(firstItem.sense) ? firstItem.sense : [firstItem.sense];
-                    const bestSense = senseList[0];
+            if (items.length > 0) {
+                const firstItem = items[0];
+                const senseList = Array.isArray(firstItem.sense) ? firstItem.sense : [firstItem.sense];
+                const bestSense = senseList[0];
 
-                    let definition = bestSense?.definition || "";
-                    let pos = bestSense?.pos || firstItem.pos || "";
+                let definition = bestSense?.definition || "";
+                let pos = bestSense?.pos || firstItem.pos || "";
 
-                    // HTML 태그와 특수 문자(^) 제거 정제
-                    definition = definition.replace(/<[^>]*>?/gm, "").replace(/\^/g, " ").trim();
+                definition = definition.replace(/<[^>]*>?/gm, "").replace(/\^/g, " ").trim();
 
-                    if (definition) {
-                        return NextResponse.json({
-                            valid: true,
-                            word: firstItem.word?.replace(/\^/g, "") || word,
-                            pos: pos,
-                            description: definition,
-                            reason: "stdict-found"
-                        });
-                    }
+                if (definition) {
+                    return NextResponse.json({
+                        valid: true,
+                        word: firstItem.word?.replace(/\^/g, "") || word,
+                        pos: pos,
+                        description: definition,
+                        reason: "stdict-found"
+                    });
                 }
+            } else {
+                // 정말로 검색 결과가 없는 경우
+                return NextResponse.json({
+                    valid: false,
+                    reason: "stdict-not-found"
+                });
             }
         } catch (e) {
             console.error("Dictionary API Error:", e);
+            return NextResponse.json({
+                valid: false,
+                reason: "stdict-exception"
+            }, { status: 503 });
         }
     }
 
-    // 국립국어원 검색 결과가 없거나 뜻이 없는 경우 무조건 false (오답 처리 강화)
     return NextResponse.json({
         valid: false,
-        description: null,
-        reason: "stdict-not-found"
-    });
+        reason: "no-api-key"
+    }, { status: 500 });
 }
