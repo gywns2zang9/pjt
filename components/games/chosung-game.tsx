@@ -252,14 +252,16 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
 
             if (res.valid) {
                 usedWordsRef.current.add(word);
+
+                // 1. 점수 및 상태 업데이트
                 setScore((prev) => {
                     const next = prev + 1;
                     currentScoreRef.current = next;
                     return next;
                 });
-                setRoundScore((prev) => prev + 1);
+                setRoundScore(1);
                 roundScoredRef.current = true;
-                addImpact(word, "correct");
+                addImpact(word, "correct", true);
 
                 const desc = res.description || "뜻 정보가 없습니다.";
                 const realW = res.word || word;
@@ -267,6 +269,10 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
 
                 setWordMeta({ word, realWord: realW, pos: posInfo, description: desc });
                 setSessionWords((prev) => [{ word, realWord: realW, pos: posInfo, description: desc, type: "correct" }, ...prev]);
+
+                // 2. 즉시 라운드 종료 및 다음 라운드 준비
+                setPhase("break");
+                setTimeout(() => startRound(), cfg.breakDuration);
             } else {
                 addImpact(word, "notword");
                 setFeedback("📖 사전에 없는 단어입니다");
@@ -276,13 +282,14 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
             }
             inputRef.current?.focus();
         },
-        [phase, input, currentChosung, endGame, isValidating]
+        [phase, input, currentChosung, endGame, isValidating, cfg.breakDuration, startRound]
     );
 
-    const addImpact = (text: string, type: ImpactWord["type"]) => {
+    const addImpact = (text: string, type: ImpactWord["type"], showPlusOne: boolean = false) => {
         const id = ++impactIdRef.current;
         const x = Math.random() * 60 + 10;
-        setImpactWords((prev) => [...prev, { id, text, type, x }]);
+        const displayText = showPlusOne ? `+1 ${text}` : text;
+        setImpactWords((prev) => [...prev, { id, text: displayText, type, x }]);
         setTimeout(() => {
             setImpactWords((prev) => prev.filter((w) => w.id !== id));
         }, 900);
@@ -315,7 +322,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
         notword: "text-orange-400",
     };
     const impactPrefix: Record<ImpactWord["type"], string> = {
-        correct: "+1 ",
+        correct: "", // prefix는 이제 addImpact에서 직접 처리함
         wrong: "✗ ",
         duplicate: "↩ ",
         notword: "",
@@ -417,9 +424,14 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                     ref={inputRef}
                                     type="text"
                                     value={input}
-                                    onChange={(e) => setInput(e.target.value)}
+                                    onChange={(e) => {
+                                        if (phase === "playing") {
+                                            setInput(e.target.value);
+                                        }
+                                    }}
                                     autoComplete="off"
-                                    disabled={phase !== "playing" || isValidating}
+                                    // disabled를 제거하여 모바일 키보드 유지, 대신 readOnly나 조건부 처리
+                                    readOnly={phase !== "playing" || isValidating}
                                     placeholder={
                                         phase === "idle"
                                             ? "게임을 시작하세요"
@@ -435,7 +447,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                     bg-background text-foreground placeholder:text-muted-foreground/50
                                     ${phase === "playing"
                                             ? "border-primary/50 focus:border-primary focus:ring-2 focus:ring-primary/20 shadow-sm shadow-primary/10"
-                                            : "border-border opacity-60 cursor-not-allowed"
+                                            : "border-border opacity-70 cursor-default"
                                         }`}
                                 />
                                 <kbd className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground border border-border rounded px-1.5 py-0.5 bg-muted/40">
@@ -443,13 +455,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                 </kbd>
                             </div>
 
-                            {phase === "playing" && roundScore > 0 && (
-                                <div className="mt-2 text-right">
-                                    <p className="text-xs text-emerald-400 font-medium">
-                                        이번 라운드 +{roundScore}점 획득 중 🔥
-                                    </p>
-                                </div>
-                            )}
+                            {/* 이번 라운드 점수 안내 삭제됨 */}
                         </form>
 
                         {/* 단어 뜻 표시 (국립국어원) */}
