@@ -59,6 +59,10 @@ export const projects: ProjectMeta[] = [
         id: "chosung-game",
         title: "초성게임",
     },
+    {
+        id: "if-buy",
+        title: "그때 살걸",
+    },
 ];
 
 export function getProjectById(id: string): ProjectMeta | undefined {
