@@ -111,8 +111,8 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
     const [shake, setShake] = useState(false);
     const [chosungPulse, setChosungPulse] = useState(false);
     const [feedback, setFeedback] = useState<string | null>(null);
-    const [wordMeta, setWordMeta] = useState<{ word: string; realWord?: string; pos?: string; description: string } | null>(null);
-    const [sessionWords, setSessionWords] = useState<{ word: string; realWord?: string; pos?: string; type: ImpactWord["type"]; description?: string }[]>([]);
+    const [wordMeta, setWordMeta] = useState<{ word: string; realWord?: string; pos?: string; description: string; link?: string } | null>(null);
+    const [sessionWords, setSessionWords] = useState<{ word: string; realWord?: string; pos?: string; type: ImpactWord["type"]; description?: string; link?: string }[]>([]);
     const [isValidating, setIsValidating] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
@@ -171,7 +171,6 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
         setFeedback(null);
         setWordMeta(null);
         roundScoredRef.current = false;
-        usedWordsRef.current = new Set();
         setPhase("playing");
         setChosungPulse(true);
         setTimeout(() => setChosungPulse(false), 600);
@@ -188,9 +187,9 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         setPhase("checking");
                         return 0;
                     }
-                    return Number((prev - 0.05).toFixed(2));
+                    return Number((prev - 0.01).toFixed(2));
                 });
-            }, 50);
+            }, 10);
         } else {
             if (timerRef.current) clearInterval(timerRef.current);
         }
@@ -266,9 +265,10 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                 const desc = res.description || "뜻 정보가 없습니다.";
                 const realW = res.word || word;
                 const posInfo = res.pos || "";
+                const dictionaryLink = `https://stdict.korean.go.kr/search/searchResult.do?searchKeyword=${encodeURIComponent(realW)}`;
 
-                setWordMeta({ word, realWord: realW, pos: posInfo, description: desc });
-                setSessionWords((prev) => [{ word, realWord: realW, pos: posInfo, description: desc, type: "correct" }, ...prev]);
+                setWordMeta({ word, realWord: realW, pos: posInfo, description: desc, link: dictionaryLink });
+                setSessionWords((prev) => [{ word, realWord: realW, pos: posInfo, description: desc, type: "correct", link: dictionaryLink }, ...prev]);
 
                 // 2. 즉시 라운드 종료 및 다음 라운드 준비
                 setPhase("break");
@@ -277,7 +277,13 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                 addImpact(word, "notword");
                 setFeedback("📖 사전에 없는 단어입니다");
                 setShake(true);
-                setSessionWords((prev) => [{ word, type: "notword", description: "표준국어대사전에 등록되지 않은 단어입니다." }, ...prev]);
+                const dictionaryLink = `https://stdict.korean.go.kr/search/searchResult.do?searchKeyword=${encodeURIComponent(word)}`;
+                setSessionWords((prev) => [{
+                    word,
+                    type: "notword",
+                    description: "표준국어대사전에 등록되지 않은 단어입니다.",
+                    link: dictionaryLink
+                }, ...prev]);
                 setTimeout(() => { setShake(false); setFeedback(null); }, 600);
             }
             inputRef.current?.focus();
@@ -306,7 +312,8 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
         setSessionWords([]);
         usedWordsRef.current = new Set();
         startRound();
-        setTimeout(() => inputRef.current?.focus(), 100);
+        // 모바일 대응: 클릭 이벤트 핸들러 내에서 즉시 포커스를 주어 키보드를 유도함
+        inputRef.current?.focus();
     };
 
     const timeLeftNum = Number(timeLeft);
@@ -407,7 +414,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         <div className="flex flex-col items-center justify-center -my-1">
                             {phase === "break" && (
                                 <span className="inline-flex items-center gap-2 text-sm text-muted-foreground px-4 py-1 rounded-full bg-muted/50 animate-pulse">
-                                    ✨ 다음 초성 준비 중...
+                                    ✨ 다음 초성 생성 중...
                                 </span>
                             )}
                             {feedback && phase === "playing" && (
@@ -430,8 +437,9 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                         }
                                     }}
                                     autoComplete="off"
-                                    // disabled를 제거하여 모바일 키보드 유지, 대신 readOnly나 조건부 처리
-                                    readOnly={phase !== "playing" || isValidating}
+                                    // phase !== "playing" 일 때도 readOnly를 풀어서 모바일 키보드가 내려가는 것을 방지
+                                    // 실제 입력은 onChange에서 phase 조건으로 막음
+                                    readOnly={isValidating}
                                     placeholder={
                                         phase === "idle"
                                             ? "게임을 시작하세요"
@@ -466,10 +474,22 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                         <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded uppercase tracking-wider">stdict</span>
                                     </div>
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <p className="text-sm font-bold text-foreground">{wordMeta.realWord || wordMeta.word}</p>
-                                            {wordMeta.pos && (
-                                                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">{wordMeta.pos}</span>
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm font-bold text-foreground">{wordMeta.realWord || wordMeta.word}</p>
+                                                {wordMeta.pos && (
+                                                    <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-sm">{wordMeta.pos}</span>
+                                                )}
+                                            </div>
+                                            {wordMeta.link && (
+                                                <a
+                                                    href={wordMeta.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[10px] text-primary hover:underline font-medium shrink-0"
+                                                >
+                                                    🔍 표준국어대사전 검색
+                                                </a>
                                             )}
                                         </div>
                                         <ExpandableText text={wordMeta.description} maxLength={120} />
@@ -543,6 +563,17 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                                 {item.pos && <span className="text-[8px] text-muted-foreground opacity-70">({item.pos})</span>}
                                             </div>
                                         </div>
+                                        {item.link && (
+                                            <a
+                                                href={item.link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[10px] text-primary/70 hover:text-primary hover:underline shrink-0 ml-2"
+                                                title="표준국어대사전 검색"
+                                            >
+                                                🔍 표준국어대사전 검색
+                                            </a>
+                                        )}
                                     </div>
                                     {item.description && (
                                         <div className="mt-1 border-l-2 border-muted pl-2 py-0.5">
@@ -564,7 +595,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
 
                     {ranking.length === 0 ? (
                         <p className="text-xs text-muted-foreground text-center py-6">
-                            아직 기록이 없어요<br />첫 기록을 세워보세요!
+                            아직 기록이 없어요<br />
                         </p>
                     ) : (
                         <ol className="space-y-2">

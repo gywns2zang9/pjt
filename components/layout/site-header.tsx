@@ -47,7 +47,7 @@ export async function SiteHeader() {
             </svg>
             <span className="hidden sm:inline">카카오톡 문의</span>
           </Link>
-          <ThemeSwitcher />
+          {/* <ThemeSwitcher /> */}
           <Suspense>
             <AuthButton />
           </Suspense>
