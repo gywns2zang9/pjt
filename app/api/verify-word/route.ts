@@ -22,9 +22,9 @@ export async function GET(req: NextRequest) {
     try {
         const apiUrl = `https://stdict.korean.go.kr/api/search.do?key=${dictionaryKey}&q=${encodeURIComponent(word)}&req_type=json&type_search=search&method=exact`;
 
-        // fetch 타임아웃 설정 (5초)
+        // fetch 타임아웃을 10초로 연장 (충분히 기다려줌)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
 
         const res = await fetch(apiUrl, {
             method: "GET",
@@ -35,12 +35,13 @@ export async function GET(req: NextRequest) {
         clearTimeout(timeoutId);
 
         if (!res.ok) {
-            // API 응답 자체가 에러인 경우 502/503 반환 -> 클라이언트가 이를 보고 재시도함
+            console.error(`Dictionary API Error Response [${word}]: Status ${res.status}`);
+            // 사전 서버가 아예 응답을 거부(502/503)한 경우에만 503 반환 -> 클라이언트 재시도
             return NextResponse.json({
                 valid: false,
                 reason: "stdict-api-error",
                 status: res.status
-            }, { status: res.status >= 500 ? 503 : 502 });
+            }, { status: 503 });
         }
 
         const text = await res.text();
@@ -49,13 +50,14 @@ export async function GET(req: NextRequest) {
         try {
             data = JSON.parse(text);
         } catch (e) {
-            // JSON 파싱 실패 (주로 국립국어원 서버 점검 시 HTML이 옴)
+            console.error(`Dictionary JSON Parse Error [${word}]: Response might not be JSON.`);
             return NextResponse.json({
                 valid: false,
                 reason: "stdict-malformed-response"
             }, { status: 502 });
         }
 
+        // 국립국어원 API는 결과가 없으면 data.channel.item이 없거나 빈 배열임
         const items = data.channel?.item || [];
 
         if (items && items.length > 0) {
@@ -66,7 +68,6 @@ export async function GET(req: NextRequest) {
             let definition = bestSense?.definition || "";
             let pos = bestSense?.pos || firstItem.pos || "";
 
-            // HTML 태그와 특수문자 제거
             definition = definition.replace(/<[^>]*>?/gm, "").replace(/\^/g, " ").trim();
 
             if (definition) {
@@ -80,7 +81,8 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // 검색 결과가 없는 경우는 "성공적으로 검색했지만 단어가 없는 것"이므로 200 OK와 함께 valid: false 반환
+        // 🟢 여기가 중요: API 호출은 '성공'했지만 단어가 '없는' 경우입니다. 
+        // 200 OK와 함께 valid: false를 주면 게임에서 즉시 "등록되지 않은 단어"로 처리됩니다. (재시도 안 함)
         return NextResponse.json({
             valid: false,
             reason: "stdict-not-found"
@@ -88,9 +90,9 @@ export async function GET(req: NextRequest) {
 
     } catch (e: any) {
         const isTimeout = e.name === 'AbortError';
-        console.error(`Dictionary API Exception: ${isTimeout ? 'Timeout' : e.message}`);
+        console.error(`Dictionary API Exception [${word}]: ${isTimeout ? 'Timeout (10s)' : e.message}`);
 
-        // 네트워크 연결 오류나 타임아웃 발생 시 503 반환 -> 클라이언트 재시도 발동!
+        // 진짜 시스템 에러인 경우에만 503 -> 클라이언트 재시도
         return NextResponse.json({
             valid: false,
             reason: "stdict-exception",
