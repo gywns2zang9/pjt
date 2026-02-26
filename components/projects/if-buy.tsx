@@ -160,7 +160,7 @@ export function IfBuy() {
                             {/* Stock Search */}
                             <div className="space-y-1.5">
                                 <div className="flex items-center justify-between ml-1">
-                                    <label className="text-xs font-medium text-muted-foreground">종목 검색</label>
+                                    <label className="text-xs font-medium text-muted-foreground">종목 선택</label>
                                 </div>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -209,7 +209,7 @@ export function IfBuy() {
 
                             {/* Strategy */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-medium text-muted-foreground ml-1">투자 기법</label>
+                                <label className="text-xs font-medium text-muted-foreground ml-1">투자 방법</label>
                                 <div className="grid grid-cols-2 p-1 rounded-xl bg-muted/50 border border-border">
                                     <button
                                         className={`py-2 px-3 rounded-lg text-xs font-bold transition-all ${strategy === "LUMP" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
@@ -229,9 +229,9 @@ export function IfBuy() {
                             {/* Date & Amount */}
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <div className="flex items-center justify-between ml-1">
-                                        <label className="text-xs font-medium text-muted-foreground">시작일</label>
-                                        <div className="flex gap-1">
+                                    <div className="flex flex-wrap items-center justify-between ml-1 gap-2 mb-1">
+                                        <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">시작일</label>
+                                        <div className="flex flex-wrap gap-1">
                                             {strategy !== "DCA" && (
                                                 <button
                                                     onClick={() => setStartDate(format(subDays(startOfToday(), 1), "yyyy-MM-dd"))}
@@ -368,17 +368,17 @@ export function IfBuy() {
                                 </div>
 
                                 {/* Chart */}
-                                <div className="p-6 rounded-2xl border border-border bg-card">
-                                    <div className="flex items-end justify-between mb-6">
-                                        <div>
-                                            <h3 className="text-base font-bold truncate flex items-center gap-2">
-                                                {simulatedStock?.name}
+                                <div className="p-4 sm:p-6 rounded-2xl border border-border bg-card">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-6 gap-4">
+                                        <div className="w-full sm:w-auto">
+                                            <h3 className="text-base font-bold flex flex-wrap items-center gap-1.5 sm:gap-2">
+                                                <span className="break-all">{simulatedStock?.name}</span>
                                                 <span className="text-muted-foreground text-xs font-normal">({simulatedStock?.symbol})</span>
-                                                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm font-semibold">{simulatedStock?.exchange}</span>
+                                                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm font-semibold whitespace-nowrap">{simulatedStock?.exchange}</span>
                                             </h3>
-                                            <p className="text-[10px] text-muted-foreground">{simulatedStartDate} ~ 현재</p>
+                                            <p className="text-[10px] text-muted-foreground mt-0.5">{simulatedStartDate} ~ 현재</p>
                                         </div>
-                                        <div className="text-right flex items-end gap-4">
+                                        <div className="text-right flex flex-wrap items-end justify-start sm:justify-end gap-3 sm:gap-4 w-full sm:w-auto mt-2 sm:mt-0">
                                             {(() => {
                                                 const maxHigh = chartData.length > 0 ? Math.max(...chartData.map(d => d.high || d.price)) : 0;
                                                 const minLow = chartData.length > 0 ? Math.min(...chartData.map(d => d.low || d.price)) : 0;
