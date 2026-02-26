@@ -249,41 +249,11 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
             }
 
             setIsValidating(true);
+            setFeedback("🔍 정답을 확인 중입니다...");
 
-            // 1차 시도
-            let res = await isValidKoreanWord(word);
-
-            if (res.error) {
-                // 1차 실패 기록
-                setSessionWords(prev => [{
-                    word,
-                    type: "notword",
-                    description: "⚠️ 연결에 실패했습니다. 다시 시도합니다.",
-                }, ...prev]);
-                setFeedback("⚠️ 연결에 실패했습니다. 다시 시도합니다.");
-
-                await new Promise(r => setTimeout(r, 600));
-
-                // 2차 시도
-                res = await isValidKoreanWord(word);
-            }
+            const res = await isValidKoreanWord(word);
 
             setIsValidating(false);
-
-            if (res?.error) {
-                // 최종 실패 기록
-                setFeedback("❌ 오류가 발생했습니다. 죄송합니다.");
-                setShake(true);
-                const dictionaryLink = `https://stdict.korean.go.kr/search/searchResult.do?searchKeyword=${encodeURIComponent(word)}`;
-                setSessionWords((prev) => [{
-                    word,
-                    type: "notword",
-                    description: "❌ 오류가 발생했습니다. 죄송합니다.",
-                    link: dictionaryLink
-                }, ...prev]);
-                setTimeout(() => { setFeedback(null); setShake(false); }, 1500);
-                return;
-            }
 
             if (res?.valid) {
                 usedWordsRef.current.add(word);
@@ -307,6 +277,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                 setPhase("break");
                 breakTimeoutRef.current = setTimeout(() => startRound(), cfg.breakDuration);
             } else {
+                // 서버 재시도 결과 실패했거나, 진짜 없는 단어인 경우 모두 '사전에 없는 단어'로 일관되게 처리
                 addImpact(word, "notword");
                 setFeedback("📖 표준국어대사전에 등록되지 않은 단어입니다.");
                 setShake(true);
@@ -317,7 +288,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                     description: "표준국어대사전에 등록되지 않은 단어입니다.",
                     link: dictionaryLink
                 }, ...prev]);
-                setTimeout(() => { setShake(false); setFeedback(null); }, 600);
+                setTimeout(() => { setShake(false); setFeedback(null); }, 1500);
             }
             inputRef.current?.focus();
         },
