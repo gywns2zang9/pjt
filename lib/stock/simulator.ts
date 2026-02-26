@@ -8,15 +8,16 @@ export interface SimulationResult {
     profit: number;
     profitRate: number;
     price: number;
+    high: number;
+    low: number;
 }
 
 export interface Summary {
     finalValue: number;
     totalInvested: number;
-    totalProfit: number;
-    totalProfitRate: number;
     totalShares: number;
     averagePrice: number;
+    bestValue: number;
 }
 
 export const Simulator = {
@@ -30,77 +31,79 @@ export const Simulator = {
         if (history.length === 0) throw new Error("데이터가 없습니다.");
 
         const buyPrice = history[0].open;
-        const totalShares = amount / buyPrice;
+        const totalShares = Math.floor(amount / buyPrice);
+        const actualInvested = totalShares * buyPrice;
 
-        const chartData = history.map((day) => {
-            const currentValue = totalShares * day.close;
-            const profit = currentValue - amount;
+        const chartData = history.map((day, index) => {
+            const isLastDay = index === history.length - 1;
+            const targetPrice = isLastDay ? day.close : day.open;
+
+            const currentValue = totalShares * targetPrice;
+            const profit = currentValue - actualInvested;
             return {
                 date: format(day.date, "yyyy-MM-dd"),
                 totalValue: Math.round(currentValue),
-                investedAmount: amount,
+                investedAmount: actualInvested,
                 profit: Math.round(profit),
-                profitRate: Number(((profit / amount) * 100).toFixed(2)),
-                price: day.close,
+                profitRate: actualInvested > 0 ? Number(((profit / actualInvested) * 100).toFixed(2)) : 0,
+                price: targetPrice,
+                high: day.high,
+                low: day.low,
             };
         });
 
         const final = chartData[chartData.length - 1];
+        const maxHigh = Math.max(...chartData.map(d => d.high));
         const summary: Summary = {
             finalValue: final.totalValue,
-            totalInvested: amount,
-            totalProfit: final.profit,
-            totalProfitRate: final.profitRate,
+            totalInvested: actualInvested,
             totalShares: totalShares,
             averagePrice: buyPrice,
+            bestValue: totalShares * maxHigh,
         };
 
         return { chartData, summary };
     },
 
     /**
-   * 적립식 투자 시뮬레이션
-   */
+     * 적립식 투자 시뮬레이션
+     */
     simulateDCA(
         history: StockHistoryData[],
-        amountPerPeriod: number,
-        frequency: "daily" | "weekly" | "monthly",
-        dayOfValue: number = 1 // 월급날 등
+        sharesPerPeriod: number,
+        startDateStr: string
     ): { chartData: SimulationResult[]; summary: Summary } {
         if (history.length === 0) throw new Error("데이터가 없습니다.");
 
         let totalInvested = 0;
         let totalShares = 0;
-        let lastProcessedMonth = "";
-        let lastProcessedWeek = -1;
 
-        const chartData = history.map((day) => {
+        let lastProcessedMonth = "";
+        const startDay = parseInt(startDateStr.split("-")[2], 10);
+        if (startDay > 1) {
+            lastProcessedMonth = startDateStr.slice(0, 7); // ex: "2026-02"
+        }
+
+        const chartData = history.map((day, index) => {
             let shouldBuy = false;
 
-            if (frequency === "daily") {
+            // 매월 1일(또는 해당 달의 첫 거래일)에 매수
+            const monthNum = format(day.date, "yyyy-MM");
+            if (monthNum !== lastProcessedMonth) {
                 shouldBuy = true;
-            } else if (frequency === "weekly") {
-                // 주번호가 바뀌면 첫 거래일에 구매
-                const weekNum = getWeekNumber(day.date);
-                if (weekNum !== lastProcessedWeek) {
-                    shouldBuy = true;
-                    lastProcessedWeek = weekNum;
-                }
-            } else if (frequency === "monthly") {
-                // 달이 바뀌고 + 날짜가 지정일 이후인 첫 거래일에 구매
-                const monthNum = format(day.date, "yyyy-MM");
-                if (monthNum !== lastProcessedMonth && getDate(day.date) >= dayOfValue) {
-                    shouldBuy = true;
-                    lastProcessedMonth = monthNum;
-                }
+                lastProcessedMonth = monthNum;
             }
 
             if (shouldBuy) {
-                totalInvested += amountPerPeriod;
-                totalShares += amountPerPeriod / day.open;
+                const buyAmount = sharesPerPeriod * day.open;
+                totalInvested += buyAmount;
+                totalShares += sharesPerPeriod;
             }
 
-            const currentValue = totalShares * day.close;
+            const isLastDay = index === history.length - 1;
+            const targetPrice = isLastDay ? day.close : day.open;
+
+            const currentValue = totalShares * targetPrice;
             const profit = currentValue - totalInvested;
 
             return {
@@ -109,39 +112,22 @@ export const Simulator = {
                 investedAmount: totalInvested,
                 profit: Math.round(profit),
                 profitRate: totalInvested > 0 ? Number(((profit / totalInvested) * 100).toFixed(2)) : 0,
-                price: day.close,
+                price: targetPrice,
+                high: day.high,
+                low: day.low,
             };
         });
 
         const final = chartData[chartData.length - 1];
+        const maxHigh = Math.max(...chartData.map(d => d.high));
         const summary: Summary = {
             finalValue: final.totalValue,
             totalInvested: totalInvested,
-            totalProfit: final.profit,
-            totalProfitRate: final.profitRate,
             totalShares: totalShares,
-            averagePrice: totalInvested / totalShares,
+            averagePrice: totalShares > 0 ? totalInvested / totalShares : 0,
+            bestValue: totalShares * maxHigh,
         };
 
         return { chartData, summary };
     }
 };
-
-/**
- * 주 번호 계산 (DCA 주간 매수용)
- */
-function getWeekNumber(d: Date) {
-    const date = new Date(d.getTime());
-    date.setHours(0, 0, 0, 0);
-    date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
-    const week1 = new Date(date.getFullYear(), 0, 4);
-    return (
-        1 +
-        Math.round(
-            ((date.getTime() - week1.getTime()) / 86400000 -
-                3 +
-                ((week1.getDay() + 6) % 7)) /
-            7
-        )
-    );
-}

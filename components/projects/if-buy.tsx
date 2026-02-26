@@ -1,19 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { format, subYears, startOfToday } from "date-fns";
+import { format, subYears, subMonths, subDays, startOfToday } from "date-fns";
 import {
     Search,
-    TrendingUp,
-    TrendingDown,
-    DollarSign,
     Calendar,
     Loader2,
     RefreshCw,
     PieChart as PieChartIcon,
     ChevronRight,
-    Calculator,
-    Info
 } from "lucide-react";
 import {
     AreaChart,
@@ -34,15 +29,15 @@ export function IfBuy() {
     const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
     const [selectedStock, setSelectedStock] = useState<StockSearchResult | null>(null);
     const [startDate, setStartDate] = useState(format(subYears(startOfToday(), 1), "yyyy-MM-dd"));
-    const [amount, setAmount] = useState<number | "">(1000000); // 100만원
     const [strategy, setStrategy] = useState<"LUMP" | "DCA">("LUMP");
-    const [frequency, setFrequency] = useState<"daily" | "weekly" | "monthly">("monthly");
-    const [dayOfValue, setDayOfValue] = useState(1);
+    const [amount, setAmount] = useState<number | "">(1000000); // 100만원 OR 1주
 
-    // Initial simulation once on mount (Disabled for now)
+    const [simulatedStock, setSimulatedStock] = useState<StockSearchResult | null>(null);
+    const [simulatedStartDate, setSimulatedStartDate] = useState<string>("");
+
     useEffect(() => {
-        // handleSimulate();
-    }, []);
+        setAmount(strategy === "LUMP" ? 1000000 : 1);
+    }, [strategy]);
 
     // UI State
     const [isSearching, setIsSearching] = useState(false);
@@ -105,10 +100,20 @@ export function IfBuy() {
             return;
         }
 
+        if (amount >= 999999999999) {
+            setError("그 돈 없잖아");
+            return;
+        }
+
         setIsLoading(true);
         setError(null);
         try {
             const today = format(startOfToday(), "yyyy-MM-dd");
+            if (startDate === today) {
+                setError("정확한 분석을 위해 날짜를 수정해주세요.");
+                setIsLoading(false);
+                return;
+            }
             const res = await fetch(
                 `/api/stock/history?symbol=${selectedStock.symbol}&start=${startDate}&end=${today}`
             );
@@ -120,10 +125,23 @@ export function IfBuy() {
 
             const results = strategy === "LUMP"
                 ? Simulator.simulateLumpSum(history, Number(amount))
-                : Simulator.simulateDCA(history, Number(amount), frequency, dayOfValue);
+                : Simulator.simulateDCA(history, Number(amount), startDate);
+
+            if (results.summary.totalShares === 0) {
+                if (strategy === "DCA") {
+                    setError("시작일을 최소 1달 전으로 설정해주세요.");
+                } else {
+                    const firstPrice = history[0].open;
+                    setError(`투자금이 부족하여 1주도 구매하지 못했습니다. (최소 ${firstPrice.toLocaleString()}원 이상이어야 합니다.)`);
+                }
+                setIsLoading(false);
+                return;
+            }
 
             setChartData(results.chartData);
             setSummary(results.summary);
+            setSimulatedStock(selectedStock);
+            setSimulatedStartDate(startDate);
             setShowResults(true);
         } catch (err: any) {
             setError(err.message || "시뮬레이션 중 오류가 발생했습니다.");
@@ -151,7 +169,7 @@ export function IfBuy() {
                                     <input
                                         type="text"
                                         className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-muted/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all outline-none text-sm"
-                                        placeholder="종목 입력 (예: 삼성전자)"
+                                        placeholder="삼성전자"
                                         value={selectedStock ? selectedStock.name : query}
                                         onFocus={() => {
                                             if (selectedStock) {
@@ -211,7 +229,31 @@ export function IfBuy() {
                             {/* Date & Amount */}
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-muted-foreground ml-1">시작일</label>
+                                    <div className="flex items-center justify-between ml-1">
+                                        <label className="text-xs font-medium text-muted-foreground">시작일</label>
+                                        <div className="flex gap-1">
+                                            {strategy !== "DCA" && (
+                                                <button
+                                                    onClick={() => setStartDate(format(subDays(startOfToday(), 1), "yyyy-MM-dd"))}
+                                                    className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                                                >
+                                                    어제
+                                                </button>
+                                            )}
+                                            <button
+                                                onClick={() => setStartDate(format(subMonths(startOfToday(), 1), "yyyy-MM-dd"))}
+                                                className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                                            >
+                                                1달 전
+                                            </button>
+                                            <button
+                                                onClick={() => setStartDate(format(subYears(startOfToday(), 1), "yyyy-MM-dd"))}
+                                                className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+                                            >
+                                                1년 전
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="relative group">
                                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                         <input
@@ -223,9 +265,13 @@ export function IfBuy() {
                                     </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-muted-foreground ml-1">투자금 (원)</label>
+                                    <label className="text-xs font-medium text-muted-foreground ml-1">
+                                        {strategy === "DCA" ? "수량 (매월 1일 기준)" : "투자금 (원)"}
+                                    </label>
                                     <div className="relative">
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold leading-none">₩</div>
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold leading-none">
+                                            {strategy === "DCA" ? "주" : "₩"}
+                                        </div>
                                         <input
                                             type="text"
                                             inputMode="numeric"
@@ -242,10 +288,15 @@ export function IfBuy() {
                                                     setAmount(Math.min(num, 999999999999));
                                                 }
                                             }}
-                                            placeholder="금액 입력"
+                                            placeholder={strategy === "DCA" ? "기본값: 1주" : "금액 입력"}
                                         />
                                     </div>
-                                    {amount !== "" && amount > 0 && (
+                                    {strategy === "DCA" && (
+                                        <p className="text-[10px] text-muted-foreground font-medium ml-1">
+                                            ※ 매월 1일(또는 다음 영업일)기준
+                                        </p>
+                                    )}
+                                    {strategy === "LUMP" && amount !== "" && amount > 0 && (
                                         <p className="text-[10px] text-primary font-medium ml-1 animate-in fade-in slide-in-from-top-1">
                                             {formatKoreanAmount(amount)}
                                         </p>
@@ -253,50 +304,15 @@ export function IfBuy() {
                                 </div>
                             </div>
                         </div>
-
-                        {/* DCA Options */}
-                        {strategy === "DCA" && (
-                            <div className="space-y-3 pt-4 animate-in fade-in slide-in-from-top-2 border-t border-border mt-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-muted-foreground ml-1">매수 주기</label>
-                                    <select
-                                        className="w-full px-3 py-2.5 rounded-xl bg-muted/50 border border-border focus:border-primary/50 outline-none text-xs appearance-none"
-                                        value={frequency}
-                                        onChange={(e: any) => setFrequency(e.target.value)}
-                                    >
-                                        <option value="daily">매일</option>
-                                        <option value="weekly">매주 (첫 거래일)</option>
-                                        <option value="monthly">매월</option>
-                                    </select>
-                                </div>
-                                {frequency === "monthly" && (
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <label className="text-xs font-medium text-muted-foreground ml-1">구매일</label>
-                                            <span className="text-xs font-bold text-primary">매월 {dayOfValue}일</span>
-                                        </div>
-                                        <input
-                                            type="range"
-                                            min="1"
-                                            max="28"
-                                            className="w-full accent-primary h-1 bg-muted rounded-full appearance-none"
-                                            value={dayOfValue}
-                                            onChange={(e) => setDayOfValue(Number(e.target.value))}
-                                        />
-                                    </div>
-                                )}
-                            </div>
-                        )}
+                        {error && <p className="text-destructive text-xs text-center font-medium my-2 bg-destructive/10 py-2 rounded-lg">{error}</p>}
 
                         <button
                             disabled={isLoading || !selectedStock}
                             onClick={handleSimulate}
-                            className="w-full py-4 mt-6 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2"
+                            className="w-full py-4 mt-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2"
                         >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "결과 확인하기"}
+                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "결과 조회하기"}
                         </button>
-
-                        {error && <p className="text-destructive text-xs text-center font-medium mt-2">{error}</p>}
                     </div>
                 </div>
 
@@ -306,8 +322,8 @@ export function IfBuy() {
                         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm rounded-2xl animate-in fade-in duration-200">
                             <RefreshCw className="w-10 h-10 text-primary animate-spin mb-4" />
                             <div className="text-center">
-                                <p className="font-bold text-lg">데이터 분석 중...</p>
-                                <p className="text-sm text-muted-foreground mt-1">불러오는 중 잠시만 기다려주세요</p>
+                                <p className="font-bold text-lg">불러오는 중...</p>
+                                <p className="text-sm text-muted-foreground mt-1">잠시만 기다려주세요</p>
                             </div>
                         </div>
                     )}
@@ -315,27 +331,76 @@ export function IfBuy() {
                     {!showResults && !isLoading ? (
                         <div className="flex-1 flex flex-col items-center justify-center p-12 rounded-2xl border border-dashed border-border bg-card/50">
                             <RefreshCw className="w-10 h-10 text-muted-foreground/20 animate-pulse mb-4" />
-                            <h3 className="font-bold text-lg mb-1">분석 대기 중</h3>
                             <p className="text-muted-foreground text-sm text-center">조건을 입력하고 결과를 확인해보세요.</p>
                         </div>
                     ) : (
                         showResults && (
                             <div className="space-y-6 animate-in fade-in duration-500">
 
+                                {/* Details */}
+                                <div className="p-5 rounded-2xl border border-border bg-card">
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+                                        <div className="space-y-1">
+                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">
+                                                보유 수량
+                                            </p>
+                                            <p className="font-black text-sm">{summary?.totalShares.toLocaleString()} 주</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">
+                                                평균 매수 단가
+                                            </p>
+                                            <p className="font-black text-sm">{Math.round(summary?.averagePrice || 0).toLocaleString()}원</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">
+                                                투자 원금
+                                            </p>
+                                            <p className="font-black text-sm">{summary?.totalInvested.toLocaleString()}원</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">
+                                                예상 평가 금액
+                                            </p>
+                                            <p className="font-black text-sm">{summary?.finalValue.toLocaleString()}원</p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 {/* Chart */}
                                 <div className="p-6 rounded-2xl border border-border bg-card">
                                     <div className="flex items-end justify-between mb-6">
                                         <div>
-                                            <h3 className="text-base font-bold truncate">
-                                                {selectedStock?.name}
+                                            <h3 className="text-base font-bold truncate flex items-center gap-2">
+                                                {simulatedStock?.name}
+                                                <span className="text-muted-foreground text-xs font-normal">({simulatedStock?.symbol})</span>
+                                                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-sm font-semibold">{simulatedStock?.exchange}</span>
                                             </h3>
-                                            <p className="text-[10px] text-muted-foreground">{startDate} ~ 현재</p>
+                                            <p className="text-[10px] text-muted-foreground">{simulatedStartDate} ~ 현재</p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">현재가</p>
-                                            <p className="text-xl font-black">
-                                                {chartData.length > 0 ? chartData[chartData.length - 1].price.toLocaleString() : "-"}원
-                                            </p>
+                                        <div className="text-right flex items-end gap-4">
+                                            {(() => {
+                                                const maxHigh = chartData.length > 0 ? Math.max(...chartData.map(d => d.high || d.price)) : 0;
+                                                const minLow = chartData.length > 0 ? Math.min(...chartData.map(d => d.low || d.price)) : 0;
+                                                return (
+                                                    <div className="flex gap-3 mr-2">
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-bold text-blue-500 uppercase tracking-wider mb-0.5">최저가</p>
+                                                            <p className="text-sm font-semibold text-blue-500">{minLow.toLocaleString()}원</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-bold text-destructive uppercase tracking-wider mb-0.5">최고가</p>
+                                                            <p className="text-sm font-semibold text-destructive">{maxHigh.toLocaleString()}원</p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })()}
+                                            <div className="text-right pl-2 border-l border-border/50">
+                                                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">현재가</p>
+                                                <p className="text-xl font-black text-emerald-500">
+                                                    {chartData.length > 0 ? chartData[chartData.length - 1].price.toLocaleString() : "-"}원
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -354,8 +419,8 @@ export function IfBuy() {
                                             <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                                                 <defs>
                                                     <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                                                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                                                        <stop offset="5%" stopColor={chartData.length > 0 && chartData[chartData.length - 1].price >= chartData[0].price ? "hsl(var(--destructive))" : "rgb(59 130 246)"} stopOpacity={0.3} />
+                                                        <stop offset="95%" stopColor={chartData.length > 0 && chartData[chartData.length - 1].price >= chartData[0].price ? "hsl(var(--destructive))" : "rgb(59 130 246)"} stopOpacity={0} />
                                                     </linearGradient>
                                                 </defs>
                                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
@@ -374,10 +439,14 @@ export function IfBuy() {
                                                                 <div className="p-3 rounded-xl bg-popover border border-border shadow-xl backdrop-blur-md">
                                                                     <p className="text-[10px] font-bold text-muted-foreground mb-1">{payload[0].payload.date}</p>
                                                                     <div className="space-y-1">
-                                                                        <p className="text-xs font-black">자산: {payload[0].value.toLocaleString()}원</p>
-                                                                        <p className="text-[10px] font-medium text-primary">투자금: {payload[1].value.toLocaleString()}원</p>
-                                                                        <p className={`text-[10px] font-bold ${payload[0].payload.profit >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-                                                                            수익: {payload[0].payload.profit.toLocaleString()}원 ({payload[0].payload.profitRate}%)
+                                                                        <p className="text-xs font-black tracking-tight">
+                                                                            <span className={
+                                                                                payload[0].payload.price > chartData[0].price
+                                                                                    ? "text-destructive" // 빨간색 (시작일보다 높음)
+                                                                                    : payload[0].payload.price < chartData[0].price
+                                                                                        ? "text-blue-500" // 파란색 (시작일보다 낮음)
+                                                                                        : "text-foreground" // 동일
+                                                                            }>{payload[0].payload.price.toLocaleString()}</span>원
                                                                         </p>
                                                                     </div>
                                                                 </div>
@@ -388,55 +457,15 @@ export function IfBuy() {
                                                 />
                                                 <Area
                                                     type="monotone"
-                                                    dataKey="totalValue"
-                                                    stroke="hsl(var(--primary))"
+                                                    dataKey="price"
+                                                    stroke={chartData.length > 0 && chartData[chartData.length - 1].price >= chartData[0].price ? "hsl(var(--destructive))" : "rgb(59 130 246)"}
                                                     strokeWidth={2}
                                                     fillOpacity={1}
                                                     fill="url(#colorValue)"
                                                     animationDuration={1500}
                                                 />
-                                                <Area
-                                                    type="monotone"
-                                                    dataKey="investedAmount"
-                                                    stroke="hsl(var(--muted-foreground))"
-                                                    strokeWidth={1.5}
-                                                    strokeDasharray="4 4"
-                                                    fill="transparent"
-                                                    animationDuration={1500}
-                                                />
                                             </AreaChart>
                                         </ResponsiveContainer>
-                                    </div>
-                                </div>
-
-                                {/* Details */}
-                                <div className="p-5 rounded-2xl border border-border bg-card">
-                                    <div className="flex items-center gap-2 mb-4">
-                                        <PieChartIcon className="w-4 h-4 text-primary" />
-                                        <h4 className="text-xs font-bold uppercase tracking-wider">포트폴리오 요약</h4>
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-                                        <div className="space-y-1">
-                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">보유 수량</p>
-                                            <p className="font-black text-sm">{summary?.totalShares.toFixed(4)} 주</p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">평균 단가</p>
-                                            <p className="font-black text-sm">{Math.round(summary?.averagePrice || 0).toLocaleString()}원</p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">예상 자산</p>
-                                            <p className="font-black text-sm">{summary?.finalValue.toLocaleString()}원</p>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">예상 수익률</p>
-                                            <div className="flex items-center gap-1">
-                                                <p className={`font-black text-sm ${(summary?.totalProfitRate || 0) >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-                                                    {(summary?.totalProfitRate || 0) >= 0 ? "+" : ""}{summary?.totalProfitRate}%
-                                                </p>
-                                                {(summary?.totalProfitRate || 0) >= 0 ? <TrendingUp className="w-3 h-3 text-emerald-500" /> : <TrendingDown className="w-3 h-3 text-destructive" />}
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
