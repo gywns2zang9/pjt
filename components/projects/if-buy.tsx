@@ -96,7 +96,7 @@ export function IfBuy() {
         }
 
         if (amount === "" || amount <= 0) {
-            setError("투자금을 입력해주세요.");
+            setError("원금을 입력해주세요.");
             return;
         }
 
@@ -119,7 +119,11 @@ export function IfBuy() {
             );
             const history = await res.json();
 
-            if (!history || history.length === 0) {
+            if (history.error) {
+                throw new Error(history.error === "Symbol, start, and end dates are required" ? "필수 입력값이 누락되었습니다." : "데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+            }
+
+            if (!history || !Array.isArray(history) || history.length === 0) {
                 throw new Error("데이터를 불러오지 못했습니다. 날짜를 확인해주세요.");
             }
 
@@ -129,10 +133,10 @@ export function IfBuy() {
 
             if (results.summary.totalShares === 0) {
                 if (strategy === "DCA") {
-                    setError("시작일을 최소 1달 전으로 설정해주세요.");
+                    setError("기준일을 최소 1달 전으로 설정해주세요.");
                 } else {
                     const firstPrice = history[0].open;
-                    setError(`투자금이 부족하여 1주도 구매하지 못했습니다. (최소 ${firstPrice.toLocaleString()}원 이상이어야 합니다.)`);
+                    setError(`금액이 부족합니다. (최소 ${firstPrice.toLocaleString()}원 이상이어야 합니다.)`);
                 }
                 setIsLoading(false);
                 return;
@@ -230,7 +234,7 @@ export function IfBuy() {
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
                                     <div className="flex flex-wrap items-center justify-between ml-1 gap-2 mb-1">
-                                        <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">시작일</label>
+                                        <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">기준일</label>
                                         <div className="flex flex-wrap gap-1">
                                             {strategy !== "DCA" && (
                                                 <button
@@ -254,11 +258,14 @@ export function IfBuy() {
                                             </button>
                                         </div>
                                     </div>
-                                    <div className="relative group">
-                                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" />
+                                    <div className="relative">
+                                        <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                            <Calendar className="w-3.5 h-3.5 text-muted-foreground transition-colors" />
+                                        </div>
                                         <input
                                             type="date"
-                                            className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-muted/50 border border-border focus:border-primary/50 outline-none text-sm"
+                                            max={format(subDays(startOfToday(), 1), "yyyy-MM-dd")}
+                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-muted/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all outline-none text-sm"
                                             value={startDate}
                                             onChange={(e) => setStartDate(e.target.value)}
                                         />
@@ -266,7 +273,7 @@ export function IfBuy() {
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-medium text-muted-foreground ml-1">
-                                        {strategy === "DCA" ? "수량 (매월 1일 기준)" : "투자금 (원)"}
+                                        {strategy === "DCA" ? "수량 (매월 1일 기준)" : "원금 (원)"}
                                     </label>
                                     <div className="relative">
                                         <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold leading-none">
@@ -307,7 +314,7 @@ export function IfBuy() {
                         {error && <p className="text-destructive text-xs text-center font-medium my-2 bg-destructive/10 py-2 rounded-lg">{error}</p>}
 
                         <button
-                            disabled={isLoading || !selectedStock}
+                            disabled={isLoading}
                             onClick={handleSimulate}
                             className="w-full py-4 mt-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2"
                         >
@@ -359,9 +366,23 @@ export function IfBuy() {
                                             <p className="font-black text-sm">{summary?.totalInvested.toLocaleString()}원</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">
-                                                예상 평가 금액
-                                            </p>
+                                            <div className="flex items-center gap-1.5">
+                                                <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-tight">
+                                                    평가 금액
+                                                </p>
+                                                {summary && summary.totalInvested > 0 && (() => {
+                                                    const rate = ((summary.finalValue - summary.totalInvested) / summary.totalInvested) * 100;
+                                                    const isPositive = rate > 0;
+                                                    const isNegative = rate < 0;
+                                                    const colorClass = isPositive ? "text-destructive" : isNegative ? "text-blue-500" : "text-muted-foreground";
+                                                    const sign = isPositive ? "+" : "";
+                                                    return (
+                                                        <span className={`text-[10px] font-bold ${colorClass}`}>
+                                                            ({sign}{rate.toFixed(2)}%)
+                                                        </span>
+                                                    );
+                                                })()}
+                                            </div>
                                             <p className="font-black text-sm">{summary?.finalValue.toLocaleString()}원</p>
                                         </div>
                                     </div>
@@ -442,9 +463,9 @@ export function IfBuy() {
                                                                         <p className="text-xs font-black tracking-tight">
                                                                             <span className={
                                                                                 payload[0].payload.price > chartData[0].price
-                                                                                    ? "text-destructive" // 빨간색 (시작일보다 높음)
+                                                                                    ? "text-destructive" // 빨간색 (기준일보다 높음)
                                                                                     : payload[0].payload.price < chartData[0].price
-                                                                                        ? "text-blue-500" // 파란색 (시작일보다 낮음)
+                                                                                        ? "text-blue-500" // 파란색 (기준일보다 낮음)
                                                                                         : "text-foreground" // 동일
                                                                             }>{payload[0].payload.price.toLocaleString()}</span>원
                                                                         </p>

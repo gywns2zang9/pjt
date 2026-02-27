@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { format } from "date-fns";
 import https from "https";
 import fs from "fs";
@@ -21,9 +22,28 @@ export interface StockHistoryData {
     volume: number;
 }
 
-// KIS API Access Token Cache
-let cachedToken: string | null = null;
-let tokenExpiredAt: number = 0;
+const fetchNewKISToken = unstable_cache(
+    async () => {
+        const res = await fetch(`${process.env.KIS_URL}/oauth2/tokenP`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                grant_type: "client_credentials",
+                appkey: process.env.KIS_APP_KEY,
+                appsecret: process.env.KIS_APP_SECRET,
+            }),
+        });
+
+        if (!res.ok) {
+            throw new Error(`KIS Auth Failed: ${res.status}`);
+        }
+
+        const data = await res.json();
+        return data.access_token as string;
+    },
+    ["kis_access_token"],
+    { revalidate: 72000, tags: ["kis_token"] } // 20시간 유효
+);
 
 // Master List Cache
 let masterListCache: StockSearchResult[] = [];
@@ -128,30 +148,13 @@ export const StockService = {
      * KIS Access Token 발급 및 관리
      */
     async getKISAccessToken(): Promise<string> {
-        const now = Date.now();
-        if (cachedToken && now < tokenExpiredAt) {
-            return cachedToken;
+        try {
+            const token = await fetchNewKISToken();
+            return token;
+        } catch (error) {
+            console.error("Token fetch failed:", error);
+            throw error;
         }
-
-        const res = await fetch(`${process.env.KIS_URL}/oauth2/tokenP`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                grant_type: "client_credentials",
-                appkey: process.env.KIS_APP_KEY,
-                appsecret: process.env.KIS_APP_SECRET,
-            }),
-        });
-
-        if (!res.ok) {
-            throw new Error(`KIS Auth Failed: ${res.status}`);
-        }
-
-        const data = await res.json();
-        cachedToken = data.access_token;
-        // 유효기간은 보통 24시간이나 안전을 위해 20시간으로 설정
-        tokenExpiredAt = now + 1000 * 60 * 60 * 20;
-        return cachedToken!;
     },
 
     /**
@@ -240,7 +243,7 @@ export const StockService = {
             const oldestDateStr = validItems[validItems.length - 1].stck_bsop_date;
 
             if (oldestDateStr <= targetStartDate) {
-                break; // 목표 시작일까지 모두 가져왔으면 종료
+                break; // 목표 기준일까지 모두 가져왔으면 종료
             }
 
             // 가장 오래된 날짜(oldestDateStr)의 하루 전시점으로 다음 끝날짜(EndDate) 설정
