@@ -13,6 +13,7 @@ import {
     type ProjectConfig,
 } from "@/lib/projects";
 import { ProjectRenderer } from "@/components/project-renderer";
+import { Guestbook } from "@/components/guestbook";
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -40,6 +41,13 @@ export default async function WorksProjectPage({ params }: Props) {
     );
 
     if (!dbConfig) notFound();
+
+    const { data: entriesData, count: entriesCount } = await supabase
+        .from("guestbook")
+        .select("*", { count: "exact" })
+        .eq("project_id", dbConfig.id)
+        .order("created_at", { ascending: false })
+        .range(0, 4);
 
     const project = getProjectById(dbConfig.id);
     if (!project) notFound();
@@ -86,7 +94,20 @@ export default async function WorksProjectPage({ params }: Props) {
                     </div>
 
                     {isCompleted ? (
-                        <ProjectRenderer id={dbConfig.id} userName={userName} gameConfig={dbConfig.game_config ?? undefined} />
+                        <>
+                            <ProjectRenderer id={dbConfig.id} userName={userName} gameConfig={dbConfig.game_config ?? undefined} />
+
+                            <div className="pt-16 mt-16 border-t border-border/50">
+                                <Guestbook
+                                    projectId={dbConfig.id}
+                                    initialEntries={entriesData ?? []}
+                                    userEmail={user.email ?? null}
+                                    userId={user.id ?? null}
+                                    userName={userName}
+                                    initialCount={entriesCount ?? (entriesData?.length ?? 0)}
+                                />
+                            </div>
+                        </>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-32 bg-background border rounded-2xl border-dashed">
                             <div className="text-5xl mb-6 opacity-30">🚧</div>

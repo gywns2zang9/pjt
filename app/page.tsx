@@ -15,6 +15,7 @@ export default async function Home() {
     supabase
       .from("guestbook")
       .select("*", { count: "exact" })
+      .eq("project_id", "home")
       .order("created_at", { ascending: false })
       .range(0, 4),
   ]);

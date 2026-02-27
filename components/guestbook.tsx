@@ -34,6 +34,8 @@ type Props = {
   userId: string | null;
   userName: string | null;
   initialCount: number;
+  projectId?: string;
+  hideTitle?: boolean;
 };
 
 const PAGE_SIZE = 5;
@@ -45,6 +47,8 @@ export function Guestbook({
   userId,
   userName,
   initialCount,
+  projectId = "home",
+  hideTitle = false,
 }: Props) {
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [content, setContent] = useState("");
@@ -82,6 +86,7 @@ export function Guestbook({
       const { data, error, count } = await supabase
         .from("guestbook")
         .select("*", { count: "exact" })
+        .eq("project_id", projectId)
         .order("created_at", { ascending: false })
         .range(offset, offset + PAGE_SIZE - 1);
       if (error) throw error;
@@ -108,6 +113,7 @@ export function Guestbook({
         body: JSON.stringify({
           content: trimmed,
           is_anonymous: isAnonymous,
+          project_id: projectId,
         }),
       });
 
@@ -286,14 +292,18 @@ export function Guestbook({
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
           <NotebookPen size={18} />
-          방명록
+          {projectId === "home" ? "방명록" : "게시판"}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <Textarea
             placeholder={
-              isLoggedIn ? "의견을 남겨주세요!" : "로그인이 필요합니다."
+              !isLoggedIn
+                ? "로그인이 필요합니다."
+                : projectId === "home"
+                  ? "의견을 남겨주세요!"
+                  : "버그나 피드백 등 의견을 남겨주세요!"
             }
             value={content}
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
@@ -335,7 +345,9 @@ export function Guestbook({
 
         <div className="space-y-3">
           {entries.length === 0 ? (
-            <p className="text-sm text-muted-foreground">방명록이 비었네요...</p>
+            <p className="text-sm text-center py-4 bg-muted/20 rounded-lg border border-dashed text-muted-foreground/50">
+              첫 번째로 의견을 남겨주세요!
+            </p>
           ) : (
             entries.map((entry) => (
               <div
