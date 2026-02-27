@@ -265,7 +265,7 @@ export function IfBuy() {
                                         <input
                                             type="date"
                                             max={format(subDays(startOfToday(), 1), "yyyy-MM-dd")}
-                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-muted/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all outline-none text-sm"
+                                            className="block w-full max-w-full min-w-0 pl-9 pr-4 py-2.5 rounded-xl bg-muted/50 border border-border focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all outline-none text-sm appearance-none"
                                             value={startDate}
                                             onChange={(e) => setStartDate(e.target.value)}
                                         />
