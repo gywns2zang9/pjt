@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { Sparkles, AlertCircle, Lightbulb, Trophy } from "lucide-react";
 import type { ProjectProps } from "@/components/project-registry";
 import { Button } from "@/components/ui/button";
 
@@ -278,8 +279,8 @@ export function CircleGame({ userName }: ProjectProps) {
 
         setFeedbacks(newFeedbacks);
 
-        // 서버에 점수 전송 (비동기)
-        if (finalScore > 0) {
+        // 서버에 점수 전송 (로그인한 유저만 비동기)
+        if (finalScore > 0 && userName !== "비회원") {
             fetch("/api/circle-scores", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -358,7 +359,7 @@ export function CircleGame({ userName }: ProjectProps) {
                                     }`}>
                                     <div className="flex items-start gap-2">
                                         <span className="text-[14px] leading-tight mt-[1px]">
-                                            {item.type === "success" ? "✨" : item.type === "error" ? "🚨" : "💡"}
+                                            {item.type === "success" ? <Sparkles className="w-4 h-4 text-emerald-500" /> : item.type === "error" ? <AlertCircle className="w-4 h-4 text-destructive" /> : <Lightbulb className="w-4 h-4 text-amber-500" />}
                                         </span>
                                         <p className="text-[13px] font-medium leading-snug">
                                             {item.text}
@@ -373,7 +374,7 @@ export function CircleGame({ userName }: ProjectProps) {
                 {/* 랭킹 보드 */}
                 <div className="order-2 lg:order-1 rounded-2xl border border-border bg-card p-5 space-y-4">
                     <div className="flex items-center gap-2">
-                        <span className="text-lg">🏆</span>
+                        <Trophy className="w-5 h-5 text-amber-500" />
                         <h2 className="font-bold text-sm tracking-wide text-foreground uppercase">TOP 3</h2>
                     </div>
 

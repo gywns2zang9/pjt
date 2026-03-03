@@ -114,12 +114,13 @@ export function SpeedTest({ userName }: ProjectProps) {
 
             setFeedback(msg);
 
-            // 서버에 기록 전송
-            fetch("/api/speed-scores", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score: finalScore }),
-            }).then(() => loadRanking()).catch(console.error);
+            if (userName !== "비회원") {
+                fetch("/api/speed-scores", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ score: finalScore }),
+                }).then(() => loadRanking()).catch(console.error);
+            }
         }
     };
 

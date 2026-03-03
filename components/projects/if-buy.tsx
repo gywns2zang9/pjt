@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { format, subYears, subMonths, subDays, startOfToday } from "date-fns";
 import {
     Search,
@@ -22,8 +23,9 @@ import {
 
 import { StockSearchResult } from "@/lib/stock/service";
 import { SimulationResult, Summary, Simulator } from "@/lib/stock/simulator";
+import type { ProjectProps } from "@/components/project-registry";
 
-export function IfBuy() {
+export function IfBuy({ userName }: ProjectProps) {
     // Form State
     const [query, setQuery] = useState("");
     const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
@@ -34,6 +36,16 @@ export function IfBuy() {
 
     const [simulatedStock, setSimulatedStock] = useState<StockSearchResult | null>(null);
     const [simulatedStartDate, setSimulatedStartDate] = useState<string>("");
+
+    // 1회 무료 조회 추적용
+    const [hasSimulated, setHasSimulated] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const viewed = localStorage.getItem("if-buy-simulated");
+            if (viewed === "true") setHasSimulated(true);
+        }
+    }, []);
 
     useEffect(() => {
         setAmount(strategy === "LUMP" ? 1000000 : 1);
@@ -147,6 +159,12 @@ export function IfBuy() {
             setSimulatedStock(selectedStock);
             setSimulatedStartDate(startDate);
             setShowResults(true);
+
+            // 비회원인 경우 1회 조회 완료 처리
+            if (userName === "비회원") {
+                setHasSimulated(true);
+                localStorage.setItem("if-buy-simulated", "true");
+            }
         } catch (err: any) {
             setError(err.message || "시뮬레이션 중 오류가 발생했습니다.");
         } finally {
@@ -313,13 +331,26 @@ export function IfBuy() {
                         </div>
                         {error && <p className="text-destructive text-xs text-center font-medium my-2 bg-destructive/10 py-2 rounded-lg">{error}</p>}
 
-                        <button
-                            disabled={isLoading}
-                            onClick={handleSimulate}
-                            className="w-full py-4 mt-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2"
-                        >
-                            {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "결과 조회하기"}
-                        </button>
+                        {userName === "비회원" && hasSimulated ? (
+                            <Link
+                                href="/auth/login"
+                                className="w-full py-4 mt-2 rounded-xl bg-amber-500 text-white font-bold text-sm hover:bg-amber-600 active:scale-95 transition-all shadow-md shadow-amber-500/20 flex items-center justify-center gap-2"
+                            >
+                                로그인이 필요한 서비스입니다.
+                            </Link>
+                        ) : (
+                            <button
+                                disabled={isLoading}
+                                onClick={handleSimulate}
+                                className="w-full py-4 mt-2 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20 flex items-center justify-center gap-2"
+                            >
+                                {isLoading ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    userName === "비회원" ? "결과 조회하기 (1회)" : "결과 조회하기"
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
 

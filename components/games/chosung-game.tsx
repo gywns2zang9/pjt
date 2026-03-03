@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { Search, Trophy } from "lucide-react";
 import { isValidKoreanWord } from "@/lib/korean-words";
 
 // ─── 초성 목록 ───────────────────────────────────────────────
@@ -156,14 +157,16 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
         setLives(0);
 
         try {
-            await fetch("/api/chosung-scores", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score: scoreToSave }),
-            });
-            loadRanking();
+            if (userName !== "비회원") {
+                await fetch("/api/chosung-scores", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ score: scoreToSave }),
+                });
+                loadRanking();
+            }
         } catch { }
-    }, [loadRanking]);
+    }, [loadRanking, userName]);
 
     const startRound = useCallback((pair?: string[]) => {
         const newPair = pair ?? generatePair(cfg.numConsonants);
@@ -573,10 +576,10 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                                 href={item.link}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-[10px] text-primary/70 hover:text-primary hover:underline shrink-0 ml-2"
+                                                className="text-[10px] text-primary/70 hover:text-primary hover:underline shrink-0 ml-2 flex items-center gap-1"
                                                 title="표준국어대사전 검색"
                                             >
-                                                🔍 표준국어대사전 검색
+                                                <Search className="w-3 h-3" /> 사전 검색
                                             </a>
                                         )}
                                     </div>
@@ -594,7 +597,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                 {/* 랭킹 보드 - 모바일에서 아래로 */}
                 <div className="order-2 lg:order-1 rounded-2xl border border-border bg-card p-5 space-y-4">
                     <div className="flex items-center gap-2">
-                        <span className="text-lg">🏆</span>
+                        <Trophy className="w-5 h-5 text-amber-500" />
                         <h2 className="font-bold text-sm tracking-wide text-foreground uppercase">TOP 3</h2>
                     </div>
 

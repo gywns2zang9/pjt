@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { createClient } from "@/lib/supabase/server";
 import { projects, STATUS_STYLES, effectiveTitle, effectiveDescription, effectiveSlug, type ProjectConfig } from "@/lib/projects";
+import { Guestbook } from "@/components/guestbook";
 
 export default async function WorksPage() {
     const supabase = await createClient();
@@ -22,6 +23,22 @@ export default async function WorksPage() {
         }))
         .filter((p) => p.meta)
         .sort((a, b) => (a.config.sort_order ?? 0) - (b.config.sort_order ?? 0));
+
+    // 방명록 데이터 가져오기 (Works 하단용)
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
+
+    const { data: entriesData, count: entriesCount } = await supabase
+        .from("guestbook")
+        .select("*", { count: "exact" })
+        .eq("project_id", "home")
+        .order("created_at", { ascending: false })
+        .range(0, 4);
+
+    const meta = user?.user_metadata;
+    const userName = user
+        ? (meta?.full_name ?? meta?.name ?? meta?.preferred_username ?? user.email?.split("@")[0] ?? "익명")
+        : "비회원";
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-foreground dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
@@ -76,6 +93,19 @@ export default async function WorksPage() {
                         </div>
                     )}
                 </Container>
+
+                <div className="border-t border-border/50 bg-slate-50/50 dark:bg-slate-900/30 py-16">
+                    <Container>
+                        <Guestbook
+                            projectId="home"
+                            initialEntries={entriesData ?? []}
+                            userEmail={user?.email ?? null}
+                            userId={user?.id ?? null}
+                            userName={userName}
+                            initialCount={entriesCount ?? 0}
+                        />
+                    </Container>
+                </div>
             </main>
             <SiteFooter />
         </div>

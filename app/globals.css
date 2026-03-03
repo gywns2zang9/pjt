@@ -30,6 +30,7 @@
     --chart-5: 220 72% 55%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 222 35% 10%;
     --foreground: 210 40% 96%;
@@ -62,10 +63,30 @@
   .custom-scrollbar::-webkit-scrollbar {
     width: 5px;
   }
+
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/30;
   }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 12s linear infinite;
+}
+
+html {
+  scroll-behavior: smooth;
 }

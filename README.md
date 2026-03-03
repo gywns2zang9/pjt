@@ -4,52 +4,98 @@
 
 ## 소개
 
-**뚝딱실**은 다양한 아이디어를 빠르게 구현해보며 실험하는 개인 웹 프로젝트입니다.  
-"뚝딱" 만들거나 "뚝딱거리며" 즐기고 있습니다.
+**뚝딱실**은 다양한 아이디어를 빠르게 구현해보며 실험하는 개인 웹 프로젝트입니다.
 
 - 🌐 도메인: `gywns2zang9.dev`
 - 🚀 호스팅: Vercel
 - 🔐 인증/DB: Supabase
 - 🎨 스타일: Tailwind CSS + shadcn/ui
 
+---
+
 ## 주요 기능
 
-### 🏠 홈 + 방명록
-- 익명/실명 선택 가능
-- 좋아요/싫어요 반응
+### 🏠 홈 (`/`)
+- 다크 테마
+- 통계 표시: 총 방문 횟수, 가입자 수, 작업물 수, 커뮤니티 의견 수
 
-### 🎉 뚝-딱! (완성작)
-완성된 프로젝트들을 모아둔 공간
 
-### 🧪 뚝딱~ing (실험실)
-뚝딱뚝딱 만들고 있는 실험적 기능들이 모이는 공간
-- 새로운 아이디어 프로토타입
-- 유용한 도구들
+### 🎉 뚝-딱! (`/works`)
+- 완성된 프로젝트 목록
+- 프로젝트별 상태 표시
+- 하단 방명록: 경험 공유 및 자유 의견
 
-### 👤 프로필(준비중)
-김효준 프로필
+### 🧪 뚝딱~ing (`/labs`) — 관리자 전용
+- 프로젝트 공개 여부, 정렬 순서, 메타(제목·설명·슬러그) 관리
+- DB 초기화
+
+### 🎮 미니 게임
+| 프로젝트 | 설명 |
+|---|---|
+| 초성게임 | 초성만 보고 단어 맞히기, 개인 최고 기록 저장 |
+| 원 그리기 | 최대한 완벽한 원을 그리는 게임 |
+| 그때 살걸 | 과거 날짜 기준 가상 투자 시뮬레이터 |
+| 스피드 | 반응 속도 측정 게임 |
+
+---
 
 ## 기술 스택
 
-- **Frontend**: Next.js 15 (App Router), TypeScript, React Server/Client Components
-- **Styling**: Tailwind CSS, shadcn/ui
-- **Auth**: Supabase Auth (Kakao OAuth)
-- **Database**: Supabase PostgreSQL + Realtime
-- **Deployment**: Vercel
-- **DNS**: Cloudflare
+| 분류 | 기술 |
+|---|---|
+| **Frontend** | Next.js 15 (App Router), TypeScript, React |
+| **스타일링** | Tailwind CSS, shadcn/ui |
+| **인증** | Supabase Auth (카카오 OAuth) |
+| **데이터베이스** | Supabase PostgreSQL |
+| **배포** | Vercel |
+| **DNS** | Cloudflare |
+
+---
 
 ## 라우트 구조
 
 ```
-/                 # 홈 + 방명록
-/works            # 뚝-딱! (프로젝트)
-/profile          # 김효준 프로필
-/auth/login       # 카카오 로그인
+/                     # 홈 (히어로 + 통계)
+/works                # 프로젝트 목록 + 방명록
+/works/[id]           # 프로젝트 상세 페이지
+/labs                 # 실험실 (관리자 전용)
+/labs/[id]            # 실험 프로젝트 상세
+/auth/login           # 카카오 로그인
 ```
+
+---
+
+## DB 테이블
+
+| 테이블 | 용도 |
+|---|---|
+| `project_configs` | 프로젝트 공개 여부, 정렬, 제목, 설명 등 |
+| `guestbook` | 방명록 메시지 (project_id별 분류) |
+| `chosung_scores` | 초성게임 최고 점수 |
+| `circle_scores` | 원 그리기 최고 점수 |
+| `speed_scores` | 스피드 게임 최고 점수 |
+| `page_views` | 페이지별 방문 횟수 집계 |
+
+---
+
+## 환경 변수
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_OR_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=        # 가입자 수 정확한 집계용 (서버 전용)
+NEXT_PUBLIC_ADMIN_UID=            # 관리자 사용자 ID
+
+KAKAO_REST_API_KEY=               # 카카오 OAuth
+RESEND_API_KEY=                   # 이메일 발송
+DICTIONARY_API_KEY=               # 국립국어원 사전 API
+```
+
+---
 
 ## 📝 라이선스
 
-개인 프로젝트 - 학습 및 실험 목적
+개인 프로젝트 — 학습 및 실험 목적
 
 ---
 

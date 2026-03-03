@@ -14,6 +14,7 @@ import {
 } from "@/lib/projects";
 import { ProjectRenderer } from "@/components/project-renderer";
 import { Guestbook } from "@/components/guestbook";
+import { AlertTriangle } from "lucide-react";
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -24,11 +25,15 @@ export default async function WorksProjectPage({ params }: Props) {
 
     // 로그인 확인
     const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
+    // const {
+    //     data: { user },
+    // } = await supabase.auth.getUser();
 
-    if (!user) redirect("/auth/login");
+    // if (!user) redirect("/auth/login");
+
+    // 세션 가져오기 (인증 여부 상관없이 진행)
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user ?? null;
 
     // slug 또는 id로 공개된 프로젝트 검색
     const { data: configs } = await supabase
@@ -65,11 +70,15 @@ export default async function WorksProjectPage({ params }: Props) {
     const displayTitle = effectiveTitle(project, config);
     const displayDesc = effectiveDescription(config);
 
-    const meta = user.user_metadata;
-    const userName =
-        meta?.full_name ?? meta?.name ?? meta?.preferred_username ?? user.email?.split("@")[0] ?? "익명";
+    const meta = user?.user_metadata;
+    const userName = user
+        ? (meta?.full_name ?? meta?.name ?? meta?.preferred_username ?? user.email?.split("@")[0] ?? "익명")
+        : "비회원";
 
     const isCompleted = config.status === "완성";
+
+    // 로그인 안내 배너 표시 조건 (게임류만 표시)
+    const showLoginBanner = !user && ["chosung-game", "circle-game", "speed-test"].includes(dbConfig.id);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-foreground dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
@@ -82,6 +91,23 @@ export default async function WorksProjectPage({ params }: Props) {
                     >
                         ← 목록으로
                     </Link>
+
+                    {showLoginBanner && (
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                            <div className="flex items-center gap-3">
+                                <AlertTriangle className="w-5 h-5 text-amber-500" />
+                                <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
+                                    기록은 저장되지 않습니다. 로그인해 주세요.
+                                </p>
+                            </div>
+                            <Link
+                                href="/auth/login"
+                                className="shrink-0 text-xs bg-amber-500 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-amber-600 transition-all shadow-sm shadow-amber-500/20"
+                            >
+                                로그인
+                            </Link>
+                        </div>
+                    )}
 
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
@@ -101,8 +127,8 @@ export default async function WorksProjectPage({ params }: Props) {
                                 <Guestbook
                                     projectId={dbConfig.id}
                                     initialEntries={entriesData ?? []}
-                                    userEmail={user.email ?? null}
-                                    userId={user.id ?? null}
+                                    userEmail={user?.email ?? null}
+                                    userId={user?.id ?? null}
                                     userName={userName}
                                     initialCount={entriesCount ?? (entriesData?.length ?? 0)}
                                 />
