@@ -143,8 +143,20 @@ export function SpeedTest({ userName }: ProjectProps) {
         return () => clearTimers();
     }, []);
 
+    // Lock/Unlock page scroll during game phases
+    useEffect(() => {
+        if (phase === "sequence" || phase === "go") {
+            document.body.style.overflow = "hidden";
+        } else {
+            document.body.style.overflow = "";
+        }
+        return () => {
+            document.body.style.overflow = "";
+        };
+    }, [phase]);
+
     return (
-        <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto touch-none select-none">
+        <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto">
             {/* ── 게임 영역 ── */}
             <div className="flex-1 min-w-0 flex flex-col items-center p-6 space-y-6 bg-card border rounded-2xl relative overflow-hidden">
                 {/* 불빛 및 결과 표시 영역 (통합) */}
