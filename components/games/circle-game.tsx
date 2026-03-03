@@ -296,7 +296,7 @@ export function CircleGame({ userName }: ProjectProps) {
             {/* ── 게임 영역 ── */}
             <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 space-y-8 bg-card border rounded-2xl">
 
-                <div className={`relative border-4 border-solid rounded-3xl overflow-hidden w-full max-w-[400px] aspect-square flex items-center justify-center transition-colors
+                <div className={`relative border-4 border-solid rounded-3xl overflow-hidden touch-none w-full max-w-[400px] aspect-square flex items-center justify-center transition-colors
                     ${score !== null ? 'border-primary/50 bg-primary/5' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
 
                     {score !== null && (
