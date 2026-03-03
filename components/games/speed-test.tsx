@@ -55,22 +55,23 @@ export function SpeedTest({ userName }: ProjectProps) {
             l++;
             if (l <= 3) {
                 setActiveLights(l);
-            } else {
-                if (sequenceTimerRef.current) clearInterval(sequenceTimerRef.current);
-                // Lights are full. Random delay between 0.2s and 3.0s (200ms ~ 3000ms)
-                const randomDelay = Math.random() * 2800 + 200;
-                goTimerRef.current = setTimeout(() => {
-                    setActiveLights(0); // LIGHTS OUT!
-                    setPhase("go");
-                    startTimeRef.current = performance.now();
-                }, randomDelay);
+                if (l === 3) {
+                    if (sequenceTimerRef.current) clearInterval(sequenceTimerRef.current);
+                    // 3개의 불이 모두 켜진 즉시 랜덤 대기 시작 (0.2초 ~ 5초)
+                    const randomDelay = Math.random() * 4800 + 200;
+                    goTimerRef.current = setTimeout(() => {
+                        setActiveLights(0); // LIGHTS OUT!
+                        setPhase("go");
+                        startTimeRef.current = performance.now();
+                    }, randomDelay);
+                }
             }
         }, 1000); // 1초마다 하나씩 점등
     }, []);
 
     const handlePointerDown = (e: React.PointerEvent | React.TouchEvent | React.MouseEvent) => {
         // 모바일/데스크톱 텍스트 선택 등 방지
-        e.preventDefault();
+        // e.preventDefault(); // allow native scrolling
 
         if (phase === "idle" || phase === "result" || phase === "fault" || phase === "timeout") {
             startSequence();
@@ -78,7 +79,7 @@ export function SpeedTest({ userName }: ProjectProps) {
     };
 
     const handlePointerUp = (e: React.PointerEvent | React.TouchEvent | React.MouseEvent) => {
-        e.preventDefault();
+        // e.preventDefault(); // allow native scrolling
 
         if (phase === "idle" || phase === "result" || phase === "fault" || phase === "timeout") return;
 
@@ -103,11 +104,11 @@ export function SpeedTest({ userName }: ProjectProps) {
             setPhase("result");
             setResultTime(finalScore);
 
-            let msg = "평범한 수준입니다.";
-            if (finalScore < 0.020) msg = "?????";
+            let msg = "분발하세요";
+            if (finalScore < 0.020) msg = "잘 찍었네요";
             else if (finalScore < 0.070) msg = "고양이 수준입니다.";
             else if (finalScore < 0.160) msg = "프로게이머 수준입니다";
-            else if (finalScore < 0.250) msg = "20대라 해도 믿겠네요";
+            else if (finalScore < 0.250) msg = "20대 평균입니다";
             else if (finalScore < 0.300) msg = "30대가 분명합니다";
             else if (finalScore < 0.400) msg = "Hi, Young Forty!";
 
@@ -186,7 +187,7 @@ export function SpeedTest({ userName }: ProjectProps) {
 
                 {/* ── 터치 전용 영역 ── */}
                 <div
-                    className={`relative border-4 border-solid rounded-[2.5rem] overflow-hidden w-full max-w-2xl h-64 md:h-80 flex flex-col items-center justify-center transition-all cursor-pointer select-none touch-none
+                    className={`relative border-4 border-solid rounded-[2.5rem] overflow-hidden w-full max-w-2xl h-64 md:h-80 flex flex-col items-center justify-center transition-all cursor-pointer select-none
                         ${(phase === 'sequence' || phase === 'go') ? 'border-primary/50 bg-primary/10 shadow-inner scale-[0.98]' : 'bg-white dark:bg-slate-900/50 border-slate-300 dark:border-slate-800 hover:border-primary/40 hover:bg-slate-50 dark:hover:bg-slate-800/80'}`}
                     onPointerDown={handlePointerDown}
                     onPointerUp={handlePointerUp}

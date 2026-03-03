@@ -251,10 +251,12 @@ export function CircleGame({ userName }: ProjectProps) {
         const newFeedbacks: typeof feedbacks = [];
         let idCounter = 1;
 
-        if (finalScore >= 90) {
-            newFeedbacks.push({ id: idCounter++, text: "따라올 사람이 없네요.", type: "success" });
+        if (finalScore >= 100) {
+            newFeedbacks.push({ id: idCounter++, text: "축하합니다!", type: "success" });
+        } else if (finalScore >= 90) {
+            newFeedbacks.push({ id: idCounter++, text: "100점까지 달려볼까요?", type: "success" });
         } else if (finalScore < 30) {
-            newFeedbacks.push({ id: idCounter++, text: "이 점수가 나오긴 하네요.ㅋㅋ", type: "error" });
+            newFeedbacks.push({ id: idCounter++, text: "ㅋㅋㅋ", type: "error" });
         } else {
             if (sizeScore <= 16) {
                 newFeedbacks.push({ id: idCounter++, text: "원을 점선보다 크게 그려보세요.", type: "warning" });
