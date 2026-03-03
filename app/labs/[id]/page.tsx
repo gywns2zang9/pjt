@@ -23,7 +23,7 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
 // 게임 설정 섹션이 있는 프로젝트
 const GAME_PROJECT_IDS = ["chosung-game"];
 // 랭킹 관리가 있는 프로젝트
-const RANKING_PROJECT_IDS = ["chosung-game", "circle-game"];
+const RANKING_PROJECT_IDS = ["chosung-game", "circle-game", "speed-test"];
 
 interface Props {
     params: Promise<{ id: string }>;

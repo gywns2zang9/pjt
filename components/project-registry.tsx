@@ -3,6 +3,7 @@
 import { ChosungGame, type GameConfig } from "@/components/games/chosung-game";
 import { CircleGame } from "@/components/games/circle-game";
 import { IfBuy } from "./projects/if-buy";
+import { SpeedTest } from "@/components/games/speed-test";
 
 // 모든 프로젝트 컴포넌트가 공통으로 받는 props
 export interface ProjectProps {
@@ -16,4 +17,5 @@ export const projectComponents: Record<string, React.ComponentType<ProjectProps>
     "chosung-game": ChosungGame,
     "circle-game": CircleGame,
     "if-buy": IfBuy,
+    "speed-test": SpeedTest,
 };

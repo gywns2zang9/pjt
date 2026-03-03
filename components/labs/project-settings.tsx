@@ -7,6 +7,7 @@ import {
     updateProjectConfig,
     resetChosungRanking,
     resetCircleRanking,
+    resetSpeedRanking,
 } from "@/app/labs/actions";
 import {
     type ProjectMeta,
@@ -67,6 +68,8 @@ export function ProjectSettings({ project, config: initialConfig, initialGameCon
                 await resetChosungRanking();
             } else if (project.id === "circle-game") {
                 await resetCircleRanking();
+            } else if (project.id === "speed-test") {
+                await resetSpeedRanking();
             }
         });
     };

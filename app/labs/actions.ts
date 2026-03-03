@@ -78,3 +78,15 @@ export async function resetCircleRanking() {
         .not("id", "is", null);
     if (error) throw error;
 }
+
+export async function resetSpeedRanking() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
+
+    const { error } = await supabase
+        .from("speed_scores")
+        .delete()
+        .not("id", "is", null);
+    if (error) throw error;
+}

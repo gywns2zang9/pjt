@@ -30,9 +30,10 @@ export function CircleGame({ userName }: ProjectProps) {
 
     useEffect(() => { loadRanking(); }, [loadRanking]);
 
-    const CANVAS_SIZE = 400;
-    const CENTER_X = CANVAS_SIZE / 2;
-    const CENTER_Y = CANVAS_SIZE / 2;
+    const CANVAS_WIDTH = 600;
+    const CANVAS_HEIGHT = 400;
+    const CENTER_X = CANVAS_WIDTH / 2;
+    const CENTER_Y = CANVAS_HEIGHT / 2;
     const TARGET_RADIUS = 5;
     const MIN_RADIUS = 100; // 인정되는 가이드라인 최소 반지름
 
@@ -63,18 +64,18 @@ export function CircleGame({ userName }: ProjectProps) {
         if (!ctx) return;
 
         // Set display size (css pixels)
-        canvas.style.width = `${CANVAS_SIZE}px`;
-        canvas.style.height = `${CANVAS_SIZE}px`;
+        canvas.style.width = `${CANVAS_WIDTH}px`;
+        canvas.style.height = `${CANVAS_HEIGHT}px`;
 
         const dpr = window.devicePixelRatio || 1;
-        canvas.width = CANVAS_SIZE * dpr;
-        canvas.height = CANVAS_SIZE * dpr;
+        canvas.width = CANVAS_WIDTH * dpr;
+        canvas.height = CANVAS_HEIGHT * dpr;
 
         ctx.scale(dpr, dpr);
-        ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
         drawCenterPoint(ctx);
-    }, [CANVAS_SIZE, drawCenterPoint]);
+    }, [CANVAS_WIDTH, CANVAS_HEIGHT, drawCenterPoint]);
 
     useEffect(() => {
         initCanvas();
@@ -103,8 +104,8 @@ export function CircleGame({ userName }: ProjectProps) {
             clientY = (e as React.MouseEvent).clientY;
         }
 
-        const scaleX = CANVAS_SIZE / rect.width;
-        const scaleY = CANVAS_SIZE / rect.height;
+        const scaleX = CANVAS_WIDTH / rect.width;
+        const scaleY = CANVAS_HEIGHT / rect.height;
 
         return {
             x: (clientX - rect.left) * scaleX,
@@ -296,7 +297,7 @@ export function CircleGame({ userName }: ProjectProps) {
             {/* ── 게임 영역 ── */}
             <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 space-y-8 bg-card border rounded-2xl">
 
-                <div className={`relative border-4 border-solid rounded-3xl overflow-hidden touch-none w-full max-w-[400px] aspect-square flex items-center justify-center transition-colors
+                <div className={`relative border-4 border-solid rounded-3xl overflow-hidden touch-none w-full max-w-[600px] h-[400px] flex items-center justify-center transition-colors
                     ${score !== null ? 'border-primary/50 bg-primary/5' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
 
                     {score !== null && (
@@ -319,11 +320,11 @@ export function CircleGame({ userName }: ProjectProps) {
                         onTouchEnd={stopDrawing}
                         onTouchCancel={stopDrawing}
                         className="cursor-crosshair w-full h-full block"
-                        style={{ maxWidth: `${CANVAS_SIZE}px`, maxHeight: `${CANVAS_SIZE}px` }}
+                        style={{ maxWidth: `${CANVAS_WIDTH}px`, maxHeight: `${CANVAS_HEIGHT}px` }}
                     />
                 </div>
 
-                <div className="flex flex-col items-center gap-4 w-full max-w-[400px]">
+                <div className="flex flex-col items-center gap-4 w-full max-w-[600px]">
                     {score !== null && (
                         <div className="flex items-center gap-3 w-full">
                             <Button
