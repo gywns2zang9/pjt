@@ -30,13 +30,14 @@ export default async function LabPage() {
                 id: p.id,
                 status: dbConfig.status,
                 show_on_works: dbConfig.show_on_works,
+                sort_order: dbConfig.sort_order ?? 0,
                 title: dbConfig.title,
                 description: dbConfig.description,
                 slug: dbConfig.slug,
             }
             : { id: p.id, ...DEFAULT_CONFIG };
         return { meta: p, config };
-    });
+    }).sort((a, b) => (a.config.sort_order ?? 0) - (b.config.sort_order ?? 0));
 
     const worksCount = projectsWithConfig.filter((p) => p.config.show_on_works).length;
 

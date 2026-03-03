@@ -46,6 +46,21 @@ export function ProjectAdminCard({ project, config: initialConfig }: Props) {
         });
     };
 
+    const handleSortOrder = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newOrder = Number(e.target.value);
+        if (isNaN(newOrder)) return;
+
+        const prev = config;
+        setConfig((c) => ({ ...c, sort_order: newOrder }));
+        startTransition(async () => {
+            try { await updateProjectConfig(project.id, { sort_order: newOrder }); }
+            catch {
+                setConfig(prev);
+                alert("저장에 실패했습니다.");
+            }
+        });
+    };
+
     return (
         <div
             className={`rounded-2xl border bg-card p-5 space-y-4 transition-all duration-200 ${isPending ? "opacity-60 pointer-events-none" : ""
@@ -89,8 +104,8 @@ export function ProjectAdminCard({ project, config: initialConfig }: Props) {
                                 key={s}
                                 onClick={() => handleStatus(s)}
                                 className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${config.status === s
-                                        ? style.className
-                                        : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
+                                    ? style.className
+                                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
                                     }`}
                             >
                                 {style.label}
@@ -108,17 +123,29 @@ export function ProjectAdminCard({ project, config: initialConfig }: Props) {
                         {config.show_on_works ? "공개됩니다" : "숨겨진 상태"}
                     </p>
                 </div>
-                <button
-                    onClick={handleToggleWorks}
-                    aria-label="뚝-딱 표시 토글"
-                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ${config.show_on_works ? "bg-primary border-primary" : "bg-muted border-muted"
-                        }`}
-                >
-                    <span
-                        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 mt-0.5 ${config.show_on_works ? "translate-x-5" : "translate-x-0.5"
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-medium text-muted-foreground">순위 정렬</label>
+                        <input
+                            type="number"
+                            value={config.sort_order ?? 0}
+                            onChange={handleSortOrder}
+                            className="w-14 px-2 py-1 text-sm bg-background border border-border rounded outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
+                            title="낮을수록 먼저 표시됩니다"
+                        />
+                    </div>
+                    <button
+                        onClick={handleToggleWorks}
+                        aria-label="뚝-딱 표시 토글"
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ${config.show_on_works ? "bg-primary border-primary" : "bg-muted border-muted"
                             }`}
-                    />
-                </button>
+                    >
+                        <span
+                            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 mt-0.5 ${config.show_on_works ? "translate-x-5" : "translate-x-0.5"
+                                }`}
+                        />
+                    </button>
+                </div>
             </div>
         </div>
     );

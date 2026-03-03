@@ -22,6 +22,8 @@ const DEFAULT_GAME_CONFIG: GameConfig = {
 
 // 게임 설정 섹션이 있는 프로젝트
 const GAME_PROJECT_IDS = ["chosung-game"];
+// 랭킹 관리가 있는 프로젝트
+const RANKING_PROJECT_IDS = ["chosung-game", "circle-game"];
 
 interface Props {
     params: Promise<{ id: string }>;
@@ -50,6 +52,7 @@ export default async function LabProjectSettingsPage({ params }: Props) {
             id,
             status: dbConfig.status,
             show_on_works: dbConfig.show_on_works,
+            sort_order: dbConfig.sort_order ?? 0,
             title: dbConfig.title,
             description: dbConfig.description,
             slug: dbConfig.slug,
@@ -62,6 +65,7 @@ export default async function LabProjectSettingsPage({ params }: Props) {
 
     const displayTitle = effectiveTitle(project, config);
     const hasGameConfig = GAME_PROJECT_IDS.includes(id);
+    const hasRanking = RANKING_PROJECT_IDS.includes(id);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-foreground dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
@@ -92,6 +96,7 @@ export default async function LabProjectSettingsPage({ params }: Props) {
                         config={config}
                         initialGameConfig={gameConfig}
                         hasGameConfig={hasGameConfig}
+                        hasRanking={hasRanking}
                     />
                 </Container>
             </main>

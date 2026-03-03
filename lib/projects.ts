@@ -12,6 +12,7 @@ export interface ProjectConfig {
     id: string;
     status: ProjectStatus;
     show_on_works: boolean;
+    sort_order?: number;
     title?: string | null;
     description?: string | null;
     slug?: string | null;  // 커스텀 URL 경로 (미설정 시 id 사용)
@@ -39,6 +40,7 @@ export const STATUS_STYLES: Record<ProjectStatus, { label: string; className: st
 export const DEFAULT_CONFIG: Omit<ProjectConfig, "id"> = {
     status: "개발중",
     show_on_works: false,
+    sort_order: 0,
 };
 
 // ─── DB 값 우선, 없으면 정적 메타 폴백 ──────────────────────
@@ -58,6 +60,10 @@ export const projects: ProjectMeta[] = [
     {
         id: "chosung-game",
         title: "초성게임",
+    },
+    {
+        id: "circle-game",
+        title: "원 그리기",
     },
     {
         id: "if-buy",

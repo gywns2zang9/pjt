@@ -7,6 +7,7 @@ import { checkIsAdmin } from "@/lib/admin";
 type ConfigUpdate = {
     status?: string;
     show_on_works?: boolean;
+    sort_order?: number;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     game_config?: Record<string, any>;
 };
@@ -63,5 +64,17 @@ export async function resetChosungRanking() {
         .from("chosung_scores")
         .delete()
         .gte("score", 0); // 전체 삭제
+    if (error) throw error;
+}
+
+export async function resetCircleRanking() {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
+
+    const { error } = await supabase
+        .from("circle_scores")
+        .delete()
+        .not("id", "is", null);
     if (error) throw error;
 }

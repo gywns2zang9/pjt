@@ -6,6 +6,7 @@ import {
     updateProjectMeta,
     updateProjectConfig,
     resetChosungRanking,
+    resetCircleRanking,
 } from "@/app/labs/actions";
 import {
     type ProjectMeta,
@@ -21,9 +22,10 @@ interface Props {
     config: ProjectConfig;
     initialGameConfig: GameConfig;
     hasGameConfig: boolean;
+    hasRanking?: boolean;
 }
 
-export function ProjectSettings({ project, config: initialConfig, initialGameConfig, hasGameConfig }: Props) {
+export function ProjectSettings({ project, config: initialConfig, initialGameConfig, hasGameConfig, hasRanking }: Props) {
     const router = useRouter();
 
     // ── 기본 정보 ──
@@ -61,7 +63,11 @@ export function ProjectSettings({ project, config: initialConfig, initialGameCon
     const handleResetRanking = () => {
         if (!window.confirm("랭킹을 초기화하시겠습니까?\n전체 점수 기록이 삭제되며 복구할 수 없습니다.")) return;
         startResetTransition(async () => {
-            await resetChosungRanking();
+            if (project.id === "chosung-game") {
+                await resetChosungRanking();
+            } else if (project.id === "circle-game") {
+                await resetCircleRanking();
+            }
         });
     };
 
@@ -199,7 +205,7 @@ export function ProjectSettings({ project, config: initialConfig, initialGameCon
             )}
 
             {/* ── 위험 구역 ── */}
-            {hasGameConfig && (
+            {hasRanking && (
                 <section className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 space-y-3">
                     <h2 className="text-sm font-semibold text-destructive">위험 구역</h2>
                     <div className="flex items-center justify-between gap-4">

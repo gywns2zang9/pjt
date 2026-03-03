@@ -20,7 +20,8 @@ export default async function WorksPage() {
             config: c,
             meta: projects.find((p) => p.id === c.id),
         }))
-        .filter((p) => p.meta);
+        .filter((p) => p.meta)
+        .sort((a, b) => (a.config.sort_order ?? 0) - (b.config.sort_order ?? 0));
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-foreground dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
