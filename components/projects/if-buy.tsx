@@ -28,7 +28,7 @@ export function IfBuy() {
     const [query, setQuery] = useState("");
     const [searchResults, setSearchResults] = useState<StockSearchResult[]>([]);
     const [selectedStock, setSelectedStock] = useState<StockSearchResult | null>(null);
-    const [startDate, setStartDate] = useState(format(subYears(startOfToday(), 1), "yyyy-MM-dd"));
+    const [startDate, setStartDate] = useState("2026-01-01");
     const [strategy, setStrategy] = useState<"LUMP" | "DCA">("LUMP");
     const [amount, setAmount] = useState<number | "">(1000000); // 100만원 OR 1주
 
@@ -101,7 +101,7 @@ export function IfBuy() {
         }
 
         if (amount >= 999999999999) {
-            setError("그 돈 없잖아");
+            setError("그 돈 없잖아요.");
             return;
         }
 

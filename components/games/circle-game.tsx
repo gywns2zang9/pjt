@@ -49,7 +49,7 @@ export function CircleGame({ userName }: ProjectProps) {
         ctx.arc(CENTER_X, CENTER_Y, MIN_RADIUS, 0, Math.PI * 2);
         ctx.strokeStyle = "rgba(100, 116, 139, 0.2)"; // 아주 연한 slate 색상
         ctx.lineWidth = 1;
-        ctx.setLineDash([4, 4]); // 4px 길이의 점선
+        ctx.setLineDash([10, 10]); // 10px 길이의 점선
         ctx.stroke();
         ctx.setLineDash([]); // 다른 선에 영향 안가게 초기화
         ctx.closePath();
@@ -296,7 +296,7 @@ export function CircleGame({ userName }: ProjectProps) {
             {/* ── 게임 영역 ── */}
             <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 space-y-8 bg-card border rounded-2xl">
 
-                <div className={`relative border-4 border-dashed rounded-3xl overflow-hidden touch-none w-full max-w-[400px] aspect-square flex items-center justify-center transition-colors
+                <div className={`relative border-4 border-solid rounded-3xl overflow-hidden w-full max-w-[400px] aspect-square flex items-center justify-center transition-colors
                     ${score !== null ? 'border-primary/50 bg-primary/5' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
 
                     {score !== null && (
