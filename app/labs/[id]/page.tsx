@@ -12,16 +12,6 @@ import {
     type ProjectConfig,
 } from "@/lib/projects";
 import { ProjectSettings } from "@/components/labs/project-settings";
-import { type GameConfig } from "@/components/games/chosung-game";
-
-const DEFAULT_GAME_CONFIG: GameConfig = {
-    gameDuration: 5,
-    breakDuration: 1500,
-    numConsonants: 2,
-};
-
-// 게임 설정 섹션이 있는 프로젝트
-const GAME_PROJECT_IDS = ["chosung-game"];
 // 랭킹 관리가 있는 프로젝트
 const RANKING_PROJECT_IDS = ["chosung-game", "circle-game", "speed-test"];
 
@@ -59,12 +49,7 @@ export default async function LabProjectSettingsPage({ params }: Props) {
         }
         : { id, ...DEFAULT_CONFIG };
 
-    const gameConfig: GameConfig = dbConfig?.game_config
-        ? { ...DEFAULT_GAME_CONFIG, ...dbConfig.game_config }
-        : DEFAULT_GAME_CONFIG;
-
     const displayTitle = effectiveTitle(project, config);
-    const hasGameConfig = GAME_PROJECT_IDS.includes(id);
     const hasRanking = RANKING_PROJECT_IDS.includes(id);
 
     return (
@@ -94,8 +79,6 @@ export default async function LabProjectSettingsPage({ params }: Props) {
                     <ProjectSettings
                         project={project}
                         config={config}
-                        initialGameConfig={gameConfig}
-                        hasGameConfig={hasGameConfig}
                         hasRanking={hasRanking}
                     />
                 </Container>

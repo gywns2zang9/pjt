@@ -19,8 +19,8 @@ export interface GameConfig {
 }
 
 const DEFAULT_CONFIG: GameConfig = {
-    gameDuration: 5,
-    breakDuration: 1500,
+    gameDuration: 10,
+    breakDuration: 3000,
     numConsonants: 2,
 };
 
@@ -123,6 +123,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
     const currentScoreRef = useRef(0);
     const usedWordsRef = useRef<Set<string>>(new Set());
     const breakTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const roundCountRef = useRef(0); // 완료된 라운드 수 (난이도 계산용)
 
     const loadRanking = useCallback(async () => {
         try {
@@ -171,7 +172,9 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
     const startRound = useCallback((pair?: string[]) => {
         const newPair = pair ?? generatePair(cfg.numConsonants);
         setCurrentChosung(newPair);
-        setTimeLeft(cfg.gameDuration);
+        // 라운드마다 0.1초 감소, 최소 1초 보장
+        const roundDuration = Math.max(1, Number((cfg.gameDuration - roundCountRef.current * 0.1).toFixed(2)));
+        setTimeLeft(roundDuration);
         setInput("");
         setRoundScore(0);
         setFeedback(null);
@@ -217,7 +220,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                     endGame(currentScoreRef.current);
                 }, 600);
             } else {
-                // 점수를 획득한 경우(또는 막판 검증 성공으로 획득한 경우) 정상 진행
+                // 라운드 성공 → 다음 라운드 (카운드는 handleSubmit에서 이미 증가됨)
                 setPhase("break");
                 breakTimeoutRef.current = setTimeout(() => startRound(), cfg.breakDuration);
             }
@@ -277,6 +280,8 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                 setWordMeta({ word, realWord: realW, pos: posInfo, description: desc, link: dictionaryLink });
                 setSessionWords((prev) => [{ word, realWord: realW, pos: posInfo, description: desc, type: "correct", link: dictionaryLink }, ...prev]);
 
+                // 라운드 성공 시 카운터 증가 후 다음 라운드
+                roundCountRef.current += 1;
                 setPhase("break");
                 breakTimeoutRef.current = setTimeout(() => startRound(), cfg.breakDuration);
             } else {
@@ -312,6 +317,7 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
         setScore(0);
         setLives(1);
         currentScoreRef.current = 0;
+        roundCountRef.current = 0; // 라운드 카운터 초기화
         setFinalScore(0);
         setImpactWords([]);
         setFeedback(null);
@@ -326,7 +332,9 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
     const timeLeftNum = Number(timeLeft);
     const timerColor = timeLeftNum <= 2 ? "text-red-500" : timeLeftNum <= 3 ? "text-orange-400" : "text-emerald-400";
     const timerBg = timeLeftNum <= 2 ? "from-red-500/20 to-red-500/5" : timeLeftNum <= 3 ? "from-orange-400/20 to-orange-400/5" : "from-emerald-400/20 to-emerald-400/5";
-    const progressPct = (timeLeftNum / cfg.gameDuration) * 100;
+    // 현재 라운드의 실제 제한시간 기준으로 프로그레스 계산
+    const currentRoundDuration = Math.max(1, Number((cfg.gameDuration - roundCountRef.current * 0.1).toFixed(2)));
+    const progressPct = (timeLeftNum / currentRoundDuration) * 100;
     const progressColor = timeLeftNum <= 2 ? "#ef4444" : timeLeftNum <= 3 ? "#fb923c" : "#34d399";
 
     const impactColors: Record<ImpactWord["type"], string> = {
@@ -420,11 +428,16 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
 
                         {/* 상태 정보 (브레이크/피드백) */}
                         <div className="flex flex-col items-center justify-center -my-1">
-                            {phase === "break" && (
-                                <span className="inline-flex items-center gap-2 text-sm text-muted-foreground px-4 py-1 rounded-full bg-muted/50 animate-pulse">
-                                    ✨ 다음 초성 생성 중...
-                                </span>
-                            )}
+                            {phase === "break" && (() => {
+                                const nextDuration = Math.max(1, Number((cfg.gameDuration - roundCountRef.current * 0.1).toFixed(2)));
+                                return (
+                                    <span className="inline-flex items-center gap-1.5 text-sm px-4 py-1 rounded-full bg-muted/50 animate-pulse">
+                                        <span className="text-muted-foreground">다음 라운드 제한 시간은</span>
+                                        <span className="text-orange-400 font-black tabular-nums">{nextDuration.toFixed(2)}초</span>
+                                        <span className="text-muted-foreground">입니다!</span>
+                                    </span>
+                                );
+                            })()}
                             {feedback && phase === "playing" && (
                                 <span className={`inline-flex items-center gap-2 text-xs px-4 py-1 rounded-full bg-muted/60 text-foreground animate-pulse ${feedback.includes("❌") || feedback.includes("🔁") || feedback.includes("💔") ? "text-red-400" : ""}`}>
                                     {feedback}
