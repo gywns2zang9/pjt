@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowRight, LayoutGrid, MessageCircle, Users, Eye } from "lucide-react";
 import { Container } from "@/components/layout/container";
 import { PageViewTracker } from "@/components/page-view-tracker";
@@ -18,26 +16,6 @@ export default function HomeClient({
     userCount: number,
     visitorCount: number
 }) {
-    const [scrollY, setScrollY] = useState(0);
-    const router = useRouter();
-    const isNavigatingRef = useRef(false);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-            setScrollY(currentScrollY);
-
-            if (currentScrollY > 150 && !isNavigatingRef.current) {
-                isNavigatingRef.current = true;
-                router.push('/works');
-            }
-        };
-        window.addEventListener("scroll", handleScroll, { passive: true });
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, [router]);
-
-    const heroOpacity = Math.max(0, 1 - scrollY * 0.005);
-    const heroScale = Math.max(1, 1 - scrollY * 0.0005);
 
     return (
         <div className="bg-[#020617] text-slate-100 overflow-x-hidden selection:bg-primary/30">
@@ -52,8 +30,7 @@ export default function HomeClient({
 
                     <Container className="relative z-10 flex flex-col items-center text-center space-y-10">
                         <div
-                            className="space-y-6 transition-all duration-700"
-                            style={{ opacity: heroOpacity, transform: `scale(${heroScale})` }}
+                            className="space-y-6"
                         >
                             <h1 className="text-5xl md:text-8xl font-black tracking-tighter leading-tight drop-shadow-2xl">
                                 뚝딱실<br />
@@ -62,29 +39,29 @@ export default function HomeClient({
 
                         <div className="flex flex-col items-center gap-16 w-full max-w-5xl">
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 pt-10 border-t border-white/5 w-full">
-                                <div className="flex flex-col items-center gap-2 group">
-                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1 group-hover:bg-primary/20 transition-colors">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1">
                                         <Eye className="w-5 h-5 text-primary" />
                                     </div>
                                     <span className="text-3xl font-black text-white italic">{visitorCount}회</span>
                                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">총 방문</span>
                                 </div>
-                                <div className="flex flex-col items-center gap-2 group">
-                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1 group-hover:bg-primary/20 transition-colors">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1">
                                         <Users className="w-5 h-5 text-primary" />
                                     </div>
                                     <span className="text-3xl font-black text-white italic">{userCount}명</span>
                                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">가입자</span>
                                 </div>
-                                <div className="flex flex-col items-center gap-2 group">
-                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1 group-hover:bg-primary/20 transition-colors">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1">
                                         <LayoutGrid className="w-5 h-5 text-primary" />
                                     </div>
                                     <span className="text-3xl font-black text-white italic">{projectCount}개</span>
                                     <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">작업물</span>
                                 </div>
-                                <div className="flex flex-col items-center gap-2 group">
-                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1 group-hover:bg-primary/20 transition-colors">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1">
                                         <MessageCircle className="w-5 h-5 text-primary" />
                                     </div>
                                     <span className="text-3xl font-black text-white italic">{totalFeedback}개</span>
