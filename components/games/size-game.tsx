@@ -360,7 +360,7 @@ export function SizeGame({ userName }: ProjectProps) {
                         </div>
 
                         {/* 도형 2개 */}
-                        <div className="flex gap-6 md:gap-10 justify-center items-center py-6 md:py-8">
+                        <div className="flex gap-6 md:gap-10 justify-center items-center py-6 md:py-8 px-4 md:px-0">
                             {(phase === "playing" || phase === "result" || phase === "gameover") && left && right ? (
                                 <>
                                     {[left, right].map((shape) => {
