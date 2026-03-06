@@ -500,7 +500,7 @@ export function SizeGame({ userName }: ProjectProps) {
                             </li>
                             <li className="flex items-baseline gap-2">
                                 <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                                <span>참 쉽죠잉?</span>
+                                <span>눈 크게 뜨고 잘 보세요</span>
                             </li>
                         </ul>
                     </div>

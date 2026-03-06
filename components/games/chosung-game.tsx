@@ -654,28 +654,28 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* How to Play */}
-            <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
-                <div className="flex items-center gap-2 mb-3">
-                    <span className="text-amber-500">💡</span>
-                    <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
+                {/* How to Play */}
+                <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="text-amber-500">💡</span>
+                        <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
+                    </div>
+                    <ul className="space-y-2.5 text-[11px] text-muted-foreground">
+                        <li className="flex items-baseline gap-2">
+                            <span className="text-primary font-bold shrink-0 leading-none">01</span>
+                            <span><strong className="text-foreground">제한 시간</strong> 내에 제시된 <strong className="text-foreground">초성</strong>에 맞는 단어를 입력하세요</span>
+                        </li>
+                        <li className="flex items-baseline gap-2">
+                            <span className="text-primary font-bold shrink-0 leading-none">02</span>
+                            <span>같은 단어는 <strong className="text-foreground">중복 입력 불가</strong>해요</span>
+                        </li>
+                        <li className="flex items-baseline gap-2">
+                            <span className="text-primary font-bold shrink-0 leading-none">03</span>
+                            <span>라운드가 지날수록 제한 시간은 <strong className="text-foreground">0.1초씩</strong> 줄어요</span>
+                        </li>
+                    </ul>
                 </div>
-                <ul className="space-y-2.5 text-[11px] text-muted-foreground">
-                    <li className="flex items-baseline gap-2">
-                        <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span><strong className="text-foreground">제한 시간</strong> 내에 제시된 <strong className="text-foreground">초성</strong>에 맞는 단어를 입력하세요</span>
-                    </li>
-                    <li className="flex items-baseline gap-2">
-                        <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>같은 단어는 <strong className="text-foreground">중복 입력 불가</strong>해요</span>
-                    </li>
-                    <li className="flex items-baseline gap-2">
-                        <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>라운드가 지날수록 제한 시간은 <strong className="text-foreground">0.1초씩</strong>줄어요</span>
-                    </li>
-                </ul>
             </div>
 
             {/* CSS */}

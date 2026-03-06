@@ -419,28 +419,28 @@ export function CircleGame({ userName }: ProjectProps) {
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* How to Play */}
-            <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
-                <div className="flex items-center gap-2 mb-3">
-                    <span className="text-amber-500">💡</span>
-                    <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
+                {/* How to Play */}
+                <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className="text-amber-500">💡</span>
+                        <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
+                    </div>
+                    <ul className="space-y-2.5 text-[11px] text-muted-foreground">
+                        <li className="flex items-baseline gap-2">
+                            <span className="text-primary font-bold shrink-0 leading-none">01</span>
+                            <span>캔버스에 <strong className="text-foreground">원을 그리세요</strong></span>
+                        </li>
+                        <li className="flex items-baseline gap-2">
+                            <span className="text-primary font-bold shrink-0 leading-none">02</span>
+                            <span>손을 떼면 <strong className="text-foreground">원</strong>을 평가해요</span>
+                        </li>
+                        <li className="flex items-baseline gap-2">
+                            <span className="text-primary font-bold shrink-0 leading-none">03</span>
+                            <span>최대한 <strong className="text-foreground">완벽한 원</strong>을 그려보세요!</span>
+                        </li>
+                    </ul>
                 </div>
-                <ul className="space-y-2.5 text-[11px] text-muted-foreground">
-                    <li className="flex items-baseline gap-2">
-                        <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>캔버스에 <strong className="text-foreground">원을 그리세요</strong></span>
-                    </li>
-                    <li className="flex items-baseline gap-2">
-                        <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>손을 떼면 <strong className="text-foreground">원</strong>을 평가해요</span>
-                    </li>
-                    <li className="flex items-baseline gap-2">
-                        <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>최대한 <strong className="text-foreground">완벽한 원</strong>을 그려보세요!</span>
-                    </li>
-                </ul>
             </div>
         </div>
     );
