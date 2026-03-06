@@ -360,7 +360,7 @@ export function SizeGame({ userName }: ProjectProps) {
                         </div>
 
                         {/* 도형 2개 */}
-                        <div className="flex gap-3 md:gap-6 justify-center items-center py-6 md:py-8 px-6 md:px-4">
+                        <div className="flex w-full gap-3 md:gap-6 justify-center items-center py-6 md:py-8 px-2 sm:px-4">
                             {(phase === "playing" || phase === "result" || phase === "gameover") && left && right ? (
                                 <>
                                     {[left, right].map((shape) => {
@@ -373,7 +373,7 @@ export function SizeGame({ userName }: ProjectProps) {
                                                 onClick={() => handleClick(shape.id)}
                                                 disabled={!isClickable}
                                                 className={`
-                                                    relative flex flex-col items-center gap-1 p-5 md:p-6 rounded-2xl border-2 transition-all duration-200
+                                                    relative flex-1 flex flex-col items-center justify-center gap-1 p-3 sm:p-5 md:p-6 rounded-2xl border-2 transition-all duration-200 aspect-square max-w-[180px]
                                                     ${st === "correct"
                                                         ? "border-emerald-500/60 bg-emerald-500/10 shadow-md shadow-emerald-500/10"
                                                         : st === "wrong"
@@ -392,7 +392,7 @@ export function SizeGame({ userName }: ProjectProps) {
                                                         : "bg-muted-foreground/40"
                                                     }`}>{num}</span>
 
-                                                <svg viewBox={`0 0 ${BOX} ${BOX}`} width={BOX} height={BOX}>
+                                                <svg viewBox={`0 0 ${BOX} ${BOX}`} className="w-full h-full max-w-[140px]">
                                                     <ShapeSVG sides={shape.sides} size={shape.size} state={st} />
                                                     {st === "correct" && (
                                                         <text x={CX} y={CY} textAnchor="middle" dominantBaseline="central"
@@ -409,10 +409,10 @@ export function SizeGame({ userName }: ProjectProps) {
                                 </>
                             ) : (
                                 // idle 미리보기
-                                <div className="flex gap-4 md:gap-10 opacity-20 pointer-events-none">
+                                <div className="flex w-full gap-3 md:gap-6 justify-center items-center opacity-20 pointer-events-none px-2 sm:px-4">
                                     {[42, 50].map((size, i) => (
-                                        <div key={i} className="flex flex-col items-center gap-1 p-4 rounded-2xl border-2 border-border bg-card">
-                                            <svg viewBox={`0 0 ${BOX} ${BOX}`} width={BOX} height={BOX}>
+                                        <div key={i} className="relative flex-1 flex flex-col items-center justify-center gap-1 p-3 sm:p-5 md:p-6 rounded-2xl border-2 border-border bg-card aspect-square max-w-[180px]">
+                                            <svg viewBox={`0 0 ${BOX} ${BOX}`} className="w-full h-full max-w-[140px]">
                                                 <circle cx={CX} cy={CY} r={size}
                                                     fill="rgba(99,102,241,0.08)" stroke="currentColor" strokeWidth={2} />
                                             </svg>
