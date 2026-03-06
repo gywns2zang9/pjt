@@ -285,6 +285,28 @@ export function SpeedGame({ userName }: ProjectProps) {
                     )}
                 </div>
             </div>
+
+            {/* How to Play */}
+            <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
+                <div className="flex items-center gap-2 mb-3">
+                    <span className="text-amber-500">💡</span>
+                    <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
+                </div>
+                <ul className="space-y-2.5 text-[11px] text-muted-foreground">
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">01</span>
+                        <span>화면을 <strong className="text-foreground">길게 누르면</strong> 신호등이 점등돼요</span>
+                    </li>
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">02</span>
+                        <span>불 3개가 모두 켜졌다가 <strong className="text-foreground">꺼지는 순간</strong> 손을 떼세요</span>
+                    </li>
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">03</span>
+                        <span>누른 채로 기다렸다가 불이 꺼지면 떼세요. <strong className="text-foreground">미리 떼지 마세요</strong></span>
+                    </li>
+                </ul>
+            </div>
         </div>
     );
 }

@@ -360,7 +360,7 @@ export function SizeGame({ userName }: ProjectProps) {
                         </div>
 
                         {/* 도형 2개 */}
-                        <div className="flex gap-6 md:gap-10 justify-center items-center py-6 md:py-8 px-4 md:px-0">
+                        <div className="flex gap-3 md:gap-6 justify-center items-center py-6 md:py-8 px-6 md:px-4">
                             {(phase === "playing" || phase === "result" || phase === "gameover") && left && right ? (
                                 <>
                                     {[left, right].map((shape) => {
@@ -490,16 +490,16 @@ export function SizeGame({ userName }: ProjectProps) {
                             <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
                         </div>
                         <ul className="space-y-2.5 text-[11px] text-muted-foreground">
-                            <li className="flex items-start gap-2">
-                                <span className="text-primary font-bold mt-0.5 shrink-0">01</span>
+                            <li className="flex items-baseline gap-2">
+                                <span className="text-primary font-bold shrink-0 leading-none">01</span>
                                 <span>매 라운드마다 서로 다른 크기의 도형이 2개 주어져요</span>
                             </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-primary font-bold mt-0.5 shrink-0">02</span>
+                            <li className="flex items-baseline gap-2">
+                                <span className="text-primary font-bold shrink-0 leading-none">02</span>
                                 <span>제한 시간(2초) 내에 <strong className="text-foreground">더 작은 것</strong> 또는 <strong className="text-foreground">더 큰 것</strong>을 선택하세요</span>
                             </li>
-                            <li className="flex items-start gap-2">
-                                <span className="text-primary font-bold mt-0.5 shrink-0">03</span>
+                            <li className="flex items-baseline gap-2">
+                                <span className="text-primary font-bold shrink-0 leading-none">03</span>
                                 <span>참 쉽죠잉?</span>
                             </li>
                         </ul>
