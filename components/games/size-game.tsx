@@ -180,6 +180,11 @@ export function SizeGame({ userName }: ProjectProps) {
         setResultType(null);
         setPhase("playing");
         startTimer(tl);
+
+        // 포커스 잔상 제거 (버튼에서 포커스 해제)
+        if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+        }
     }, [startTimer]);
 
     // ─── 게임 시작 ────────────────────────────────────────
