@@ -360,7 +360,7 @@ export function SizeGame({ userName }: ProjectProps) {
                         </div>
 
                         {/* 도형 2개 */}
-                        <div className="flex gap-4 md:gap-10 justify-center items-center py-4">
+                        <div className="flex gap-6 md:gap-10 justify-center items-center py-6 md:py-8">
                             {(phase === "playing" || phase === "result" || phase === "gameover") && left && right ? (
                                 <>
                                     {[left, right].map((shape) => {
@@ -373,7 +373,7 @@ export function SizeGame({ userName }: ProjectProps) {
                                                 onClick={() => handleClick(shape.id)}
                                                 disabled={!isClickable}
                                                 className={`
-                                                    relative flex flex-col items-center gap-1 p-4 rounded-2xl border-2 transition-all duration-200
+                                                    relative flex flex-col items-center gap-1 p-5 md:p-6 rounded-2xl border-2 transition-all duration-200
                                                     ${st === "correct"
                                                         ? "border-emerald-500/60 bg-emerald-500/10 shadow-md shadow-emerald-500/10"
                                                         : st === "wrong"
