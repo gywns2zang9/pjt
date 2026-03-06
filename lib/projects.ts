@@ -63,15 +63,19 @@ export const projects: ProjectMeta[] = [
     },
     {
         id: "circle-game",
-        title: "원 그리기",
+        title: "원 게임",
     },
     {
         id: "if-buy",
         title: "그때 살걸",
     },
     {
-        id: "speed-test",
-        title: "스피드",
+        id: "speed-game",
+        title: "스피드 게임",
+    },
+    {
+        id: "size-game",
+        title: "크기 게임",
     },
 ];
 

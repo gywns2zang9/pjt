@@ -51,7 +51,7 @@ export function ProjectSettings({ project, config: initialConfig, hasRanking }: 
                 await resetChosungRanking();
             } else if (project.id === "circle-game") {
                 await resetCircleRanking();
-            } else if (project.id === "speed-test") {
+            } else if (project.id === "speed-game") {
                 await resetSpeedRanking();
             }
         });
