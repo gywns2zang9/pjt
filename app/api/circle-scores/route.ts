@@ -12,7 +12,8 @@ export async function GET() {
         .from("circle_scores")
         .select("user_name, score, created_at")
         .order("score", { ascending: false })
-        .limit(20);
+        .order("created_at", { ascending: true }) // 동점 시 먼저 달성한 사람 우선
+        .limit(100);
 
     if (error) {
         // 테이블이 아직 없거나 권한이 없는 경우 빈 배열 반환하여 프론트엔드 에러 방지
@@ -24,7 +25,7 @@ export async function GET() {
             acc.push(curr);
         }
         return acc;
-    }, []).slice(0, 3); // 3개만 보여주기
+    }, []);
 
     return NextResponse.json(uniqueRankings ?? []);
 }

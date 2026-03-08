@@ -12,7 +12,8 @@ export async function GET() {
         .from("chosung_scores")
         .select("user_name, score, created_at")
         .order("score", { ascending: false })
-        .limit(20); // 좀 더 넉넉히 가져와서 중복 제거 (또는 DB 스키마가 1인 1매칭이라면 불필요)
+        .order("created_at", { ascending: true }) // 동점 시 먼저 달성한 사람 우선
+        .limit(100);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -22,7 +23,7 @@ export async function GET() {
             acc.push(curr);
         }
         return acc;
-    }, []).slice(0, 10);
+    }, []);
 
     return NextResponse.json(uniqueRankings ?? []);
 }

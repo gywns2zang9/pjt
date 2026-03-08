@@ -12,7 +12,8 @@ export async function GET() {
         .from("size_scores")
         .select("user_name, score, created_at")
         .order("score", { ascending: false })
-        .limit(20);
+        .order("created_at", { ascending: true }) // 동점 시 먼저 달성한 사람 우선
+        .limit(100);
 
     if (error) {
         return NextResponse.json([]);
@@ -23,7 +24,7 @@ export async function GET() {
             acc.push(curr);
         }
         return acc;
-    }, []).slice(0, 3);
+    }, []);
 
     return NextResponse.json(uniqueRankings ?? []);
 }

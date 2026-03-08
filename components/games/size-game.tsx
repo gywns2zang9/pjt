@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Trophy, Lightbulb, AlertCircle, Sparkles } from "lucide-react";
+import { Trophy, Lightbulb, AlertCircle, Sparkles, X } from "lucide-react";
 import type { ProjectProps } from "@/components/project-registry";
 
 // ─── 도형: 꼭짓점 수 (0 = 원) ───────────────────────────────
@@ -105,6 +105,7 @@ export function SizeGame({ userName }: ProjectProps) {
     const [resultType, setResultType] = useState<"correct" | "wrong" | "timeout" | null>(null);
     const [finalScore, setFinalScore] = useState(0);
     const [ranking, setRanking] = useState<RankEntry[]>([]);
+    const [showAllRanking, setShowAllRanking] = useState(false);
     const [shake, setShake] = useState(false);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -287,269 +288,329 @@ export function SizeGame({ userName }: ProjectProps) {
 
     // ─── 렌더 ────────────────────────────────────────────
     return (
-        <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto">
-            {/* ── 게임 영역 ── */}
-            <div className="flex-1 min-w-0">
-                <div className={`relative rounded-2xl border border-border bg-card overflow-hidden transition-all ${shake ? "animate-shake" : ""}`}>
-                    <div className="flex flex-col p-4 md:p-6 gap-4 md:gap-5">
+        <>
+            <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto">
+                {/* ── 게임 영역 ── */}
+                <div className="flex-1 min-w-0">
+                    <div className={`relative rounded-2xl border border-border bg-card overflow-hidden transition-all ${shake ? "animate-shake" : ""}`}>
+                        <div className="flex flex-col p-4 md:p-6 gap-4 md:gap-5">
 
-                        {/* 상단: 라운드 + 점수 */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
-                                <span className="text-[10px] text-muted-foreground font-medium">ROUND</span>
-                                <span className="text-lg font-black text-foreground tabular-nums">
-                                    {phase === "idle" ? 1 : round}
-                                </span>
-                            </div>
-
-                            <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 border border-primary/20">
-                                <span className="text-[10px] md:text-xs text-muted-foreground font-medium">SCORE</span>
-                                <span className="text-lg md:text-2xl font-black text-primary tabular-nums">{score}</span>
-                            </div>
-                        </div>
-
-                        {/* 타이머 바 */}
-                        {phase === "playing" && (
-                            <div className="space-y-1">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-[10px] text-muted-foreground font-medium">TIME</span>
-                                    <span className={`text-sm font-black tabular-nums ${timerTextCls} transition-colors`}>
-                                        {timeLeft.toFixed(2)}s
+                            {/* 상단: 라운드 + 점수 */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
+                                    <span className="text-[10px] text-muted-foreground font-medium">ROUND</span>
+                                    <span className="text-lg font-black text-foreground tabular-nums">
+                                        {phase === "idle" ? 1 : round}
                                     </span>
                                 </div>
-                                <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+
+                                <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 border border-primary/20">
+                                    <span className="text-[10px] md:text-xs text-muted-foreground font-medium">SCORE</span>
+                                    <span className="text-lg md:text-2xl font-black text-primary tabular-nums">{score}</span>
+                                </div>
+                            </div>
+
+                            {/* 타이머 바 */}
+                            {phase === "playing" && (
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[10px] text-muted-foreground font-medium">TIME</span>
+                                        <span className={`text-sm font-black tabular-nums ${timerTextCls} transition-colors`}>
+                                            {timeLeft.toFixed(2)}s
+                                        </span>
+                                    </div>
+                                    <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
+                                        <div
+                                            className="h-full rounded-full"
+                                            style={{
+                                                width: `${progressPct}%`,
+                                                backgroundColor: timerColor,
+                                                transition: "width 50ms linear, background-color 0.3s",
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* 안내 메시지 */}
+                            <div className="text-center min-h-[28px] flex items-center justify-center gap-2">
+                                {phase === "idle" && (
+                                    <p className="text-sm text-muted-foreground">
+                                        제시된 두 도형 중 <span className="font-bold text-foreground">더 작은 것</span> 또는 <span className="font-bold text-foreground">더 큰 것</span>을 골라주세요
+                                    </p>
+                                )}
+                                {phase === "playing" && (
+                                    <p className="text-sm text-muted-foreground">
+                                        둘 중 <span className={`font-black text-base px-1.5 py-0.5 rounded-md ${pickSmaller
+                                            ? "text-blue-500 dark:text-blue-400 bg-blue-500/10"
+                                            : "text-rose-500 dark:text-rose-400 bg-rose-500/10"
+                                            }`}>{pickSmaller ? "더 작은 것" : "더 큰 것"}</span>을 고르시오
+                                    </p>
+                                )}
+                                {phase === "result" && resultType === "correct" && (
+                                    <p className="text-sm font-bold text-emerald-500 animate-in fade-in duration-200">정답입니다! </p>
+                                )}
+                                {phase === "result" && resultType === "wrong" && (
+                                    <p className="text-sm font-bold text-destructive animate-in fade-in duration-200">오답입니다!</p>
+                                )}
+                                {phase === "result" && resultType === "timeout" && (
+                                    <p className="text-sm font-bold text-orange-500 animate-in fade-in duration-200">시간 초과!</p>
+                                )}
+                                {phase === "gameover" && (
+                                    <p className="text-sm text-muted-foreground">
+                                        둘 중 <span className={`font-black text-base px-1.5 py-0.5 rounded-md ${pickSmaller
+                                            ? "text-blue-500 dark:text-blue-400 bg-blue-500/10"
+                                            : "text-rose-500 dark:text-rose-400 bg-rose-500/10"
+                                            }`}>{pickSmaller ? "더 작은 것" : "더 큰 것"}</span>을 고르시오
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* 도형 2개 */}
+                            <div className="flex w-full gap-3 md:gap-6 justify-center items-center py-6 md:py-8 px-2 sm:px-4">
+                                {(phase === "playing" || phase === "result" || phase === "gameover") && left && right ? (
+                                    <>
+                                        {[left, right].map((shape) => {
+                                            const st = getShapeState(shape.id);
+                                            const isClickable = phase === "playing";
+                                            const num = shape.id + 1;
+                                            return (
+                                                <button
+                                                    key={shape.id}
+                                                    onClick={() => handleClick(shape.id)}
+                                                    disabled={!isClickable}
+                                                    className={`
+                                                    relative flex-1 flex flex-col items-center justify-center gap-1 p-3 sm:p-5 md:p-6 rounded-2xl border-2 transition-all duration-200 aspect-square max-w-[180px]
+                                                    ${st === "correct"
+                                                            ? "border-emerald-500/60 bg-emerald-500/10 shadow-md shadow-emerald-500/10"
+                                                            : st === "wrong"
+                                                                ? "border-destructive/60 bg-destructive/10"
+                                                                : st === "timeout"
+                                                                    ? "border-orange-400/40 bg-orange-400/5"
+                                                                    : isClickable
+                                                                        ? "border-border bg-card hover:border-primary/40 hover:bg-primary/5 cursor-pointer"
+                                                                        : "border-border bg-card"
+                                                        }
+                                                `}
+                                                >
+                                                    {/* 번호 뱃지 */}
+                                                    <span className={`absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white ${st === "correct" ? "bg-emerald-500"
+                                                        : st === "wrong" ? "bg-destructive"
+                                                            : "bg-muted-foreground/40"
+                                                        }`}>{num}</span>
+
+                                                    <svg viewBox={`0 0 ${BOX} ${BOX}`} className="w-full h-full max-w-[140px]">
+                                                        <ShapeSVG sides={shape.sides} size={shape.size} state={st} />
+                                                        {st === "correct" && (
+                                                            <text x={CX} y={CY} textAnchor="middle" dominantBaseline="central"
+                                                                fontSize="28" opacity="0.5" fill="#10b981">✓</text>
+                                                        )}
+                                                        {st === "wrong" && (
+                                                            <text x={CX} y={CY} textAnchor="middle" dominantBaseline="central"
+                                                                fontSize="24" opacity="0.4" fill="#ef4444">✗</text>
+                                                        )}
+                                                    </svg>
+                                                </button>
+                                            );
+                                        })}
+                                    </>
+                                ) : (
+                                    // idle 미리보기
+                                    <div className="flex w-full gap-3 md:gap-6 justify-center items-center opacity-20 pointer-events-none px-2 sm:px-4">
+                                        {[42, 50].map((size, i) => (
+                                            <div key={i} className="relative flex-1 flex flex-col items-center justify-center gap-1 p-3 sm:p-5 md:p-6 rounded-2xl border-2 border-border bg-card aspect-square max-w-[180px]">
+                                                <svg viewBox={`0 0 ${BOX} ${BOX}`} className="w-full h-full max-w-[140px]">
+                                                    <circle cx={CX} cy={CY} r={size}
+                                                        fill="rgba(99,102,241,0.08)" stroke="currentColor" strokeWidth={2} />
+                                                </svg>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 컨트롤 버튼 */}
+                            <div>
+                                {phase === "idle" && (
+                                    <button
+                                        onClick={handleStart}
+                                        className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20"
+                                    >
+                                        게임 시작
+                                    </button>
+                                )}
+                                {phase === "gameover" && (
+                                    <div className="animate-in zoom-in duration-300">
+                                        <button
+                                            onClick={handleStart}
+                                            className="block w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20"
+                                        >
+                                            다시 시작
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── 사이드바 ── */}
+                <div className="w-full lg:w-64 shrink-0 flex flex-col gap-4">
+
+                    {/* 정답 표시 */}
+                    {left && right && (resultType === "wrong" || resultType === "timeout" || phase === "gameover") && (
+                        <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50 animate-in slide-in-from-top-2 duration-300">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Lightbulb className="w-4 h-4 text-amber-500" />
+                                <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Answer</span>
+                            </div>
+                            <p className="text-[15px] text-muted-foreground mb-3">
+                                <span className="font-bold text-xl text-foreground">{correctId === 0 ? "왼쪽" : "오른쪽"}</span>이{" "}
+                                <span className="font-bold text-foreground">{pickSmaller ? "더 작습니다" : "더 큽니다"}</span>
+                            </p>
+                            <div className="flex flex-col gap-2">
+                                {[left, right].map((shape) => (
                                     <div
-                                        className="h-full rounded-full"
-                                        style={{
-                                            width: `${progressPct}%`,
-                                            backgroundColor: timerColor,
-                                            transition: "width 50ms linear, background-color 0.3s",
-                                        }}
-                                    />
+                                        key={shape.id}
+                                        className={`flex items-center gap-3 p-2.5 rounded-xl border ${shape.id === correctId
+                                            ? "bg-emerald-500/10 border-emerald-500/25"
+                                            : "bg-muted/30 border-border/50"
+                                            }`}
+                                    >
+                                        <span className={`text-xs font-black w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0 ${shape.id === correctId ? "bg-emerald-500" : "bg-muted-foreground/30"
+                                            }`}>
+                                            {shape.id + 1}
+                                        </span>
+                                        <span className="text-xs font-semibold text-foreground tabular-nums flex-1">{shape.size}px</span>
+                                        {shape.id === correctId && <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* How to Play (idle) */}
+                    {phase === "idle" && (
+                        <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Lightbulb className="w-4 h-4 text-amber-500" />
+                                <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
+                            </div>
+                            <ul className="space-y-2.5 text-[11px] text-muted-foreground">
+                                <li className="flex items-baseline gap-2">
+                                    <span className="text-primary font-bold shrink-0 leading-none">01</span>
+                                    <span>매 라운드마다 서로 다른 크기의 도형이 2개 주어져요</span>
+                                </li>
+                                <li className="flex items-baseline gap-2">
+                                    <span className="text-primary font-bold shrink-0 leading-none">02</span>
+                                    <span>제한 시간(2초) 내에 <strong className="text-foreground">더 작은 것</strong> 또는 <strong className="text-foreground">더 큰 것</strong>을 선택하세요</span>
+                                </li>
+                                <li className="flex items-baseline gap-2">
+                                    <span className="text-primary font-bold shrink-0 leading-none">03</span>
+                                    <span>눈 크게 뜨고 잘 보세요</span>
+                                </li>
+                            </ul>
+                        </div>
+                    )}
+
+                    {/* 랭킹 보드 */}
+                    <div className="order-2 lg:order-1 rounded-2xl border border-border bg-card p-5 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <Trophy className="w-5 h-5 text-amber-500" />
+                            <h2 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">TOP 3</h2>
+                            {ranking.length > 0 && (
+                                <button
+                                    onClick={() => setShowAllRanking(true)}
+                                    className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors"
+                                >
+                                    전체보기
+                                </button>
+                            )}
+                        </div>
+
+                        {ranking.length === 0 ? (
+                            <p className="text-xs text-muted-foreground text-center py-6">아직 기록이 없어요</p>
+                        ) : (
+                            <ol className="space-y-2">
+                                {ranking.slice(0, 3).map((entry, i) => (
+                                    <li
+                                        key={i}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
+                                            : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
+                                                : "bg-orange-400/10 border border-orange-400/20"
+                                            }`}
+                                    >
+                                        <span className="text-base shrink-0">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                                        </div>
+                                        <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
+
+                        {phase === "gameover" && (
+                            <div className="pt-3 border-t border-border animate-in slide-in-from-top-2 duration-300">
+                                <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+                                    <span className="text-[10px] text-destructive font-bold uppercase tracking-tighter">Game Over</span>
+                                    <span className="text-xl font-black text-foreground">{finalScore}점</span>
                                 </div>
                             </div>
                         )}
-
-                        {/* 안내 메시지 */}
-                        <div className="text-center min-h-[28px] flex items-center justify-center gap-2">
-                            {phase === "idle" && (
-                                <p className="text-sm text-muted-foreground">
-                                    제시된 두 도형 중 <span className="font-bold text-foreground">더 작은 것</span> 또는 <span className="font-bold text-foreground">더 큰 것</span>을 골라주세요
-                                </p>
-                            )}
-                            {phase === "playing" && (
-                                <p className="text-sm text-muted-foreground">
-                                    둘 중 <span className={`font-black text-base px-1.5 py-0.5 rounded-md ${pickSmaller
-                                        ? "text-blue-500 dark:text-blue-400 bg-blue-500/10"
-                                        : "text-rose-500 dark:text-rose-400 bg-rose-500/10"
-                                        }`}>{pickSmaller ? "더 작은 것" : "더 큰 것"}</span>을 고르시오
-                                </p>
-                            )}
-                            {phase === "result" && resultType === "correct" && (
-                                <p className="text-sm font-bold text-emerald-500 animate-in fade-in duration-200">정답입니다! </p>
-                            )}
-                            {phase === "result" && resultType === "wrong" && (
-                                <p className="text-sm font-bold text-destructive animate-in fade-in duration-200">오답입니다!</p>
-                            )}
-                            {phase === "result" && resultType === "timeout" && (
-                                <p className="text-sm font-bold text-orange-500 animate-in fade-in duration-200">시간 초과!</p>
-                            )}
-                            {phase === "gameover" && (
-                                <p className="text-sm text-muted-foreground">
-                                    둘 중 <span className={`font-black text-base px-1.5 py-0.5 rounded-md ${pickSmaller
-                                        ? "text-blue-500 dark:text-blue-400 bg-blue-500/10"
-                                        : "text-rose-500 dark:text-rose-400 bg-rose-500/10"
-                                        }`}>{pickSmaller ? "더 작은 것" : "더 큰 것"}</span>을 고르시오
-                                </p>
-                            )}
-                        </div>
-
-                        {/* 도형 2개 */}
-                        <div className="flex w-full gap-3 md:gap-6 justify-center items-center py-6 md:py-8 px-2 sm:px-4">
-                            {(phase === "playing" || phase === "result" || phase === "gameover") && left && right ? (
-                                <>
-                                    {[left, right].map((shape) => {
-                                        const st = getShapeState(shape.id);
-                                        const isClickable = phase === "playing";
-                                        const num = shape.id + 1;
-                                        return (
-                                            <button
-                                                key={shape.id}
-                                                onClick={() => handleClick(shape.id)}
-                                                disabled={!isClickable}
-                                                className={`
-                                                    relative flex-1 flex flex-col items-center justify-center gap-1 p-3 sm:p-5 md:p-6 rounded-2xl border-2 transition-all duration-200 aspect-square max-w-[180px]
-                                                    ${st === "correct"
-                                                        ? "border-emerald-500/60 bg-emerald-500/10 shadow-md shadow-emerald-500/10"
-                                                        : st === "wrong"
-                                                            ? "border-destructive/60 bg-destructive/10"
-                                                            : st === "timeout"
-                                                                ? "border-orange-400/40 bg-orange-400/5"
-                                                                : isClickable
-                                                                    ? "border-border bg-card hover:border-primary/40 hover:bg-primary/5 cursor-pointer"
-                                                                    : "border-border bg-card"
-                                                    }
-                                                `}
-                                            >
-                                                {/* 번호 뱃지 */}
-                                                <span className={`absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white ${st === "correct" ? "bg-emerald-500"
-                                                    : st === "wrong" ? "bg-destructive"
-                                                        : "bg-muted-foreground/40"
-                                                    }`}>{num}</span>
-
-                                                <svg viewBox={`0 0 ${BOX} ${BOX}`} className="w-full h-full max-w-[140px]">
-                                                    <ShapeSVG sides={shape.sides} size={shape.size} state={st} />
-                                                    {st === "correct" && (
-                                                        <text x={CX} y={CY} textAnchor="middle" dominantBaseline="central"
-                                                            fontSize="28" opacity="0.5" fill="#10b981">✓</text>
-                                                    )}
-                                                    {st === "wrong" && (
-                                                        <text x={CX} y={CY} textAnchor="middle" dominantBaseline="central"
-                                                            fontSize="24" opacity="0.4" fill="#ef4444">✗</text>
-                                                    )}
-                                                </svg>
-                                            </button>
-                                        );
-                                    })}
-                                </>
-                            ) : (
-                                // idle 미리보기
-                                <div className="flex w-full gap-3 md:gap-6 justify-center items-center opacity-20 pointer-events-none px-2 sm:px-4">
-                                    {[42, 50].map((size, i) => (
-                                        <div key={i} className="relative flex-1 flex flex-col items-center justify-center gap-1 p-3 sm:p-5 md:p-6 rounded-2xl border-2 border-border bg-card aspect-square max-w-[180px]">
-                                            <svg viewBox={`0 0 ${BOX} ${BOX}`} className="w-full h-full max-w-[140px]">
-                                                <circle cx={CX} cy={CY} r={size}
-                                                    fill="rgba(99,102,241,0.08)" stroke="currentColor" strokeWidth={2} />
-                                            </svg>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 컨트롤 버튼 */}
-                        <div>
-                            {phase === "idle" && (
-                                <button
-                                    onClick={handleStart}
-                                    className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20"
-                                >
-                                    게임 시작
-                                </button>
-                            )}
-                            {phase === "gameover" && (
-                                <div className="animate-in zoom-in duration-300">
-                                    <button
-                                        onClick={handleStart}
-                                        className="block w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20"
-                                    >
-                                        다시 시작
-                                    </button>
-                                </div>
-                            )}
-                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* ── 사이드바 ── */}
-            <div className="w-full lg:w-64 shrink-0 flex flex-col gap-4">
-
-                {/* 정답 표시 */}
-                {left && right && (resultType === "wrong" || resultType === "timeout" || phase === "gameover") && (
-                    <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50 animate-in slide-in-from-top-2 duration-300">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Lightbulb className="w-4 h-4 text-amber-500" />
-                            <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Answer</span>
-                        </div>
-                        <p className="text-[15px] text-muted-foreground mb-3">
-                            <span className="font-bold text-xl text-foreground">{correctId === 0 ? "왼쪽" : "오른쪽"}</span>이{" "}
-                            <span className="font-bold text-foreground">{pickSmaller ? "더 작습니다" : "더 큽니다"}</span>
-                        </p>
-                        <div className="flex flex-col gap-2">
-                            {[left, right].map((shape) => (
-                                <div
-                                    key={shape.id}
-                                    className={`flex items-center gap-3 p-2.5 rounded-xl border ${shape.id === correctId
-                                        ? "bg-emerald-500/10 border-emerald-500/25"
-                                        : "bg-muted/30 border-border/50"
-                                        }`}
+            {/* 전체 랭킹 모달 */}
+            {
+                showAllRanking && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                        onClick={() => setShowAllRanking(false)}
+                    >
+                        <div
+                            className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* 모달 헤더 */}
+                            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+                                <Trophy className="w-5 h-5 text-amber-500" />
+                                <h3 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">전체 랭킹</h3>
+                                <button
+                                    onClick={() => setShowAllRanking(false)}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                                 >
-                                    <span className={`text-xs font-black w-6 h-6 rounded-full flex items-center justify-center text-white shrink-0 ${shape.id === correctId ? "bg-emerald-500" : "bg-muted-foreground/30"
-                                        }`}>
-                                        {shape.id + 1}
-                                    </span>
-                                    <span className="text-xs font-semibold text-foreground tabular-nums flex-1">{shape.size}px</span>
-                                    {shape.id === correctId && <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* How to Play (idle) */}
-                {phase === "idle" && (
-                    <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Lightbulb className="w-4 h-4 text-amber-500" />
-                            <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
-                        </div>
-                        <ul className="space-y-2.5 text-[11px] text-muted-foreground">
-                            <li className="flex items-baseline gap-2">
-                                <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                                <span>매 라운드마다 서로 다른 크기의 도형이 2개 주어져요</span>
-                            </li>
-                            <li className="flex items-baseline gap-2">
-                                <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                                <span>제한 시간(2초) 내에 <strong className="text-foreground">더 작은 것</strong> 또는 <strong className="text-foreground">더 큰 것</strong>을 선택하세요</span>
-                            </li>
-                            <li className="flex items-baseline gap-2">
-                                <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                                <span>눈 크게 뜨고 잘 보세요</span>
-                            </li>
-                        </ul>
-                    </div>
-                )}
-
-                {/* 랭킹 보드 */}
-                <div className="order-2 lg:order-1 rounded-2xl border border-border bg-card p-5 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-amber-500" />
-                        <h2 className="font-bold text-sm tracking-wide text-foreground uppercase">TOP 3</h2>
-                    </div>
-
-                    {ranking.length === 0 ? (
-                        <p className="text-xs text-muted-foreground text-center py-6">아직 기록이 없어요</p>
-                    ) : (
-                        <ol className="space-y-2">
-                            {ranking.slice(0, 3).map((entry, i) => (
-                                <li
-                                    key={i}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
-                                        : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
-                                            : "bg-orange-400/10 border border-orange-400/20"
-                                        }`}
-                                >
-                                    <span className="text-base shrink-0">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold truncate">{entry.user_name}</p>
-                                    </div>
-                                    <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
-                                </li>
-                            ))}
-                        </ol>
-                    )}
-
-                    {phase === "gameover" && (
-                        <div className="pt-3 border-t border-border animate-in slide-in-from-top-2 duration-300">
-                            <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
-                                <span className="text-[10px] text-destructive font-bold uppercase tracking-tighter">Game Over</span>
-                                <span className="text-xl font-black text-foreground">{finalScore}점</span>
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            {/* 랭킹 목록 */}
+                            <div className="p-4 max-h-[60vh] overflow-y-auto">
+                                <ol className="space-y-2">
+                                    {ranking.map((entry, i) => (
+                                        <li
+                                            key={i}
+                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
+                                                : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
+                                                    : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
+                                                        : "bg-muted/30 border border-transparent"
+                                                }`}
+                                        >
+                                            <span className="text-sm font-black w-6 text-center shrink-0 text-muted-foreground">
+                                                {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
+                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                                            </div>
+                                            <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
+                                        </li>
+                                    ))}
+                                </ol>
                             </div>
                         </div>
-                    )}
-                </div>
-            </div>
-        </div>
+                    </div>
+                )
+            }
+        </>
     );
 }

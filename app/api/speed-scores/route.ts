@@ -12,7 +12,8 @@ export async function GET() {
         .from("speed_scores")
         .select("user_name, score, created_at")
         .order("score", { ascending: true }) // 반응속도 시간은 짧을수록 좋으므로 ASC
-        .limit(20);
+        .order("created_at", { ascending: true }) // 동점 시 먼저 달성한 사람 우선
+        .limit(100);
 
     if (error) {
         return NextResponse.json([]);
@@ -23,7 +24,7 @@ export async function GET() {
             acc.push(curr);
         }
         return acc;
-    }, []).slice(0, 3); // 3개만 보여주기
+    }, []);
 
     return NextResponse.json(uniqueRankings ?? []);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Sparkles, AlertCircle, Lightbulb, Trophy } from "lucide-react";
+import { Sparkles, AlertCircle, Lightbulb, Trophy, X } from "lucide-react";
 import type { ProjectProps } from "@/components/project-registry";
 import { Button } from "@/components/ui/button";
 
@@ -21,6 +21,7 @@ export function CircleGame({ userName }: ProjectProps) {
         created_at: string;
     }
     const [ranking, setRanking] = useState<RankEntry[]>([]);
+    const [showAllRanking, setShowAllRanking] = useState(false);
 
     const loadRanking = useCallback(async () => {
         try {
@@ -296,152 +297,210 @@ export function CircleGame({ userName }: ProjectProps) {
     };
 
     return (
-        <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto">
-            {/* ── 게임 영역 ── */}
-            <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 space-y-8 bg-card border rounded-2xl">
+        <>
+            <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto">
+                {/* ── 게임 영역 ── */}
+                <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 space-y-8 bg-card border rounded-2xl">
 
-                <div className={`relative border-4 border-solid rounded-3xl overflow-hidden touch-none w-full max-w-[600px] h-[400px] flex items-center justify-center transition-colors
+                    <div className={`relative border-4 border-solid rounded-3xl overflow-hidden touch-none w-full max-w-[600px] h-[400px] flex items-center justify-center transition-colors
                     ${score !== null ? 'border-primary/50 bg-primary/5' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
 
-                    {score !== null && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 animate-in zoom-in-75 fade-in duration-300">
-                            <div className="flex items-baseline justify-center text-6xl sm:text-7xl font-black text-primary drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] dark:drop-shadow-[0_0_15px_rgba(0,0,0,0.8)] mix-blend-multiply dark:mix-blend-lighten">
-                                <span>{score}</span>
-                                <span className="text-3xl sm:text-4xl text-primary/80 font-bold ml-1">점</span>
+                        {score !== null && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-10 animate-in zoom-in-75 fade-in duration-300">
+                                <div className="flex items-baseline justify-center text-6xl sm:text-7xl font-black text-primary drop-shadow-[0_0_15px_rgba(255,255,255,0.8)] dark:drop-shadow-[0_0_15px_rgba(0,0,0,0.8)] mix-blend-multiply dark:mix-blend-lighten">
+                                    <span>{score}</span>
+                                    <span className="text-3xl sm:text-4xl text-primary/80 font-bold ml-1">점</span>
+                                </div>
+                            </div>
+                        )}
+
+                        <canvas
+                            ref={canvasRef}
+                            onMouseDown={startDrawing}
+                            onMouseMove={draw}
+                            onMouseUp={stopDrawing}
+                            onMouseLeave={stopDrawing}
+                            onTouchStart={startDrawing}
+                            onTouchMove={draw}
+                            onTouchEnd={stopDrawing}
+                            onTouchCancel={stopDrawing}
+                            className="cursor-crosshair w-full h-full block"
+                            style={{ maxWidth: `${CANVAS_WIDTH}px`, maxHeight: `${CANVAS_HEIGHT}px` }}
+                        />
+                    </div>
+
+                    <div className="flex flex-col items-center gap-4 w-full max-w-[600px]">
+                        {score !== null && (
+                            <div className="flex items-center gap-3 w-full">
+                                <Button
+                                    variant="default"
+                                    className="w-full font-bold h-12 text-md transition-all shadow-sm animate-in fade-in slide-in-from-bottom-2"
+                                    onClick={clearCanvas}
+                                >
+                                    다시 그리기
+                                </Button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* ── 사이드바: 랭킹 및 히스토리 ── */}
+                <div className="w-full lg:w-64 shrink-0 flex flex-col gap-4">
+                    {/* 팁 / 피드백 (초성게임 Word History 같은 UI) */}
+                    {score !== null && feedbacks.length > 0 && (
+                        <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
+                            <div className="flex items-center gap-2 mb-3">
+                                <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Tip</span>
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{feedbacks.length}</span>
+                            </div>
+                            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                                {feedbacks.map((item) => (
+                                    <div key={item.id} className={`p-3 rounded-xl border transition-all animate-in slide-in-from-left-2 duration-300 ${item.type === "success" ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+                                        item.type === "warning" ? "bg-orange-400/5 border-orange-400/10 text-orange-600 dark:text-orange-400" :
+                                            "bg-destructive/5 border-destructive/10 text-destructive"
+                                        }`}>
+                                        <div className="flex items-start gap-2">
+                                            <span className="text-[14px] leading-tight mt-[1px]">
+                                                {item.type === "success" ? <Sparkles className="w-4 h-4 text-emerald-500" /> : item.type === "error" ? <AlertCircle className="w-4 h-4 text-destructive" /> : <Lightbulb className="w-4 h-4 text-amber-500" />}
+                                            </span>
+                                            <p className="text-[13px] font-medium leading-snug">
+                                                {item.text}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
 
-                    <canvas
-                        ref={canvasRef}
-                        onMouseDown={startDrawing}
-                        onMouseMove={draw}
-                        onMouseUp={stopDrawing}
-                        onMouseLeave={stopDrawing}
-                        onTouchStart={startDrawing}
-                        onTouchMove={draw}
-                        onTouchEnd={stopDrawing}
-                        onTouchCancel={stopDrawing}
-                        className="cursor-crosshair w-full h-full block"
-                        style={{ maxWidth: `${CANVAS_WIDTH}px`, maxHeight: `${CANVAS_HEIGHT}px` }}
-                    />
-                </div>
-
-                <div className="flex flex-col items-center gap-4 w-full max-w-[600px]">
-                    {score !== null && (
-                        <div className="flex items-center gap-3 w-full">
-                            <Button
-                                variant="default"
-                                className="w-full font-bold h-12 text-md transition-all shadow-sm animate-in fade-in slide-in-from-bottom-2"
-                                onClick={clearCanvas}
-                            >
-                                다시 그리기
-                            </Button>
+                    {/* 랭킹 보드 */}
+                    <div className="order-2 lg:order-1 rounded-2xl border border-border bg-card p-5 space-y-4">
+                        <div className="flex items-center gap-2">
+                            <Trophy className="w-5 h-5 text-amber-500" />
+                            <h2 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">TOP 3</h2>
+                            {ranking.length > 0 && (
+                                <button
+                                    onClick={() => setShowAllRanking(true)}
+                                    className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors"
+                                >
+                                    전체보기
+                                </button>
+                            )}
                         </div>
-                    )}
-                </div>
-            </div>
 
-            {/* ── 사이드바: 랭킹 및 히스토리 ── */}
-            <div className="w-full lg:w-64 shrink-0 flex flex-col gap-4">
-                {/* 팁 / 피드백 (초성게임 Word History 같은 UI) */}
-                {score !== null && feedbacks.length > 0 && (
+                        {ranking.length === 0 ? (
+                            <p className="text-xs text-muted-foreground text-center py-6">
+                                아직 기록이 없어요<br />
+                            </p>
+                        ) : (
+                            <ol className="space-y-2">
+                                {ranking.slice(0, 3).map((entry, i) => (
+                                    <li
+                                        key={i}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${i === 0
+                                            ? "bg-yellow-400/10 border border-yellow-400/25"
+                                            : i === 1
+                                                ? "bg-slate-400/10 border border-slate-400/20"
+                                                : i === 2
+                                                    ? "bg-orange-400/10 border border-orange-400/20"
+                                                    : "bg-muted/30"
+                                            }`}
+                                    >
+                                        <span className="text-base shrink-0">
+                                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                                        </div>
+                                        <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
+                                    </li>
+                                ))}
+                            </ol>
+                        )}
+
+                        {score !== null && (
+                            <div className="pt-3 border-t border-border animate-in slide-in-from-top-2 duration-300">
+                                <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-primary/10 border border-primary/20">
+                                    <span className="text-[10px] text-primary font-bold uppercase tracking-tighter">Score</span>
+                                    <div className="flex items-baseline gap-0.5">
+                                        <span className="text-xl font-black text-foreground">{score}점</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* How to Play */}
                     <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
                         <div className="flex items-center gap-2 mb-3">
-                            <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Tip</span>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{feedbacks.length}</span>
+                            <span className="text-amber-500">💡</span>
+                            <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
                         </div>
-                        <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                            {feedbacks.map((item) => (
-                                <div key={item.id} className={`p-3 rounded-xl border transition-all animate-in slide-in-from-left-2 duration-300 ${item.type === "success" ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
-                                    item.type === "warning" ? "bg-orange-400/5 border-orange-400/10 text-orange-600 dark:text-orange-400" :
-                                        "bg-destructive/5 border-destructive/10 text-destructive"
-                                    }`}>
-                                    <div className="flex items-start gap-2">
-                                        <span className="text-[14px] leading-tight mt-[1px]">
-                                            {item.type === "success" ? <Sparkles className="w-4 h-4 text-emerald-500" /> : item.type === "error" ? <AlertCircle className="w-4 h-4 text-destructive" /> : <Lightbulb className="w-4 h-4 text-amber-500" />}
-                                        </span>
-                                        <p className="text-[13px] font-medium leading-snug">
-                                            {item.text}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                        <ul className="space-y-2.5 text-[11px] text-muted-foreground">
+                            <li className="flex items-baseline gap-2">
+                                <span className="text-primary font-bold shrink-0 leading-none">01</span>
+                                <span>캔버스에 <strong className="text-foreground">원을 그리세요</strong></span>
+                            </li>
+                            <li className="flex items-baseline gap-2">
+                                <span className="text-primary font-bold shrink-0 leading-none">02</span>
+                                <span>손을 떼면 <strong className="text-foreground">원</strong>을 평가해요</span>
+                            </li>
+                            <li className="flex items-baseline gap-2">
+                                <span className="text-primary font-bold shrink-0 leading-none">03</span>
+                                <span>최대한 <strong className="text-foreground">완벽한 원</strong>을 그려보세요!</span>
+                            </li>
+                        </ul>
                     </div>
-                )}
-
-                {/* 랭킹 보드 */}
-                <div className="order-2 lg:order-1 rounded-2xl border border-border bg-card p-5 space-y-4">
-                    <div className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-amber-500" />
-                        <h2 className="font-bold text-sm tracking-wide text-foreground uppercase">TOP 3</h2>
-                    </div>
-
-                    {ranking.length === 0 ? (
-                        <p className="text-xs text-muted-foreground text-center py-6">
-                            아직 기록이 없어요<br />
-                        </p>
-                    ) : (
-                        <ol className="space-y-2">
-                            {ranking.slice(0, 3).map((entry, i) => (
-                                <li
-                                    key={i}
-                                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${i === 0
-                                        ? "bg-yellow-400/10 border border-yellow-400/25"
-                                        : i === 1
-                                            ? "bg-slate-400/10 border border-slate-400/20"
-                                            : i === 2
-                                                ? "bg-orange-400/10 border border-orange-400/20"
-                                                : "bg-muted/30"
-                                        }`}
-                                >
-                                    <span className="text-base shrink-0">
-                                        {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                                    </span>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold truncate">{entry.user_name}</p>
-                                    </div>
-                                    <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
-                                </li>
-                            ))}
-                        </ol>
-                    )}
-
-                    {score !== null && (
-                        <div className="pt-3 border-t border-border animate-in slide-in-from-top-2 duration-300">
-                            <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-primary/10 border border-primary/20">
-                                <span className="text-[10px] text-primary font-bold uppercase tracking-tighter">Score</span>
-                                <div className="flex items-baseline gap-0.5">
-                                    <span className="text-xl font-black text-foreground">{score}점</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* How to Play */}
-                <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
-                    <div className="flex items-center gap-2 mb-3">
-                        <span className="text-amber-500">💡</span>
-                        <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
-                    </div>
-                    <ul className="space-y-2.5 text-[11px] text-muted-foreground">
-                        <li className="flex items-baseline gap-2">
-                            <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                            <span>캔버스에 <strong className="text-foreground">원을 그리세요</strong></span>
-                        </li>
-                        <li className="flex items-baseline gap-2">
-                            <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                            <span>손을 떼면 <strong className="text-foreground">원</strong>을 평가해요</span>
-                        </li>
-                        <li className="flex items-baseline gap-2">
-                            <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                            <span>최대한 <strong className="text-foreground">완벽한 원</strong>을 그려보세요!</span>
-                        </li>
-                    </ul>
                 </div>
             </div>
-        </div>
+
+            {/* 전체 랭킹 모달 */}
+            {showAllRanking && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setShowAllRanking(false)}
+                >
+                    <div
+                        className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* 모달 헤더 */}
+                        <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+                            <Trophy className="w-5 h-5 text-amber-500" />
+                            <h3 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">전체 랭킹</h3>
+                            <button
+                                onClick={() => setShowAllRanking(false)}
+                                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        {/* 랭킹 목록 */}
+                        <div className="p-4 max-h-[60vh] overflow-y-auto">
+                            <ol className="space-y-2">
+                                {ranking.map((entry, i) => (
+                                    <li
+                                        key={i}
+                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
+                                                : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
+                                                    : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
+                                                        : "bg-muted/30 border border-transparent"
+                                            }`}
+                                    >
+                                        <span className="text-sm font-black w-6 text-center shrink-0 text-muted-foreground">
+                                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                                        </div>
+                                        <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
+                                    </li>
+                                ))}
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
