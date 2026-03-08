@@ -1,9 +1,15 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { Sparkles, AlertCircle, Lightbulb, Trophy, X } from "lucide-react";
+import { Sparkles, AlertCircle, Lightbulb, Trophy, X, ChevronDown } from "lucide-react";
 import type { ProjectProps } from "@/components/project-registry";
 import { Button } from "@/components/ui/button";
+
+interface RankEntry {
+    user_name: string;
+    score: number;
+    created_at: string;
+}
 
 export function CircleGame({ userName }: ProjectProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -14,12 +20,6 @@ export function CircleGame({ userName }: ProjectProps) {
     const [score, setScore] = useState<number | null>(null);
     const [feedbacks, setFeedbacks] = useState<{ id: number, text: string, type: "error" | "warning" | "success" | "info" }[]>([]);
 
-    // 랭킹 관리를 위한 상태
-    interface RankEntry {
-        user_name: string;
-        score: number;
-        created_at: string;
-    }
     const [ranking, setRanking] = useState<RankEntry[]>([]);
     const [showAllRanking, setShowAllRanking] = useState(false);
 
@@ -31,6 +31,18 @@ export function CircleGame({ userName }: ProjectProps) {
     }, []);
 
     useEffect(() => { loadRanking(); }, [loadRanking]);
+
+    // Space 키 지원
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === "Space" && score !== null) {
+                e.preventDefault();
+                clearCanvas();
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [score]);
 
     const CANVAS_WIDTH = 600;
     const CANVAS_HEIGHT = 400;
@@ -116,10 +128,8 @@ export function CircleGame({ userName }: ProjectProps) {
     };
 
     const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-        // 이미 결과가 나왔다면 초기화 후 시작
-        if (score !== null) {
-            clearCanvas();
-        }
+        // 이미 결과가 나왔다면 터치/클릭으로는 재설정 불가 (버튼/Space 만 지원)
+        if (score !== null) return;
 
         setIsDrawing(true);
         const { x, y } = getCoordinates(e);
@@ -299,8 +309,14 @@ export function CircleGame({ userName }: ProjectProps) {
     return (
         <>
             <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto">
-                {/* ── 게임 영역 ── */}
-                <div className="flex-1 min-w-0 flex flex-col items-center justify-center p-6 space-y-8 bg-card border rounded-2xl">
+                {/* 1. How to Play (모바일 전용) */}
+                <div className="order-1 lg:hidden">
+                    <HTPSection />
+                </div>
+
+                {/* 2. 게임 영역 (모바일: 2, PC: 왼쪽) */}
+                <div className="order-2 lg:flex-1 min-w-0 flex flex-col items-center justify-center p-6 space-y-8 bg-card border rounded-2xl">
+
 
                     <div className={`relative border-4 border-solid rounded-3xl overflow-hidden touch-none w-full max-w-[600px] h-[400px] flex items-center justify-center transition-colors
                     ${score !== null ? 'border-primary/50 bg-primary/5' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
@@ -329,128 +345,41 @@ export function CircleGame({ userName }: ProjectProps) {
                         />
                     </div>
 
-                    <div className="flex flex-col items-center gap-4 w-full max-w-[600px]">
+                    {/* 3. 하단 버튼 영역 (높이 고정으로 레이아웃 흔들림 방지) */}
+                    <div className="flex flex-col items-center justify-center w-full max-w-[600px] min-h-[48px]">
                         {score !== null && (
-                            <div className="flex items-center gap-3 w-full">
+                            <div className="w-full animate-in fade-in slide-in-from-bottom-2">
                                 <Button
                                     variant="default"
-                                    className="w-full font-bold h-12 text-md transition-all shadow-sm animate-in fade-in slide-in-from-bottom-2"
+                                    className="w-full font-bold h-12 text-md transition-all shadow-sm group relative"
                                     onClick={clearCanvas}
                                 >
                                     다시 그리기
+                                    <span className="hidden sm:inline-flex absolute right-4 items-center gap-1.5 px-1.5 py-0.5 rounded border border-white/30 bg-white/20 text-[10px] font-medium tracking-tight">
+                                        Space
+                                    </span>
                                 </Button>
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* ── 사이드바: 랭킹 및 히스토리 ── */}
-                <div className="w-full lg:w-64 shrink-0 flex flex-col gap-4">
-                    {/* 팁 / 피드백 (초성게임 Word History 같은 UI) */}
-                    {score !== null && feedbacks.length > 0 && (
-                        <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Tip</span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{feedbacks.length}</span>
-                            </div>
-                            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
-                                {feedbacks.map((item) => (
-                                    <div key={item.id} className={`p-3 rounded-xl border transition-all animate-in slide-in-from-left-2 duration-300 ${item.type === "success" ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
-                                        item.type === "warning" ? "bg-orange-400/5 border-orange-400/10 text-orange-600 dark:text-orange-400" :
-                                            "bg-destructive/5 border-destructive/10 text-destructive"
-                                        }`}>
-                                        <div className="flex items-start gap-2">
-                                            <span className="text-[14px] leading-tight mt-[1px]">
-                                                {item.type === "success" ? <Sparkles className="w-4 h-4 text-emerald-500" /> : item.type === "error" ? <AlertCircle className="w-4 h-4 text-destructive" /> : <Lightbulb className="w-4 h-4 text-amber-500" />}
-                                            </span>
-                                            <p className="text-[13px] font-medium leading-snug">
-                                                {item.text}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                {/* 3. 사이드바 (모바일: 3, 4 PC: 오른쪽) */}
+                <div className="order-3 lg:w-64 shrink-0 flex flex-col gap-4">
+                    {/* PC 전용 How to Play */}
+                    <div className="hidden lg:block">
+                        <HTPSection />
+                    </div>
 
                     {/* 랭킹 보드 */}
-                    <div className="order-2 lg:order-1 rounded-2xl border border-border bg-card p-5 space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Trophy className="w-5 h-5 text-amber-500" />
-                            <h2 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">TOP 3</h2>
-                            {ranking.length > 0 && (
-                                <button
-                                    onClick={() => setShowAllRanking(true)}
-                                    className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors"
-                                >
-                                    전체보기
-                                </button>
-                            )}
-                        </div>
+                    <RankingBoard
+                        ranking={ranking}
+                        onShowAll={() => setShowAllRanking(true)}
+                        score={score}
+                    />
 
-                        {ranking.length === 0 ? (
-                            <p className="text-xs text-muted-foreground text-center py-6">
-                                아직 기록이 없어요<br />
-                            </p>
-                        ) : (
-                            <ol className="space-y-2">
-                                {ranking.slice(0, 3).map((entry, i) => (
-                                    <li
-                                        key={i}
-                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${i === 0
-                                            ? "bg-yellow-400/10 border border-yellow-400/25"
-                                            : i === 1
-                                                ? "bg-slate-400/10 border border-slate-400/20"
-                                                : i === 2
-                                                    ? "bg-orange-400/10 border border-orange-400/20"
-                                                    : "bg-muted/30"
-                                            }`}
-                                    >
-                                        <span className="text-base shrink-0">
-                                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                                        </span>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold truncate">{entry.user_name}</p>
-                                        </div>
-                                        <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
-                                    </li>
-                                ))}
-                            </ol>
-                        )}
-
-                        {score !== null && (
-                            <div className="pt-3 border-t border-border animate-in slide-in-from-top-2 duration-300">
-                                <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-primary/10 border border-primary/20">
-                                    <span className="text-[10px] text-primary font-bold uppercase tracking-tighter">Score</span>
-                                    <div className="flex items-baseline gap-0.5">
-                                        <span className="text-xl font-black text-foreground">{score}점</span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* How to Play */}
-                    <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="text-amber-500">💡</span>
-                            <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
-                        </div>
-                        <ul className="space-y-2.5 text-[11px] text-muted-foreground">
-                            <li className="flex items-baseline gap-2">
-                                <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                                <span>캔버스에 <strong className="text-foreground">원을 그리세요</strong></span>
-                            </li>
-                            <li className="flex items-baseline gap-2">
-                                <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                                <span>손을 떼면 <strong className="text-foreground">원</strong>을 평가해요</span>
-                            </li>
-                            <li className="flex items-baseline gap-2">
-                                <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                                <span>최대한 <strong className="text-foreground">완벽한 원</strong>을 그려보세요!</span>
-                            </li>
-                        </ul>
-                    </div>
+                    {/* 팁 / 피드백 (모바일 4) */}
+                    <TipSection feedbacks={feedbacks} isVisible={score !== null && feedbacks.length > 0} />
                 </div>
             </div>
 
@@ -464,7 +393,6 @@ export function CircleGame({ userName }: ProjectProps) {
                         className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* 모달 헤더 */}
                         <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
                             <Trophy className="w-5 h-5 text-amber-500" />
                             <h3 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">전체 랭킹</h3>
@@ -475,16 +403,15 @@ export function CircleGame({ userName }: ProjectProps) {
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
-                        {/* 랭킹 목록 */}
                         <div className="p-4 max-h-[60vh] overflow-y-auto">
                             <ol className="space-y-2">
                                 {ranking.map((entry, i) => (
                                     <li
                                         key={i}
                                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
-                                                : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
-                                                    : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
-                                                        : "bg-muted/30 border border-transparent"
+                                            : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
+                                                : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
+                                                    : "bg-muted/30 border border-transparent"
                                             }`}
                                     >
                                         <span className="text-sm font-black w-6 text-center shrink-0 text-muted-foreground">
@@ -504,3 +431,110 @@ export function CircleGame({ userName }: ProjectProps) {
         </>
     );
 }
+
+// ─── 서브 컴포넌트 ───────────────────────────────────────────
+
+function HTPSection() {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="p-4 rounded-2xl border border-border bg-card/50">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-2 w-full transition-colors"
+            >
+                <span className="text-amber-500">💡</span>
+                <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase flex-1 text-left">How to Play</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+                <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">01</span>
+                        <span>화면 중앙의 빨간 점을 중심으로 원을 그리세요</span>
+                    </li>
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">02</span>
+                        <span>점선 가이드라인보다 크게 그려야 높은 점수를 받습니다</span>
+                    </li>
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">03</span>
+                        <span>정확도, 폐합 유무, 크기, 중심 일치도를 평가합니다</span>
+                    </li>
+                </ul>
+            )}
+        </div>
+    );
+}
+
+function RankingBoard({ ranking, onShowAll, score }: { ranking: RankEntry[], onShowAll: () => void, score: number | null }) {
+    return (
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+            <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <h2 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">TOP 3</h2>
+                {ranking.length > 0 && (
+                    <button
+                        onClick={onShowAll}
+                        className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors"
+                    >
+                        전체보기
+                    </button>
+                )}
+            </div>
+
+            {ranking.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">아직 기록이 없어요</p>
+            ) : (
+                <ol className="space-y-2">
+                    {ranking.slice(0, 3).map((entry, i) => (
+                        <li
+                            key={i}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${i === 0
+                                ? "bg-yellow-400/10 border border-yellow-400/25"
+                                : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
+                                    : "bg-orange-400/10 border border-orange-400/20"
+                                }`}
+                        >
+                            <span className="text-base shrink-0">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                            </div>
+                            <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
+                        </li>
+                    ))}
+                </ol>
+            )}
+
+        </div>
+    );
+}
+
+function TipSection({ feedbacks, isVisible }: { feedbacks: { id: number, text: string, type: "error" | "warning" | "success" | "info" }[], isVisible: boolean }) {
+    if (!isVisible) return null;
+    return (
+        <div className="p-4 rounded-2xl border border-border bg-card/50">
+            <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Tip</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{feedbacks.length}</span>
+            </div>
+            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                {feedbacks.map((item) => (
+                    <div key={item.id} className={`p-3 rounded-xl border transition-all animate-in slide-in-from-left-2 duration-300 ${item.type === "success" ? "bg-emerald-500/5 border-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+                        item.type === "warning" ? "bg-orange-400/5 border-orange-400/10 text-orange-600 dark:text-orange-400" :
+                            "bg-destructive/5 border-destructive/10 text-destructive"
+                        }`}>
+                        <div className="flex items-start gap-2">
+                            <span className="text-[14px] leading-tight mt-[1px]">
+                                {item.type === "success" ? <Sparkles className="w-4 h-4 text-emerald-500" /> : item.type === "error" ? <AlertCircle className="w-4 h-4 text-destructive" /> : <Lightbulb className="w-4 h-4 text-amber-500" />}
+                            </span>
+                            <p className="text-[13px] font-medium leading-snug">
+                                {item.text}
+                            </p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+

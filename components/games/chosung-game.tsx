@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Search, Trophy, X } from "lucide-react";
+import { Search, Trophy, X, ChevronDown } from "lucide-react";
 import { isValidKoreanWord } from "@/lib/korean-words";
+import { Button } from "@/components/ui/button";
 
 // ─── 초성 목록 ───────────────────────────────────────────────
 const CHOSUNGS = ["ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
@@ -330,6 +331,20 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
         inputRef.current?.focus();
     };
 
+    // Space 키 지원 (시작/재시작)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.code === "Space") {
+                if (phase === "idle" || phase === "gameover") {
+                    e.preventDefault();
+                    handleStart();
+                }
+            }
+        };
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [phase, startRound]);
+
     const timeLeftNum = Number(timeLeft);
     const timerColor = timeLeftNum <= 2 ? "text-red-500" : timeLeftNum <= 3 ? "text-orange-400" : "text-emerald-400";
     const timerBg = timeLeftNum <= 2 ? "from-red-500/20 to-red-500/5" : timeLeftNum <= 3 ? "from-orange-400/20 to-orange-400/5" : "from-emerald-400/20 to-emerald-400/5";
@@ -360,8 +375,13 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
     return (
         <>
             <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto">
-                {/* ── 게임 영역 ── */}
-                <div className="flex-1 min-w-0">
+                {/* 1. How to Play (모바일 전용) */}
+                <div className="order-1 lg:hidden">
+                    <HTPSection />
+                </div>
+
+                {/* 2. 게임 영역 (모바일: 2, PC: 왼쪽) */}
+                <div className="order-2 lg:flex-1 min-w-0">
                     <div
                         className={`relative rounded-2xl border border-border bg-card overflow-hidden transition-all ${shake ? "animate-shake" : ""}`}
                     >
@@ -382,7 +402,6 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                             {/* 상단: 타이머 + 점수 */}
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 md:gap-4">
-                                    {/* 타이머 */}
                                     <div className={`flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-gradient-to-r ${timerBg} border border-border/50`}>
                                         <span className="text-[10px] md:text-xs text-muted-foreground font-medium">TIME</span>
                                         <span className={`inline-block w-[3.5rem] md:w-[4.5rem] text-center text-lg md:text-2xl font-black tabular-nums ${timerColor} transition-colors duration-300`}>
@@ -428,8 +447,8 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                 ))}
                             </div>
 
-                            {/* 상태 정보 (브레이크/피드백) */}
-                            <div className="flex flex-col items-center justify-center -my-1">
+                            {/* 상태 정보 (브레이크/피드백) - 높이 고정으로 레이아웃 흔들림 방지 */}
+                            <div className="flex flex-col items-center justify-center h-8 my-1">
                                 {phase === "break" && (() => {
                                     const nextDuration = Math.max(1, Number((cfg.gameDuration - roundCountRef.current * 0.1).toFixed(2)));
                                     return (
@@ -460,8 +479,6 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                             }
                                         }}
                                         autoComplete="off"
-                                        // phase !== "playing" 일 때도 readOnly를 풀어서 모바일 키보드가 내려가는 것을 방지
-                                        // 실제 입력은 onChange에서 phase 조건으로 막음
                                         readOnly={isValidating}
                                         placeholder={
                                             phase === "idle"
@@ -485,8 +502,6 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                         Enter
                                     </kbd>
                                 </div>
-
-                                {/* 이번 라운드 점수 안내 삭제됨 */}
                             </form>
 
                             {/* 단어 뜻 표시 (국립국어원) */}
@@ -522,173 +537,70 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                 </div>
                             )}
 
-                            {/* 게임 컨트롤 */}
-                            <div className="mt-2">
+                            {/* 게임 컨트롤 (높이 고정으로 레이아웃 흔들림 방지) */}
+                            <div className="min-h-[48px] flex items-center justify-center w-full">
                                 {phase === "gameover" && (
-                                    <div className="animate-in zoom-in duration-300">
-                                        <button
+                                    <div className="w-full animate-in zoom-in duration-300">
+                                        <Button
+                                            variant="default"
                                             onClick={handleStart}
-                                            className="block w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20"
+                                            className="w-full font-bold h-12 text-md transition-all shadow-sm group relative"
                                         >
                                             다시 시작
-                                        </button>
+                                            <span className="hidden sm:inline-flex absolute right-4 items-center gap-1.5 px-1.5 py-0.5 rounded border border-white/30 bg-white/20 text-[10px] font-medium tracking-tight">
+                                                Space
+                                            </span>
+                                        </Button>
                                     </div>
                                 )}
 
                                 {phase === "idle" && (
-                                    <button
+                                    <Button
+                                        variant="default"
                                         onClick={handleStart}
-                                        className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold text-base hover:opacity-90 active:scale-95 transition-all shadow-md shadow-primary/20"
+                                        className="w-full font-bold h-12 text-md transition-all shadow-sm group relative"
                                     >
                                         게임 시작
-                                    </button>
+                                        <span className="hidden sm:inline-flex absolute right-4 items-center gap-1.5 px-1.5 py-0.5 rounded border border-white/30 bg-white/20 text-[10px] font-medium tracking-tight">
+                                            Space
+                                        </span>
+                                    </Button>
                                 )}
 
                                 {(phase === "playing" || phase === "break") && (
-                                    <button
+                                    <Button
+                                        variant="outline"
                                         onClick={() => endGame()}
-                                        className="w-full py-3 rounded-xl border border-destructive/30 text-destructive font-bold text-sm hover:bg-destructive/10 active:scale-95 transition-all mt-2"
+                                        className="w-full font-bold h-12 text-md transition-all border border-destructive/30 text-destructive hover:bg-destructive/10 active:scale-95 shadow-sm"
                                     >
                                         게임 종료
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* ── 사이드바: 랭킹 및 히스토리 ── */}
-                {/* ── 사이드바: 랭킹 및 히스토리 ── */}
-                <div className="w-full lg:w-64 shrink-0 flex flex-col gap-4">
-                    {/* 단어 히스토리 (누적) - 모바일에서 위로 */}
-                    {sessionWords.length > 0 && (
-                        <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Word History</span>
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{sessionWords.length}</span>
-                            </div>
-                            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
-                                {sessionWords.map((item, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`p-3 rounded-xl border transition-all animate-in slide-in-from-left-2 duration-300
-                                                ${item.type === "correct"
-                                                ? "bg-emerald-500/5 border-emerald-500/10"
-                                                : "bg-destructive/5 border-destructive/10"
-                                            }`}
-                                    >
-                                        <div className="flex items-center justify-between mb-1">
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className={`text-sm font-bold ${item.type === "correct" ? "text-emerald-500" : "text-destructive"}`}>
-                                                        {item.realWord || item.word}
-                                                    </span>
-                                                    {item.pos && <span className="text-[8px] text-muted-foreground opacity-70">({item.pos})</span>}
-                                                </div>
-                                            </div>
-                                            {item.link && (
-                                                <a
-                                                    href={item.link}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-[10px] text-primary/70 hover:text-primary hover:underline shrink-0 ml-2 flex items-center gap-1"
-                                                    title="표준국어대사전 검색"
-                                                >
-                                                    <Search className="w-3 h-3" /> 사전 검색
-                                                </a>
-                                            )}
-                                        </div>
-                                        {item.description && (
-                                            <div className="mt-1 border-l-2 border-muted pl-2 py-0.5">
-                                                <ExpandableText text={item.description} maxLength={80} />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* 랭킹 보드 - 모바일에서 아래로 */}
-                    <div className="order-2 lg:order-1 rounded-2xl border border-border bg-card p-5 space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Trophy className="w-5 h-5 text-amber-500" />
-                            <h2 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">TOP 3</h2>
-                            {ranking.length > 0 && (
-                                <button
-                                    onClick={() => setShowAllRanking(true)}
-                                    className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors"
-                                >
-                                    전체보기
-                                </button>
-                            )}
-                        </div>
-
-                        {ranking.length === 0 ? (
-                            <p className="text-xs text-muted-foreground text-center py-6">
-                                아직 기록이 없어요<br />
-                            </p>
-                        ) : (
-                            <ol className="space-y-2">
-                                {ranking.slice(0, 3).map((entry, i) => (
-                                    <li
-                                        key={i}
-                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${i === 0
-                                            ? "bg-yellow-400/10 border border-yellow-400/25"
-                                            : i === 1
-                                                ? "bg-slate-400/10 border border-slate-400/20"
-                                                : i === 2
-                                                    ? "bg-orange-400/10 border border-orange-400/20"
-                                                    : "bg-muted/30"
-                                            }`}
-                                    >
-                                        <span className="text-base shrink-0">
-                                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}
-                                        </span>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold truncate">{entry.user_name}</p>
-                                        </div>
-                                        <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
-                                    </li>
-                                ))}
-                            </ol>
-                        )}
-
-
-                        {phase === "gameover" && (
-                            <div className="pt-3 border-t border-border animate-in slide-in-from-top-2 duration-300">
-                                <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
-                                    <span className="text-[10px] text-destructive font-bold uppercase tracking-tighter">Game Over</span>
-                                    <span className="text-xl font-black text-foreground">{finalScore}점</span>
-                                </div>
-                            </div>
-                        )}
+                {/* 3. 사이드바 (모바일: 3, 4 PC: 오른쪽) */}
+                <div className="order-3 lg:w-64 shrink-0 flex flex-col gap-4">
+                    {/* PC 전용 How to Play */}
+                    <div className="hidden lg:block">
+                        <HTPSection />
                     </div>
 
-                    {/* How to Play */}
-                    <div className="order-1 lg:order-2 p-4 rounded-2xl border border-border bg-card/50">
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="text-amber-500">💡</span>
-                            <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">How to Play</span>
-                        </div>
-                        <ul className="space-y-2.5 text-[11px] text-muted-foreground">
-                            <li className="flex items-baseline gap-2">
-                                <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                                <span><strong className="text-foreground">제한 시간</strong> 내에 제시된 <strong className="text-foreground">초성</strong>에 맞는 단어를 입력하세요</span>
-                            </li>
-                            <li className="flex items-baseline gap-2">
-                                <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                                <span>같은 단어는 <strong className="text-foreground">중복 입력 불가</strong>해요</span>
-                            </li>
-                            <li className="flex items-baseline gap-2">
-                                <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                                <span>라운드가 지날수록 제한 시간은 <strong className="text-foreground">0.1초씩</strong> 줄어요</span>
-                            </li>
-                        </ul>
-                    </div>
+                    {/* 랭킹 보드 */}
+                    <RankingBoard
+                        ranking={ranking}
+                        onShowAll={() => setShowAllRanking(true)}
+                        phase={phase}
+                        finalScore={finalScore}
+                    />
+
+                    {/* 단어 히스토리 (PC 3, 모바일 4) */}
+                    <HistorySection sessionWords={sessionWords} />
                 </div>
 
-                {/* CSS */}
+                {/* 스타일링 */}
                 <style jsx global>{`
                 @keyframes impact-word {
                     0%   { opacity: 1; transform: translateY(0) scale(1.2); }
@@ -723,7 +635,6 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* 모달 헤더 */}
                         <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
                             <Trophy className="w-5 h-5 text-amber-500" />
                             <h3 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">전체 랭킹</h3>
@@ -734,16 +645,15 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
-                        {/* 랭킹 목록 */}
                         <div className="p-4 max-h-[60vh] overflow-y-auto">
                             <ol className="space-y-2">
                                 {ranking.map((entry, i) => (
                                     <li
                                         key={i}
                                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
-                                                : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
-                                                    : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
-                                                        : "bg-muted/30 border border-transparent"
+                                            : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
+                                                : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
+                                                    : "bg-muted/30 border border-transparent"
                                             }`}
                                     >
                                         <span className="text-sm font-black w-6 text-center shrink-0 text-muted-foreground">
@@ -763,3 +673,131 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
         </>
     );
 }
+
+// ─── 서브 컴포넌트 ───────────────────────────────────────────
+
+function HTPSection() {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="p-4 rounded-2xl border border-border bg-card/50">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-2 w-full transition-colors"
+            >
+                <span className="text-amber-500">💡</span>
+                <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase flex-1 text-left">How to Play</span>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {isOpen && (
+                <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">01</span>
+                        <span>제시된 2개의 초성으로 시작하는 단어를 입력하세요</span>
+                    </li>
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">02</span>
+                        <span>사전에 등록된 명사만 정답으로 인정됩니다</span>
+                    </li>
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">03</span>
+                        <span>제한 시간 내에 최대한 많은 단어를 맞춰보세요</span>
+                    </li>
+                </ul>
+            )}
+        </div>
+    );
+}
+
+function RankingBoard({ ranking, onShowAll, phase, finalScore }: { ranking: RankEntry[], onShowAll: () => void, phase: GamePhase, finalScore: number }) {
+    return (
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+            <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <h2 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">TOP 3</h2>
+                {ranking.length > 0 && (
+                    <button
+                        onClick={onShowAll}
+                        className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors"
+                    >
+                        전체보기
+                    </button>
+                )}
+            </div>
+
+            {ranking.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-6">아직 기록이 없어요</p>
+            ) : (
+                <ol className="space-y-2">
+                    {ranking.slice(0, 3).map((entry, i) => (
+                        <li
+                            key={i}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${i === 0
+                                ? "bg-yellow-400/10 border border-yellow-400/25"
+                                : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
+                                    : "bg-orange-400/10 border border-orange-400/20"
+                                }`}
+                        >
+                            <span className="text-base shrink-0">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                            </div>
+                            <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
+                        </li>
+                    ))}
+                </ol>
+            )}
+
+        </div>
+    );
+}
+
+function HistorySection({ sessionWords }: { sessionWords: { word: string; realWord?: string; pos?: string; type: "correct" | "wrong" | "duplicate" | "notword"; description?: string; link?: string }[] }) {
+    if (sessionWords.length === 0) return null;
+    return (
+        <div className="p-4 rounded-2xl border border-border bg-card/50">
+            <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-bold text-muted-foreground tracking-widest uppercase">Word History</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{sessionWords.length}</span>
+            </div>
+            <div className="flex flex-col gap-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                {sessionWords.map((item, idx) => (
+                    <div
+                        key={idx}
+                        className={`p-3 rounded-xl border transition-all animate-in slide-in-from-left-2 duration-300
+                                ${item.type === "correct"
+                                ? "bg-emerald-500/5 border-emerald-500/10"
+                                : "bg-destructive/5 border-destructive/10"
+                            }`}
+                    >
+                        <div className="flex items-center justify-between mb-1">
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                    <span className={`text-sm font-bold ${item.type === "correct" ? "text-emerald-500" : "text-destructive"}`}>
+                                        {item.realWord || item.word}
+                                    </span>
+                                    {item.pos && <span className="text-[8px] text-muted-foreground opacity-70">({item.pos})</span>}
+                                </div>
+                            </div>
+                            {item.link && (
+                                <a
+                                    href={item.link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[10px] text-primary/70 hover:text-primary hover:underline shrink-0 ml-2 flex items-center gap-1"
+                                >
+                                    <Search className="w-3 h-3" />
+                                </a>
+                            )}
+                        </div>
+                        {item.description && (
+                            <div className="mt-1 border-l-2 border-muted pl-2 py-0.5">
+                                <ExpandableText text={item.description} maxLength={80} />
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
