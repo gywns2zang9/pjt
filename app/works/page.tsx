@@ -47,7 +47,7 @@ export default async function WorksPage() {
                 <Container className="py-12 lg:py-16 space-y-8">
                     <div className="space-y-1">
                         <h1 className="text-2xl font-semibold tracking-tight">뚝-딱!</h1>
-                        <p className="text-muted-foreground">작업물을 모아둔 공간입니다.</p>
+                        <p className="text-muted-foreground">재밌게 즐겨주세요~</p>
                     </div>
 
                     {visibleProjects.length === 0 ? (

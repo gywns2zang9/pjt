@@ -44,28 +44,28 @@ export default function HomeClient({
                                         <Eye className="w-5 h-5 text-primary" />
                                     </div>
                                     <span className="text-3xl font-black text-white italic">{visitorCount}회</span>
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">총 방문</span>
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">방문</span>
                                 </div>
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1">
                                         <Users className="w-5 h-5 text-primary" />
                                     </div>
                                     <span className="text-3xl font-black text-white italic">{userCount}명</span>
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">가입자</span>
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">회원</span>
                                 </div>
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1">
                                         <LayoutGrid className="w-5 h-5 text-primary" />
                                     </div>
                                     <span className="text-3xl font-black text-white italic">{projectCount}개</span>
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">작업물</span>
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">콘텐츠</span>
                                 </div>
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center mb-1">
                                         <MessageCircle className="w-5 h-5 text-primary" />
                                     </div>
                                     <span className="text-3xl font-black text-white italic">{totalFeedback}개</span>
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">의견</span>
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">피드백</span>
                                 </div>
                             </div>
                         </div>
