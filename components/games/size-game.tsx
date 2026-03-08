@@ -412,7 +412,6 @@ export function SizeGame({ userName }: ProjectProps) {
                                             const st = getShapeState(shape.id);
                                             const isClickable = phase === "playing";
                                             const num = shape.id + 1;
-                                            const color = shape.id === 0 ? "#3b82f6" : "#ef4444";
 
                                             return (
                                                 <button
@@ -431,21 +430,17 @@ export function SizeGame({ userName }: ProjectProps) {
                                                         }
                                                 `}
                                                 >
-                                                    {/* 번호 뱃지 (고정 색상) */}
-                                                    <span
-                                                        className="absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white shadow-sm"
-                                                        style={{ backgroundColor: color }}
-                                                    >
-                                                        {num}
-                                                    </span>
+                                                    {/* 번호 뱃지 */}
+                                                    <span className={`absolute top-2 left-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-black text-white ${st === "correct" ? "bg-emerald-500"
+                                                        : st === "wrong" ? "bg-destructive"
+                                                            : "bg-muted-foreground/40"
+                                                        }`}>{num}</span>
 
                                                     <svg viewBox={`0 0 ${BOX} ${BOX}`} className="w-full h-full max-w-[140px]">
                                                         <ShapeSVG
                                                             sides={shape.sides}
                                                             size={shape.size}
                                                             state={st}
-                                                            strokeColor={st === "idle" ? color : undefined}
-                                                            fillColor={st === "idle" ? `${color}15` : undefined}
                                                         />
                                                         {st === "correct" && (
                                                             <text x={CX} y={CY} textAnchor="middle" dominantBaseline="central"
@@ -515,22 +510,26 @@ export function SizeGame({ userName }: ProjectProps) {
                         <HTPSection />
                     </div>
 
-                    {/* 랭킹 보드 (PC 2순위, 모바일 3순위) */}
-                    <RankingBoard
-                        ranking={ranking}
-                        onShowAll={() => setShowAllRanking(true)}
-                        phase={phase}
-                        finalScore={finalScore}
-                    />
+                    {/* 랭킹 보드 (PC: 1번째, 모바일: 2번째) */}
+                    <div className="order-2 lg:order-1 flex flex-col gap-4">
+                        <RankingBoard
+                            ranking={ranking}
+                            onShowAll={() => setShowAllRanking(true)}
+                            phase={phase}
+                            finalScore={finalScore}
+                        />
+                    </div>
 
-                    {/* 정답/팁 (PC 3순위, 모바일 4순위) */}
-                    <AnswerSection
-                        isVisible={left !== null && right !== null && (resultType === "wrong" || resultType === "timeout" || phase === "gameover")}
-                        left={left}
-                        right={right}
-                        correctId={correctId}
-                        pickSmaller={pickSmaller}
-                    />
+                    {/* 정답/팁 (PC: 2번째, 모바일: 1번째) */}
+                    <div className="order-1 lg:order-2 flex flex-col gap-4">
+                        <AnswerSection
+                            isVisible={left !== null && right !== null && (resultType === "wrong" || resultType === "timeout" || phase === "gameover")}
+                            left={left}
+                            right={right}
+                            correctId={correctId}
+                            pickSmaller={pickSmaller}
+                        />
+                    </div>
                 </div>
             </div>
 

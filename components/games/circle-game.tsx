@@ -371,15 +371,19 @@ export function CircleGame({ userName }: ProjectProps) {
                         <HTPSection />
                     </div>
 
-                    {/* 랭킹 보드 */}
-                    <RankingBoard
-                        ranking={ranking}
-                        onShowAll={() => setShowAllRanking(true)}
-                        score={score}
-                    />
+                    {/* 랭킹 보드 (PC 1, 모바일 2) */}
+                    <div className="order-2 lg:order-1 flex flex-col gap-4">
+                        <RankingBoard
+                            ranking={ranking}
+                            onShowAll={() => setShowAllRanking(true)}
+                            score={score}
+                        />
+                    </div>
 
-                    {/* 팁 / 피드백 (모바일 4) */}
-                    <TipSection feedbacks={feedbacks} isVisible={score !== null && feedbacks.length > 0} />
+                    {/* 팁 / 피드백 (PC 2, 모바일 1) */}
+                    <div className="order-1 lg:order-2 flex flex-col gap-4">
+                        <TipSection feedbacks={feedbacks} isVisible={score !== null && feedbacks.length > 0} />
+                    </div>
                 </div>
             </div>
 

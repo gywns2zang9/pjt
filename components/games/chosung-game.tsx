@@ -588,16 +588,20 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                         <HTPSection />
                     </div>
 
-                    {/* 랭킹 보드 */}
-                    <RankingBoard
-                        ranking={ranking}
-                        onShowAll={() => setShowAllRanking(true)}
-                        phase={phase}
-                        finalScore={finalScore}
-                    />
+                    {/* 랭킹 보드 (PC 1, 모바일 2) */}
+                    <div className="order-2 lg:order-1 flex flex-col gap-4">
+                        <RankingBoard
+                            ranking={ranking}
+                            onShowAll={() => setShowAllRanking(true)}
+                            phase={phase}
+                            finalScore={finalScore}
+                        />
+                    </div>
 
-                    {/* 단어 히스토리 (PC 3, 모바일 4) */}
-                    <HistorySection sessionWords={sessionWords} />
+                    {/* 단어 히스토리 (PC 2, 모바일 1) */}
+                    <div className="order-1 lg:order-2 flex flex-col gap-4">
+                        <HistorySection sessionWords={sessionWords} />
+                    </div>
                 </div>
 
                 {/* 스타일링 */}
