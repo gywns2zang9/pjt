@@ -169,7 +169,7 @@ export function SortGame({ userName }: ProjectProps) {
         }
     };
 
-    // 키보드 지원 (시작/재시작)
+    // 키보드 지원 (시작/재시작/포기)
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
@@ -178,12 +178,15 @@ export function SortGame({ userName }: ProjectProps) {
                 if (phaseRef.current === "idle" || phaseRef.current === "gameover") {
                     e.preventDefault();
                     handleStart();
+                } else if (phaseRef.current === "playing") {
+                    e.preventDefault();
+                    handleGiveUp();
                 }
             }
         };
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [handleStart]);
+    }, [handleStart, handleGiveUp]);
 
     // ─── Render UI ─────────────────────────────────────────
     const progressPct = (elapsedTime / TIME_LIMIT) * 100;
@@ -322,9 +325,12 @@ export function SortGame({ userName }: ProjectProps) {
                                         <Button
                                             variant="outline"
                                             onClick={handleGiveUp}
-                                            className="w-full font-bold h-12 text-md transition-all border border-destructive/30 text-destructive hover:bg-destructive/10 active:scale-95 shadow-sm"
+                                            className="w-full font-bold h-12 text-md transition-all border border-destructive/30 text-destructive hover:bg-destructive/10 active:scale-95 shadow-sm group relative"
                                         >
                                             게임 포기
+                                            <span className="hidden sm:inline-flex absolute right-4 items-center gap-1.5 px-1.5 py-0.5 rounded border border-destructive/30 bg-destructive/10 text-[10px] font-medium tracking-tight">
+                                                Space
+                                            </span>
                                         </Button>
                                     </div>
                                 )}
