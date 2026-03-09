@@ -3,6 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { checkIsAdmin } from "@/lib/admin";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+
+function getAdminSupabase() {
+    return createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+}
 
 type ConfigUpdate = {
     status?: string;
@@ -17,7 +25,8 @@ export async function updateProjectConfig(id: string, updates: ConfigUpdate) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
 
-    const { error } = await supabase
+    const adminSupabase = getAdminSupabase();
+    const { error } = await adminSupabase
         .from("project_configs")
         .upsert({ id, ...updates, updated_at: new Date().toISOString() }, { onConflict: "id" });
     if (error) throw error;
@@ -36,7 +45,8 @@ export async function updateProjectMeta(
     const { data: { user } } = await supabase.auth.getUser();
     if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
 
-    const { error } = await supabase
+    const adminSupabase = getAdminSupabase();
+    const { error } = await adminSupabase
         .from("project_configs")
         .upsert(
             {
@@ -60,7 +70,8 @@ export async function resetChosungRanking() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
 
-    const { error } = await supabase
+    const adminSupabase = getAdminSupabase();
+    const { error } = await adminSupabase
         .from("chosung_scores")
         .delete()
         .gte("score", 0); // 전체 삭제
@@ -72,7 +83,8 @@ export async function resetCircleRanking() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
 
-    const { error } = await supabase
+    const adminSupabase = getAdminSupabase();
+    const { error } = await adminSupabase
         .from("circle_scores")
         .delete()
         .not("id", "is", null);
@@ -84,7 +96,8 @@ export async function resetSpeedRanking() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
 
-    const { error } = await supabase
+    const adminSupabase = getAdminSupabase();
+    const { error } = await adminSupabase
         .from("speed_scores")
         .delete()
         .not("id", "is", null);

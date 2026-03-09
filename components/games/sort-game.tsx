@@ -20,7 +20,7 @@ export function SortGame({ userName }: ProjectProps) {
     const [ranking, setRanking] = useState<RankEntry[]>([]);
     const [showAllRanking, setShowAllRanking] = useState(false);
     const [shake, setShake] = useState(false);
-    const [resultType, setResultType] = useState<"success" | "timeout" | null>(null);
+    const [resultType, setResultType] = useState<"success" | "timeout" | "gaveup" | null>(null);
 
     const TIME_LIMIT = 30; // 30s max
 
@@ -107,19 +107,19 @@ export function SortGame({ userName }: ProjectProps) {
 
         setTimeout(() => {
             setPhase("gameover");
-        }, 1200);
+        }, 500);
     }, []);
 
     const handleGiveUp = useCallback(() => {
         stopTimer();
         setShake(true);
         setTimeout(() => setShake(false), 500);
-        setResultType("timeout");
+        setResultType("gaveup");
         setPhase("result");
 
         setTimeout(() => {
             setPhase("gameover");
-        }, 1200);
+        }, 500);
     }, [stopTimer]);
 
     const handleSuccess = useCallback((finalTime: number) => {
@@ -130,7 +130,7 @@ export function SortGame({ userName }: ProjectProps) {
         setTimeout(() => {
             setPhase("gameover");
             saveScore(finalTime);
-        }, 1500);
+        }, 700);
     }, [saveScore, stopTimer]);
 
     const handleStart = () => {
@@ -241,7 +241,7 @@ export function SortGame({ userName }: ProjectProps) {
                                     <div className="flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-primary/10 border border-primary/20">
                                         <span className="text-[10px] md:text-xs text-muted-foreground font-medium">RECORD</span>
                                         <span className="text-lg md:text-2xl font-black text-primary tabular-nums">
-                                            {resultType === 'success' || phase === 'gameover' && resultType !== 'timeout' ? elapsedTime.toFixed(2) + 's' : '--'}
+                                            {resultType === 'success' || (phase === 'gameover' && resultType !== 'timeout' && resultType !== 'gaveup') ? elapsedTime.toFixed(2) + 's' : '--'}
                                         </span>
                                     </div>
                                 </div>
@@ -249,7 +249,7 @@ export function SortGame({ userName }: ProjectProps) {
                                 {/* Timer Bar */}
                                 <div className="space-y-1">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-[10px] text-muted-foreground font-medium">TIME ELAPSED</span>
+                                        <span className="text-[10px] text-muted-foreground font-medium">TIME</span>
                                         <span className={`text-sm font-black tabular-nums transition-colors ${phase === 'playing' ? timerTextCls : 'text-muted-foreground'}`}>
                                             {phase === 'playing' ? `${elapsedTime.toFixed(2)}s / ${TIME_LIMIT}s` : phase === 'idle' ? `0.00s / ${TIME_LIMIT}s` : `${elapsedTime.toFixed(2)}s`}
                                         </span>
@@ -275,19 +275,22 @@ export function SortGame({ userName }: ProjectProps) {
                                     </p>
                                 )}
                                 {phase === "playing" && (
-                                    <p className="text-sm font-bold text-indigo-500 animate-pulse">
-                                        두 블록을 클릭하여 위치를 바꾸세요
+                                    <p className="text-sm font-bold text-indigo-500">
+                                        두 블록을 선택해 위치를 바꾸세요!
                                     </p>
                                 )}
                                 {phase === "result" && resultType === "success" && (
-                                    <p className="text-sm font-bold text-emerald-500 animate-in fade-in duration-200">정렬 완료! ({elapsedTime.toFixed(2)}초)</p>
+                                    <p className="text-sm font-bold text-emerald-500 animate-in fade-in duration-200">성공! ({elapsedTime.toFixed(2)}초)</p>
                                 )}
                                 {phase === "result" && resultType === "timeout" && (
                                     <p className="text-sm font-bold text-orange-500 animate-in fade-in duration-200">시간 초과!</p>
                                 )}
-                                {phase === "gameover" && resultType === "timeout" && (
+                                {phase === "result" && resultType === "gaveup" && (
+                                    <p className="text-sm font-bold text-orange-500 animate-in fade-in duration-200">포기가 빠르군요.</p>
+                                )}
+                                {phase === "gameover" && (resultType === "timeout" || resultType === "gaveup") && (
                                     <p className="text-sm font-bold text-destructive animate-in fade-in duration-200">
-                                        정렬 실패!
+                                        실패!
                                     </p>
                                 )}
                             </div>
