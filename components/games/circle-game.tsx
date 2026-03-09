@@ -35,6 +35,9 @@ export function CircleGame({ userName }: ProjectProps) {
     // Space 키 지원
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // 입력창(게시판 등)에서 입력 중일 때는 단축키 비활성화
+            if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
+
             if (e.code === "Space" && score !== null) {
                 e.preventDefault();
                 clearCanvas();

@@ -273,6 +273,9 @@ export function SizeGame({ userName }: ProjectProps) {
     // 키보드 지원 (시작/재시작: Space, 선택: 1, 2)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // 입력창(게시판 등)에서 입력 중일 때는 단축키 비활성화
+            if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
+
             if (e.code === "Space") {
                 if (phase === "idle" || phase === "gameover") {
                     e.preventDefault();
