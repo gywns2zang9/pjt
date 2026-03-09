@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
 import { maskName } from "@/lib/utils/mask-name";
 
 type Entry = {
@@ -289,11 +290,23 @@ export function Guestbook({
 
   return (
     <Card className="border-border/70 bg-card/70">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
         <CardTitle className="flex items-center gap-2">
           <NotebookPen size={18} />
           {projectId === "home" ? "방명록" : "게시판"}
         </CardTitle>
+        <Link
+          href="https://pf.kakao.com/_xohxazX"
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center gap-2 rounded-md transition hover:text-primary text-foreground"
+          aria-label="카카오톡 문의"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-[18px] h-[18px]">
+            <path d="M12 3C6.477 3 2 6.58 2 11.02c0 2.64 1.75 4.96 4.4 6.35-.14.53-.9 3.35-.93 3.57 0 0-.02.17.09.24.11.07.24.02.24.02.32-.05 3.72-2.45 4.31-2.86.6.09 1.21.14 1.84.14 5.523 0 10-3.58 10-8.02C22 6.58 17.523 3 12 3Z" />
+          </svg>
+          <span>카카오톡 문의</span>
+        </Link>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">

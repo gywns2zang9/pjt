@@ -35,7 +35,7 @@ export async function SiteHeader() {
           />
         </div>
         <div className="flex items-center gap-2">
-          <Link
+          {/* <Link
             href="https://pf.kakao.com/_xohxazX"
             target="_blank"
             rel="noreferrer"
@@ -46,7 +46,7 @@ export async function SiteHeader() {
               <path d="M12 3C6.477 3 2 6.58 2 11.02c0 2.64 1.75 4.96 4.4 6.35-.14.53-.9 3.35-.93 3.57 0 0-.02.17.09.24.11.07.24.02.24.02.32-.05 3.72-2.45 4.31-2.86.6.09 1.21.14 1.84.14 5.523 0 10-3.58 10-8.02C22 6.58 17.523 3 12 3Z" />
             </svg>
             <span className="hidden sm:inline">카카오톡 문의</span>
-          </Link>
+          </Link> */}
           <ThemeSwitcher />
           <Suspense>
             <AuthButton />
