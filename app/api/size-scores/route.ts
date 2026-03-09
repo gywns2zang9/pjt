@@ -84,7 +84,7 @@ export async function POST(req: Request) {
         await supabase.from("size_scores").delete().eq("user_id", user.id);
         const { error: insertError } = await supabase
             .from("size_scores")
-            .insert({ user_id: user.id, user_name: userName, score, play_count: playCount });
+            .insert({ user_id: user.id, user_name: userName, score, play_count: playCount, updated_at: new Date().toISOString() });
 
         if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
