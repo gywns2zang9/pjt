@@ -609,7 +609,7 @@ function HTPSection() {
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>제한 시간(2초) 내에 <strong className="text-foreground">더 작은 도형</strong> 또는 <strong className="text-foreground">더 큰 도형</strong>을 찾으세요</span>
+                        <span>제한 시간<strong>(2초)</strong> 내에 <strong className="text-foreground">더 작은 도형</strong> 또는 <strong className="text-foreground">더 큰 도형</strong>을 찾으세요</span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
