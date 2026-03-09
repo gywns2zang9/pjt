@@ -159,6 +159,9 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
         setPhase("gameover");
         setLives(0);
 
+        // 게임 종료 시 입력란 포커스 해제하여 스페이스바로 재배치 가능하게 함
+        inputRef.current?.blur();
+
         try {
             if (userName !== "비회원") {
                 await fetch("/api/chosung-scores", {
