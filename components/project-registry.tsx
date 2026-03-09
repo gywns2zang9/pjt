@@ -5,6 +5,7 @@ import { CircleGame } from "@/components/games/circle-game";
 import { IfBuy } from "./projects/if-buy";
 import { SpeedGame } from "@/components/games/speed-game";
 import { SizeGame } from "@/components/games/size-game";
+import { DdongGame } from "@/components/games/ddong-game";
 
 // 모든 프로젝트 컴포넌트가 공통으로 받는 props
 export interface ProjectProps {
@@ -20,4 +21,5 @@ export const projectComponents: Record<string, React.ComponentType<ProjectProps>
     "if-buy": IfBuy,
     "speed-game": SpeedGame,
     "size-game": SizeGame,
+    "ddong-game": DdongGame,
 };

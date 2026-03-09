@@ -13,7 +13,7 @@ import {
 } from "@/lib/projects";
 import { ProjectSettings } from "@/components/labs/project-settings";
 // 랭킹 관리가 있는 프로젝트
-const RANKING_PROJECT_IDS = ["chosung-game", "circle-game", "speed-game"];
+const RANKING_PROJECT_IDS = ["chosung-game", "circle-game", "speed-game", "ddong-game"];
 
 interface Props {
     params: Promise<{ id: string }>;
