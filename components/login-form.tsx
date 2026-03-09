@@ -39,9 +39,9 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">🛠️ 뚝딱실</CardTitle>
+          <CardTitle className="text-2xl">뚝딱실</CardTitle>
           <CardDescription>
-            카카오톡으로 간편하게 로그인하세요
+            걱정마세요. 닉네임과 이메일 정보만 털어가요.
           </CardDescription>
         </CardHeader>
         <CardContent>
