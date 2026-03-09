@@ -28,13 +28,12 @@ export async function GET(request: Request) {
                     await resend.emails.send({
                         from: "gywns2zang9.dev <onboarding@resend.dev>",
                         to: ["gywns2zang9@gmail.com"],
-                        subject: `🎉 새로운 회원이 가입했습니다! (${provider})`,
+                        subject: `🎉 새로운 유저가 가입했습니다! (${provider})`,
                         html: `
                             <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
-                                <h2 style="color: #0070f3;">새로운 가입 알림</h2>
-                                <p><strong>이름:</strong> ${displayName}</p>
+                                <h2><strong>${displayName}</strong> 가입 알림</h2>
                                 <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
-                                <p style="font-size: 11px; color: #999;">본 메일은 gywns2zang9.dev 시스템에서 가입 성공 시 자동으로 발송됩니다.</p>
+                                <p style="font-size: 11px; color: #999;">본 메일은 gywns2zang9.dev에서 발송된 메일입니다.</p>
                             </div>
                         `,
                     });
