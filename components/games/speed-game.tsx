@@ -106,13 +106,11 @@ export function SpeedGame({ userName }: ProjectProps) {
             setPhase("result");
             setResultTime(finalScore);
 
-            let msg = "분발하세요";
-            if (finalScore < 0.020) msg = "잘 찍었네요";
-            else if (finalScore < 0.070) msg = "고양이 수준입니다.";
-            else if (finalScore < 0.160) msg = "프로게이머 수준입니다";
-            else if (finalScore < 0.250) msg = "20대 평균입니다";
-            else if (finalScore < 0.300) msg = "30대가 분명합니다";
-            else if (finalScore < 0.400) msg = "Hi, Young Forty!";
+            let msg = "Hi, Young Forty!";
+            if (finalScore < 0.050) msg = "조금만 더 하면..";
+            else if (finalScore < 0.100) msg = "만족하긴 일러요~";
+            else if (finalScore < 0.150) msg = "이정도로 만족하진 않겠죠?";
+            else if (finalScore < 0.300) msg = "2030 평균";
 
             setFeedback(msg);
 
@@ -355,15 +353,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>화면을 길게 누르면 빨간 불이 하나씩 켜집니다</span>
+                        <span>화면을 누르면 <strong>불</strong>이 하나씩 켜져요.</span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>불빛이 모두 사라지는 순간 즉시 손을 떼세요</span>
+                        <span>불이 모두 꺼지면 <strong>0.5초</strong> 이내로 손을 떼세요.</span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>반응 속도가 빠를수록 높은 순위에 기록됩니다</span>
+                        <span>불은 <strong>5초</strong> 안에 꺼지므로 집중하세요.</span>
                     </li>
                 </ul>
             )}

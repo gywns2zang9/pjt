@@ -699,15 +699,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>제시된 2개의 초성으로 시작하는 단어를 입력하세요</span>
+                        <span>제시된 <strong>초성</strong>으로 시작하는 단어를 입력하세요.</span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>사전에 등록된 명사만 정답으로 인정됩니다</span>
+                        <span>제한 시간<strong>(10초)</strong> 내 입력하세요. 라운드가 지날수록 시간이 줄어요.</span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>제한 시간 내에 최대한 많은 단어를 맞춰보세요</span>
+                        <span><strong>표준국어대사전</strong>에 등록된 단어만 인정해요.</span>
                     </li>
                 </ul>
             )}

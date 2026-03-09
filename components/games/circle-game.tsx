@@ -267,23 +267,25 @@ export function CircleGame({ userName }: ProjectProps) {
         let idCounter = 1;
 
         if (finalScore >= 100) {
-            newFeedbacks.push({ id: idCounter++, text: "축하합니다!", type: "success" });
+            newFeedbacks.push({ id: idCounter++, text: "축하합니다! 커피 살게요.", type: "success" });
+        } else if (finalScore >= 99) {
+            newFeedbacks.push({ id: idCounter++, text: "거의 다 왔어요!", type: "success" });
         } else if (finalScore >= 90) {
-            newFeedbacks.push({ id: idCounter++, text: "100점까지 달려볼까요?", type: "success" });
+            newFeedbacks.push({ id: idCounter++, text: "100점까지 달려볼까요? 100점은 선물이 있어요.", type: "success" });
         } else if (finalScore < 30) {
-            newFeedbacks.push({ id: idCounter++, text: "ㅋㅋㅋ", type: "error" });
+            newFeedbacks.push({ id: idCounter++, text: "처음부터 다시 그려주세요.", type: "error" });
         } else {
-            if (sizeScore <= 16) {
+            if (sizeScore <= 19) {
                 newFeedbacks.push({ id: idCounter++, text: "원을 점선보다 크게 그려보세요.", type: "warning" });
             }
-            if (gapScore <= 16) {
-                newFeedbacks.push({ id: idCounter++, text: "시작점과 끝점이 많이 벗어났어요.", type: "warning" });
+            if (gapScore <= 19) {
+                newFeedbacks.push({ id: idCounter++, text: "시작점과 끝점이 벗어나지 않게 그려보세요.", type: "warning" });
             }
-            if (shapeScore <= 40) {
+            if (shapeScore <= 49) {
                 newFeedbacks.push({ id: idCounter++, text: "더 동그랗게 그려보세요.", type: "warning" });
             }
-            if (centerScore <= 8) {
-                newFeedbacks.push({ id: idCounter++, text: "중앙에서 벗어났어요.", type: "warning" });
+            if (centerScore <= 9) {
+                newFeedbacks.push({ id: idCounter++, text: "중심이 벗어나지 않게 그려보세요.", type: "warning" });
             }
 
             if (newFeedbacks.length === 0) {
@@ -457,15 +459,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>화면 중앙의 빨간 점을 중심으로 원을 그리세요</span>
+                        <span><strong>빨간 점</strong>을 중심으로 하는 원을 그리세요</span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>점선 가이드라인보다 크게 그려야 높은 점수를 받습니다</span>
+                        <span>가이드라인보다 원이 <strong>작으면</strong> 점수가 깎여요. <br /> <strong>찌그러짐</strong>, <strong>시작점과 끝점의 위치</strong>, <strong>원 중심의 위치</strong>를 평가해요.</span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>정확도, 폐합 유무, 크기, 중심 일치도를 평가합니다</span>
+                        <span><strong>시간 제한</strong>은 없어요. 예쁘게 그려보세요.</span>
                     </li>
                 </ul>
             )}

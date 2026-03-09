@@ -13,6 +13,7 @@ export default async function Home() {
   const [
     { count: totalFeedbackCount },
     { count: visitorCount },
+    { data: activeConfigs },
     userCount,
   ] = await Promise.all([
     // 의견 수
@@ -24,6 +25,12 @@ export default async function Home() {
     supabase
       .from("page_views")
       .select("*", { count: "exact", head: true }),
+
+    // 공개된 프로젝트 목록 (Works 페이지와 동일한 필터링 로직을 위해 id들을 가져옴)
+    supabase
+      .from("project_configs")
+      .select("id")
+      .eq("show_on_works", true),
 
     // 가입자 수
     (async () => {
@@ -48,11 +55,16 @@ export default async function Home() {
     })(),
   ]);
 
+  // Works 페이지와 동일하게, DB에서 공개 설정되어 있으면서 실제 컴포넌트(projects)가 존재하는 것만 카운트
+  const publicProjectCount = (activeConfigs ?? [])
+    .filter(c => projects.some(p => p.id === c.id))
+    .length;
+
   return (
     <>
       <SiteHeader />
       <HomeClient
-        projectCount={projects.length}
+        projectCount={publicProjectCount}
         totalFeedback={totalFeedbackCount ?? 0}
         userCount={userCount}
         visitorCount={visitorCount ?? 0}
