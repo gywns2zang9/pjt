@@ -50,15 +50,21 @@ export async function POST(req: Request) {
     // 현재 저장된 최고 기록 확인
     const { data: existingData } = await supabase
         .from("speed_scores")
-        .select("score")
+        .select("score, play_count")
         .eq("user_id", user.id)
         .order("score", { ascending: true }) // 가장 짧은 시간 확인
         .limit(1);
 
     const existing = existingData?.[0];
+    const playCount = (existing?.play_count ?? 0) + 1;
 
     if (existing && existing.score <= score) { // 더 짧은 시간(더 좋은 기록)이면 무시
-        return NextResponse.json({ ok: true, message: "Not a personal record" });
+        // 단지 플레이 횟수만 업데이트
+        await supabase
+            .from("speed_scores")
+            .update({ play_count: playCount, updated_at: new Date().toISOString() })
+            .eq("user_id", user.id);
+        return NextResponse.json({ ok: true, message: "Not a personal record, play_count updated" });
     }
 
     // 새 기록이거나 더 단축된 시간인 경우 저장
@@ -69,6 +75,7 @@ export async function POST(req: Request) {
                 user_id: user.id,
                 user_name: userName,
                 score: score,
+                play_count: playCount,
                 updated_at: new Date().toISOString()
             },
             { onConflict: 'user_id' }
@@ -78,7 +85,7 @@ export async function POST(req: Request) {
         await supabase.from("speed_scores").delete().eq("user_id", user.id);
         const { error: insertError } = await supabase
             .from("speed_scores")
-            .insert({ user_id: user.id, user_name: userName, score });
+            .insert({ user_id: user.id, user_name: userName, score, play_count: playCount });
 
         if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
     }

@@ -49,15 +49,21 @@ export async function POST(req: Request) {
     // 현재 저장된 최고 점수 확인
     const { data: existingData } = await supabase
         .from("chosung_scores")
-        .select("score")
+        .select("score, play_count")
         .eq("user_id", user.id)
         .order("score", { ascending: false })
         .limit(1);
 
     const existing = existingData?.[0];
+    const playCount = (existing?.play_count ?? 0) + 1;
 
     if (existing && existing.score >= score) {
-        return NextResponse.json({ ok: true, message: "Not a personal record" });
+        // 단지 플레이 횟수만 업데이트
+        await supabase
+            .from("chosung_scores")
+            .update({ play_count: playCount, updated_at: new Date().toISOString() })
+            .eq("user_id", user.id);
+        return NextResponse.json({ ok: true, message: "Not a personal record, play_count updated" });
     }
 
     // 새 기록이거나 더 높은 점수인 경우 저장
@@ -69,6 +75,7 @@ export async function POST(req: Request) {
                 user_id: user.id,
                 user_name: userName,
                 score: score,
+                play_count: playCount,
                 updated_at: new Date().toISOString()
             },
             { onConflict: 'user_id' }
@@ -81,7 +88,7 @@ export async function POST(req: Request) {
         await supabase.from("chosung_scores").delete().eq("user_id", user.id);
         const { error: insertError } = await supabase
             .from("chosung_scores")
-            .insert({ user_id: user.id, user_name: userName, score });
+            .insert({ user_id: user.id, user_name: userName, score, play_count: playCount });
 
         if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
     }

@@ -45,13 +45,20 @@ export async function POST(req: Request) {
 
     const { data: existingData } = await supabase
         .from("ddong_scores")
-        .select("score")
+        .select("score, play_count")
         .eq("user_id", user.id)
         .order("score", { ascending: false })
         .limit(1);
 
-    if (existingData?.[0] && existingData[0].score >= score) {
-        return NextResponse.json({ ok: true, message: "Not a personal record" });
+    const existing = existingData?.[0];
+    const playCount = (existing?.play_count ?? 0) + 1;
+
+    if (existing && existing.score >= score) {
+        await supabase
+            .from("ddong_scores")
+            .update({ play_count: playCount, updated_at: new Date().toISOString() })
+            .eq("user_id", user.id);
+        return NextResponse.json({ ok: true, message: "Not a personal record, but play_count updated" });
     }
 
     const { error: upsertError } = await supabase
@@ -61,6 +68,7 @@ export async function POST(req: Request) {
                 user_id: user.id,
                 user_name: userName,
                 score: score,
+                play_count: playCount,
                 updated_at: new Date().toISOString()
             },
             { onConflict: 'user_id' }
@@ -70,7 +78,7 @@ export async function POST(req: Request) {
         await supabase.from("ddong_scores").delete().eq("user_id", user.id);
         const { error: insertError } = await supabase
             .from("ddong_scores")
-            .insert({ user_id: user.id, user_name: userName, score });
+            .insert({ user_id: user.id, user_name: userName, score, play_count: playCount });
 
         if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
     }
