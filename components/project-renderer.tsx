@@ -7,9 +7,10 @@ interface Props {
     id: string;
     userName: string;
     gameConfig?: Partial<GameConfig>;
+    title?: string;
 }
 
-export function ProjectRenderer({ id, userName, gameConfig }: Props) {
+export function ProjectRenderer({ id, userName, gameConfig, title }: Props) {
     const Component = projectComponents[id];
 
     if (!Component) {
@@ -20,5 +21,5 @@ export function ProjectRenderer({ id, userName, gameConfig }: Props) {
         );
     }
 
-    return <Component userName={userName} gameConfig={gameConfig} />;
+    return <Component userName={userName} gameConfig={gameConfig} title={title} />;
 }

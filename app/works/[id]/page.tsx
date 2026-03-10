@@ -120,7 +120,7 @@ export default async function WorksProjectPage({ params }: Props) {
 
                     {isCompleted ? (
                         <>
-                            <ProjectRenderer id={dbConfig.id} userName={userName} gameConfig={dbConfig.game_config ?? undefined} />
+                            <ProjectRenderer id={dbConfig.id} userName={userName} gameConfig={dbConfig.game_config ?? undefined} title={displayTitle} />
 
                             <div className="pt-16 mt-16 border-t border-border/50">
                                 <Guestbook
@@ -138,7 +138,7 @@ export default async function WorksProjectPage({ params }: Props) {
                             <div className="text-5xl mb-6 opacity-30">🚧</div>
                             <h2 className="text-xl font-semibold mb-2">제한됨</h2>
                             <p className="text-muted-foreground text-center max-w-sm px-6">
-                                현재 <span className="font-bold text-foreground">[{statusStyle.label}]</span>인 프로젝트입니다.<br />
+                                현재 <span className="font-bold text-foreground">[{statusStyle.label}]</span> 상태의 프로젝트입니다.<br />
                             </p>
                             <Link href="/works" className="mt-8 px-5 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-all text-sm">
                                 다른 프로젝트 보기

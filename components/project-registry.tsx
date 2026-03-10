@@ -12,6 +12,7 @@ import { SortGame } from "@/components/games/sort-game";
 export interface ProjectProps {
     userName: string;
     gameConfig?: Partial<GameConfig>;
+    title?: string;
 }
 
 // 프로젝트 ID → 컴포넌트 매핑

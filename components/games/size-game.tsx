@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Trophy, AlertCircle, Sparkles, X, ChevronDown } from "lucide-react";
 import type { ProjectProps } from "@/components/project-registry";
 import { Button } from "@/components/ui/button";
+import { KakaoShareButton } from "@/components/kakao-share-button";
 
 // ─── 도형: 꼭짓점 수 (0 = 원) ───────────────────────────────
 const SHAPE_SIDES = [0, 3, 4, 5, 6, 8, 10, 12, 15, 17, 20];
@@ -99,7 +100,7 @@ function generateRound(round: number): {
 }
 
 // ─── 메인 컴포넌트 ───────────────────────────────────────────
-export function SizeGame({ userName }: ProjectProps) {
+export function SizeGame({ userName, title }: ProjectProps) {
     const [phase, setPhase] = useState<GamePhase>("idle");
     const [round, setRound] = useState(1);
     const [score, setScore] = useState(0);
@@ -580,6 +581,24 @@ export function SizeGame({ userName }: ProjectProps) {
                                 ))}
                             </ol>
                         </div>
+                        {/* 현재 내 최고 기록 점수 찾기 */}
+                        {(() => {
+                            const myBestScore = ranking.find((r) => r.user_name === userName)?.score;
+                            const displayScore = myBestScore !== undefined ? `${myBestScore}점` : undefined;
+                            return (
+                                <div className="p-4 border-t border-border bg-muted/20">
+                                    <KakaoShareButton
+                                        title={`[뚝딱실] - [${title}]`}
+                                        description={myBestScore !== undefined && myBestScore > 0
+                                            ? `${userName}님이 ${displayScore}을 달성했어요.`
+                                            : `${userName}님이 도움을 요청해요.`
+                                        }
+                                        gameUrl="/works/size-game"
+                                        score={myBestScore}
+                                    />
+                                </div>
+                            );
+                        })()}
                     </div>
                 </div>
             )}

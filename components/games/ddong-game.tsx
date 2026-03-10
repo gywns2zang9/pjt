@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Trophy, X, ChevronDown } from "lucide-react";
 import { type ProjectProps } from "@/components/project-registry";
 import { Button } from "@/components/ui/button";
+import { KakaoShareButton } from "@/components/kakao-share-button";
 
 type GamePhase = "idle" | "playing" | "inputting" | "result" | "gameover";
 
@@ -16,7 +17,7 @@ interface DdongSpot {
     pos: number;
 }
 
-export function DdongGame({ userName }: ProjectProps) {
+export function DdongGame({ userName, title }: ProjectProps) {
     const [phase, setPhase] = useState<GamePhase>("idle");
     const [score, setScore] = useState(0);
     const [round, setRound] = useState(1);
@@ -458,6 +459,23 @@ export function DdongGame({ userName }: ProjectProps) {
                                     </li>
                                 ))}
                             </ol>
+                        </div>
+                        <div className="p-4 border-t border-border bg-muted/20">
+                            {(() => {
+                                const myBestScore = ranking.find((r) => r.user_name === userName)?.score;
+                                const displayScore = myBestScore !== undefined ? `${myBestScore}점` : undefined;
+                                return (
+                                    <KakaoShareButton
+                                        title={`[뚝딱실] - [${title}]`}
+                                        description={myBestScore !== undefined && myBestScore > 0
+                                            ? `${userName}님이 ${displayScore}을 달성했어요.`
+                                            : `${userName}님이 도움을 요청해요.`
+                                        }
+                                        gameUrl="/works/ddong-game"
+                                        score={myBestScore}
+                                    />
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

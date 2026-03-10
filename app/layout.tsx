@@ -19,6 +19,8 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+import { KakaoScript } from "@/components/kakao-script";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -28,6 +30,7 @@ export default function RootLayout({
     <html lang="ko" suppressHydrationWarning>
       <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3082415933218635"
         crossOrigin="anonymous"></script>
+      <KakaoScript />
       <body className={`${geistSans.className} antialiased`}>
         <ThemeProvider
           attribute="class"

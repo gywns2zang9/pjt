@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Trophy, X, ChevronDown } from "lucide-react";
 import { type ProjectProps } from "@/components/project-registry";
 import { Button } from "@/components/ui/button";
+import { KakaoShareButton } from "@/components/kakao-share-button";
 
 type GamePhase = "idle" | "playing" | "result" | "gameover";
 
@@ -12,7 +13,7 @@ interface RankEntry {
     score: number;
 }
 
-export function SortGame({ userName }: ProjectProps) {
+export function SortGame({ userName, title }: ProjectProps) {
     const [phase, setPhase] = useState<GamePhase>("idle");
     const [blocks, setBlocks] = useState<number[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -374,6 +375,23 @@ export function SortGame({ userName }: ProjectProps) {
                                     </li>
                                 ))}
                             </ol>
+                        </div>
+                        <div className="p-4 border-t border-border bg-muted/20">
+                            {(() => {
+                                const myBestScore = ranking.find((r) => r.user_name === userName)?.score;
+                                const displayScore = myBestScore !== undefined ? `${myBestScore}s` : undefined;
+                                return (
+                                    <KakaoShareButton
+                                        title={`[뚝딱실] - [${title}]`}
+                                        description={myBestScore !== undefined && myBestScore > 0
+                                            ? `${userName}님이 ${displayScore}를 달성했어요.`
+                                            : `${userName}님이 도움을 요청해요.`
+                                        }
+                                        gameUrl="/works/sort-game"
+                                        score={myBestScore}
+                                    />
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Search, Trophy, X, ChevronDown } from "lucide-react";
 import { isValidKoreanWord } from "@/lib/korean-words";
 import { Button } from "@/components/ui/button";
+import { KakaoShareButton } from "@/components/kakao-share-button";
 
 // ─── 초성 목록 ───────────────────────────────────────────────
 const CHOSUNGS = ["ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
@@ -92,10 +93,11 @@ function ExpandableText({ text, maxLength = 80 }: { text: string; maxLength?: nu
 interface ChosungGameProps {
     userName: string;
     gameConfig?: Partial<GameConfig>;
+    title?: string;
 }
 
 // ─── 메인 컴포넌트 ───────────────────────────────────────────
-export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
+export function ChosungGame({ userName, gameConfig, title }: ChosungGameProps) {
     const cfg: GameConfig = { ...DEFAULT_CONFIG, ...gameConfig };
 
     const [phase, setPhase] = useState<GamePhase>("idle");
@@ -676,6 +678,23 @@ export function ChosungGame({ userName, gameConfig }: ChosungGameProps) {
                                     </li>
                                 ))}
                             </ol>
+                        </div>
+                        <div className="p-4 border-t border-border bg-muted/20">
+                            {(() => {
+                                const myBestScore = ranking.find((r) => r.user_name === userName)?.score;
+                                const displayScore = myBestScore !== undefined ? `${myBestScore}점` : undefined;
+                                return (
+                                    <KakaoShareButton
+                                        title={`[뚝딱실] - [${title}]`}
+                                        description={myBestScore !== undefined && myBestScore > 0
+                                            ? `${userName}님이 ${displayScore}을 달성했어요.`
+                                            : `${userName}님이 도움을 요청해요.`
+                                        }
+                                        gameUrl="/works/chosung-game"
+                                        score={myBestScore}
+                                    />
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

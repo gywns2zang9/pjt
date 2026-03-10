@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Sparkles, AlertCircle, Lightbulb, Trophy, X, ChevronDown } from "lucide-react";
 import type { ProjectProps } from "@/components/project-registry";
 import { Button } from "@/components/ui/button";
+import { KakaoShareButton } from "@/components/kakao-share-button";
 
 interface RankEntry {
     user_name: string;
@@ -11,7 +12,7 @@ interface RankEntry {
     created_at: string;
 }
 
-export function CircleGame({ userName }: ProjectProps) {
+export function CircleGame({ userName, title }: ProjectProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
 
@@ -433,6 +434,23 @@ export function CircleGame({ userName }: ProjectProps) {
                                     </li>
                                 ))}
                             </ol>
+                        </div>
+                        <div className="p-4 border-t border-border bg-muted/20">
+                            {(() => {
+                                const myBestScore = ranking.find((r) => r.user_name === userName)?.score;
+                                const displayScore = myBestScore !== undefined ? `${myBestScore}점` : undefined;
+                                return (
+                                    <KakaoShareButton
+                                        title={`[뚝딱실] - [${title}]`}
+                                        description={myBestScore !== undefined && myBestScore > 0
+                                            ? `${userName}님이 ${displayScore}을 달성했어요.`
+                                            : `${userName}님이 도움을 요청해요.`
+                                        }
+                                        gameUrl="/works/circle-game"
+                                        score={myBestScore}
+                                    />
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
