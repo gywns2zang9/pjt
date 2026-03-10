@@ -25,8 +25,7 @@ export default async function WorksPage() {
         .sort((a, b) => (a.config.sort_order ?? 0) - (b.config.sort_order ?? 0));
 
     // 방명록 데이터 가져오기 (Works 하단용)
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user ?? null;
+    const { data: { user } } = await supabase.auth.getUser();
 
     const { data: entriesData, count: entriesCount } = await supabase
         .from("guestbook")

@@ -31,9 +31,8 @@ export default async function WorksProjectPage({ params }: Props) {
 
     // if (!user) redirect("/auth/login");
 
-    // 세션 가져오기 (인증 여부 상관없이 진행)
-    const { data: { session } } = await supabase.auth.getSession();
-    const user = session?.user ?? null;
+    // 유저 정보 가져오기 (인증 여부 상관없이 진행)
+    const { data: { user } } = await supabase.auth.getUser();
 
     // slug 또는 id로 공개된 프로젝트 검색
     const { data: configs } = await supabase
