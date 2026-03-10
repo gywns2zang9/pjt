@@ -4,13 +4,46 @@ import { Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface KakaoShareButtonProps {
-    title: string;
-    description: string;
+    userName: string;
+    gameTitle: string;
     gameUrl: string; // ex) /works/size-game
-    score?: number;
+    displayScore?: string;
+    rank?: number | null;
 }
 
-export function KakaoShareButton({ title, description, gameUrl, score }: KakaoShareButtonProps) {
+export function KakaoShareButton({ userName, gameTitle, gameUrl, displayScore, rank }: KakaoShareButtonProps) {
+    let cardTitle = "";
+    let cardDescription = "";
+    let cardButtonTitle = "";
+    let uiButtonText = "";
+
+    if (rank === 1 && displayScore) {
+        cardTitle = `[뚝딱실] - ${userName}님 경쟁 상대가 없네요.`;
+        cardDescription = `"${gameTitle}"에서 ${displayScore}(1등)을 달성했어요!`;
+        cardButtonTitle = `[${gameTitle}] 바로가기`;
+        uiButtonText = "내 점수 자랑하기"; ``
+    } else if (rank === 2 && displayScore) {
+        cardTitle = `[뚝딱실] - ${userName}님이 자랑해요.`;
+        cardDescription = `${userName}님이 "${gameTitle}"에서 ${displayScore}을 달성했다고 자랑해요.`;
+        cardButtonTitle = `[${gameTitle}] 바로가기`;
+        uiButtonText = "내 점수 자랑하기";
+    } else if (rank === 3 && displayScore) {
+        cardTitle = `[뚝딱실] - 3등이 자랑하기 있나요?`;
+        cardDescription = `${userName}님이 "${gameTitle}" 점수를 자랑해요.`;
+        cardButtonTitle = `[${gameTitle}] 바로가기`;
+        uiButtonText = "내 점수 자랑하기";
+    } else if (rank !== null && rank !== undefined && rank >= 4 && displayScore) {
+        cardTitle = `[뚝딱실] - [${gameTitle}] 같이해요.`;
+        cardDescription = `${userName}님이 "${gameTitle}"에서 ${displayScore}을 달성했어요.`;
+        cardButtonTitle = `[${gameTitle}] 바로가기`;
+        uiButtonText = "내 점수 공유하기";
+    } else {
+        cardTitle = `[뚝딱실] - [${gameTitle}] 같이 해요~`;
+        cardDescription = `${userName}님이 "${gameTitle}"에 초대했어요!`;
+        cardButtonTitle = `바로가기`;
+        uiButtonText = "초대하기";
+    }
+
     const handleShare = () => {
         // @ts-ignore
         if (window.Kakao && window.Kakao.isInitialized()) {
@@ -18,8 +51,8 @@ export function KakaoShareButton({ title, description, gameUrl, score }: KakaoSh
             window.Kakao.Share.sendDefault({
                 objectType: "feed",
                 content: {
-                    title: title,
-                    description: description,
+                    title: cardTitle,
+                    description: cardDescription,
                     imageUrl: "https://www.gywns2zang9.dev/og-image.png", // 프로젝트 OG 이미지 사용 권장
                     link: {
                         mobileWebUrl: `https://www.gywns2zang9.dev${gameUrl}`,
@@ -28,7 +61,7 @@ export function KakaoShareButton({ title, description, gameUrl, score }: KakaoSh
                 },
                 buttons: [
                     {
-                        title: "내 실력 보여주기",
+                        title: cardButtonTitle,
                         link: {
                             mobileWebUrl: `https://www.gywns2zang9.dev${gameUrl}`,
                             webUrl: `https://www.gywns2zang9.dev${gameUrl}`,
@@ -48,7 +81,7 @@ export function KakaoShareButton({ title, description, gameUrl, score }: KakaoSh
             onClick={handleShare}
         >
             <Share2 className="w-4 h-4 mr-2" />
-            {(score !== undefined && score !== null) ? "내 점수 자랑하기" : "친구 초대하기"}
+            {uiButtonText}
         </Button>
     );
 }

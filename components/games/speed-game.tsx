@@ -331,17 +331,17 @@ export function SpeedGame({ userName, title }: ProjectProps) {
                         </div>
                         <div className="p-4 border-t border-border bg-muted/20">
                             {(() => {
-                                const myBestScore = ranking.find((r) => r.user_name === userName)?.score;
-                                const displayScore = myBestScore !== undefined ? `${(myBestScore * 1000).toFixed(2)}ms` : undefined;
+                                const myRankIndex = ranking.findIndex((r) => r.user_name === userName);
+                                const myBestScore = myRankIndex !== -1 ? ranking[myRankIndex].score : undefined;
+                                const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${(myBestScore * 1000).toFixed(2)}ms` : undefined;
+                                const myRank = displayScore !== undefined ? myRankIndex + 1 : null;
                                 return (
                                     <KakaoShareButton
-                                        title={`[뚝딱실] - [${title}]`}
-                                        description={myBestScore !== undefined && myBestScore > 0
-                                            ? `${userName}님이 ${displayScore}를 달성했어요.`
-                                            : `${userName}님이 도움을 요청해요.`
-                                        }
+                                        userName={userName}
+                                        gameTitle={title!}
                                         gameUrl="/works/speed-game"
-                                        score={myBestScore}
+                                        displayScore={displayScore}
+                                        rank={myRank}
                                     />
                                 );
                             })()}

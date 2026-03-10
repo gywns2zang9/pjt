@@ -583,18 +583,18 @@ export function SizeGame({ userName, title }: ProjectProps) {
                         </div>
                         {/* 현재 내 최고 기록 점수 찾기 */}
                         {(() => {
-                            const myBestScore = ranking.find((r) => r.user_name === userName)?.score;
-                            const displayScore = myBestScore !== undefined ? `${myBestScore}점` : undefined;
+                            const myRankIndex = ranking.findIndex((r) => r.user_name === userName);
+                            const myBestScore = myRankIndex !== -1 ? ranking[myRankIndex].score : undefined;
+                            const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore}점` : undefined;
+                            const myRank = displayScore !== undefined ? myRankIndex + 1 : null;
                             return (
                                 <div className="p-4 border-t border-border bg-muted/20">
                                     <KakaoShareButton
-                                        title={`[뚝딱실] - [${title}]`}
-                                        description={myBestScore !== undefined && myBestScore > 0
-                                            ? `${userName}님이 ${displayScore}을 달성했어요.`
-                                            : `${userName}님이 도움을 요청해요.`
-                                        }
+                                        userName={userName}
+                                        gameTitle={title!}
                                         gameUrl="/works/size-game"
-                                        score={myBestScore}
+                                        displayScore={displayScore}
+                                        rank={myRank}
                                     />
                                 </div>
                             );
