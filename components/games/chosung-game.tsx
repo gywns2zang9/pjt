@@ -5,6 +5,7 @@ import { Search, Trophy, X, ChevronDown } from "lucide-react";
 import { isValidKoreanWord } from "@/lib/korean-words";
 import { Button } from "@/components/ui/button";
 import { KakaoShareButton } from "@/components/kakao-share-button";
+import { Portal } from "@/components/portal";
 
 // ─── 초성 목록 ───────────────────────────────────────────────
 const CHOSUNGS = ["ㄱ", "ㄴ", "ㄷ", "ㄹ", "ㅁ", "ㅂ", "ㅅ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"];
@@ -639,65 +640,67 @@ export function ChosungGame({ userName, gameConfig, title }: ChosungGameProps) {
 
             {/* 전체 랭킹 모달 */}
             {showAllRanking && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-                    onClick={() => setShowAllRanking(false)}
-                >
+                <Portal>
                     <div
-                        className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
-                        onClick={(e) => e.stopPropagation()}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                        onClick={() => setShowAllRanking(false)}
                     >
-                        <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-                            <Trophy className="w-5 h-5 text-amber-500" />
-                            <h3 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">전체 랭킹</h3>
-                            <button
-                                onClick={() => setShowAllRanking(false)}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <div className="p-4 max-h-[60vh] overflow-y-auto">
-                            <ol className="space-y-2">
-                                {ranking.map((entry, i) => (
-                                    <li
-                                        key={i}
-                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
-                                            : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
-                                                : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
-                                                    : "bg-muted/30 border border-transparent"
-                                            }`}
-                                    >
-                                        <span className="text-sm font-black w-6 text-center shrink-0 text-muted-foreground">
-                                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
-                                        </span>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold truncate">{entry.user_name}</p>
-                                        </div>
-                                        <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
-                                    </li>
-                                ))}
-                            </ol>
-                        </div>
-                        <div className="p-4 border-t border-border bg-muted/20">
-                            {(() => {
-                                const myRankIndex = ranking.findIndex((r) => r.user_name === userName);
-                                const myBestScore = myRankIndex !== -1 ? ranking[myRankIndex].score : undefined;
-                                const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore}점` : undefined;
-                                const myRank = displayScore !== undefined ? myRankIndex + 1 : null;
-                                return (
-                                    <KakaoShareButton
-                                        userName={userName}
-                                        gameTitle={title!}
-                                        gameUrl="/works/chosung-game"
-                                        displayScore={displayScore}
-                                        rank={myRank}
-                                    />
-                                );
-                            })()}
+                        <div
+                            className="relative w-full max-w-sm mx-4 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+                                <Trophy className="w-5 h-5 text-amber-500" />
+                                <h3 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">전체 랭킹</h3>
+                                <button
+                                    onClick={() => setShowAllRanking(false)}
+                                    className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <div className="p-4 max-h-[60vh] overflow-y-auto">
+                                <ol className="space-y-2">
+                                    {ranking.map((entry, i) => (
+                                        <li
+                                            key={i}
+                                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
+                                                : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
+                                                    : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
+                                                        : "bg-muted/30 border border-transparent"
+                                                }`}
+                                        >
+                                            <span className="text-sm font-black w-6 text-center shrink-0 text-muted-foreground">
+                                                {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
+                                            </span>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                                            </div>
+                                            <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </div>
+                            <div className="p-4 border-t border-border bg-muted/20">
+                                {(() => {
+                                    const myRankIndex = ranking.findIndex((r) => r.user_name === userName);
+                                    const myBestScore = myRankIndex !== -1 ? ranking[myRankIndex].score : undefined;
+                                    const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore}점` : undefined;
+                                    const myRank = displayScore !== undefined ? myRankIndex + 1 : null;
+                                    return (
+                                        <KakaoShareButton
+                                            userName={userName}
+                                            gameTitle={title!}
+                                            gameUrl="/works/chosung-game"
+                                            displayScore={displayScore}
+                                            rank={myRank}
+                                        />
+                                    );
+                                })()}
+                            </div>
                         </div>
                     </div>
-                </div>
+                </Portal>
             )}
         </>
     );

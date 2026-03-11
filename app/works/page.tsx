@@ -5,6 +5,19 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { createClient } from "@/lib/supabase/server";
 import { projects, STATUS_STYLES, effectiveTitle, effectiveDescription, effectiveSlug, type ProjectConfig } from "@/lib/projects";
 import { Guestbook } from "@/components/guestbook";
+import ProjectListClient from "@/components/project-list-client";
+
+const TABLE_MAP: Record<string, string> = {
+    "chosung-game": "chosung_scores",
+    "circle-game": "circle_scores",
+    "size-game": "size_scores",
+    "speed-game": "speed_scores",
+    "sort-game": "sort_scores",
+    "ddong-game": "ddong_scores",
+};
+
+// 시간 기반(낮을수록 좋은) 게임
+const SCORE_ASC = new Set(["speed-game", "sort-game"]);
 
 export default async function WorksPage() {
     const supabase = await createClient();
@@ -21,11 +34,60 @@ export default async function WorksPage() {
             config: c,
             meta: projects.find((p) => p.id === c.id),
         }))
-        .filter((p) => p.meta)
-        .sort((a, b) => (a.config.sort_order ?? 0) - (b.config.sort_order ?? 0));
+        .filter((p) => p.meta);
 
-    // 방명록 데이터 가져오기 (Works 하단용)
+    // 방명록 및 유저 정보 가져오기
     const { data: { user } } = await supabase.auth.getUser();
+
+    // ── 통계(전체/나의 플레이 + 순위) 비동기 조회 ──
+    const projectsWithStats = await Promise.all(
+        visibleProjects.map(async (project) => {
+            const id = project.meta!.id;
+            const tableName = TABLE_MAP[id];
+            let totalPlay = 0;
+            let myPlay = 0;
+            let myRank: number | null = null;
+            let totalPlayers = 0;
+
+            if (tableName) {
+                // 전체 스코어 데이터 조회 (play_count + score + user_id)
+                const { data: allData } = await supabase
+                    .from(tableName)
+                    .select("user_id, score, play_count");
+
+                const rows = allData ?? [];
+                totalPlayers = rows.length;
+                totalPlay = rows.reduce((acc: number, row: any) => acc + (row.play_count ?? 0), 0);
+
+                if (user) {
+                    // 내 플레이 횟수
+                    const myRow = rows.find((r: any) => r.user_id === user.id);
+                    if (myRow) {
+                        myPlay = myRow.play_count ?? 0;
+                        const myScore = myRow.score ?? 0;
+
+                        // 순위 계산 (동점자는 같은 등수)
+                        const isAsc = SCORE_ASC.has(id);
+                        const betterCount = rows.filter((r: any) =>
+                            isAsc
+                                ? (r.score ?? Infinity) < myScore  // 시간 기반: 나보다 빠른 사람
+                                : (r.score ?? 0) > myScore         // 점수 기반: 나보다 높은 사람
+                        ).length;
+                        myRank = betterCount + 1;
+                    }
+                }
+            }
+
+            return {
+                config: project.config,
+                meta: { id: project.meta!.id, title: project.meta!.title },
+                totalPlay,
+                myPlay,
+                myRank,
+                totalPlayers,
+            };
+        })
+    );
 
     const { data: entriesData, count: entriesCount } = await supabase
         .from("guestbook")
@@ -49,48 +111,7 @@ export default async function WorksPage() {
                         <p className="text-muted-foreground">재미로 즐겨주세요~^^</p>
                     </div>
 
-                    {visibleProjects.length === 0 ? (
-                        <div className="py-20 text-center text-muted-foreground text-sm">
-                            공개된 작업물이 없어요
-                        </div>
-                    ) : (
-                        <div className="grid gap-3 sm:grid-cols-2">
-                            {visibleProjects.map(({ meta, config }) => {
-                                const statusStyle = STATUS_STYLES[config.status];
-                                const title = effectiveTitle(meta!, config);
-                                const description = effectiveDescription(config);
-                                const slug = effectiveSlug(meta!, config);
-                                return (
-                                    <Link
-                                        key={meta!.id}
-                                        href={`/works/${slug}`}
-                                        className="group block rounded-2xl border border-border bg-card p-5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-all duration-200"
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="space-y-1.5 min-w-0">
-                                                <div className="flex items-center gap-2">
-                                                    <h2 className="font-semibold text-base text-foreground group-hover:text-primary transition-colors">
-                                                        {title}
-                                                    </h2>
-                                                    <span
-                                                        className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusStyle.className}`}
-                                                    >
-                                                        {statusStyle.label}
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                                                    {description}
-                                                </p>
-                                            </div>
-                                            <span className="shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors mt-0.5">
-                                                →
-                                            </span>
-                                        </div>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-                    )}
+                    <ProjectListClient projects={projectsWithStats} />
                 </Container>
 
                 <div className="border-t border-border/50 bg-slate-50/50 dark:bg-slate-900/30 py-16">
