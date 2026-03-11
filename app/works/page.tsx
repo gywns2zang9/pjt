@@ -14,10 +14,11 @@ const TABLE_MAP: Record<string, string> = {
     "speed-game": "speed_scores",
     "sort-game": "sort_scores",
     "ddong-game": "ddong_scores",
+    "touch-game": "touch_scores",
 };
 
 // 시간 기반(낮을수록 좋은) 게임
-const SCORE_ASC = new Set(["speed-game", "sort-game"]);
+const SCORE_ASC = new Set(["speed-game", "sort-game", "touch-game"]);
 
 export default async function WorksPage() {
     const supabase = await createClient();
