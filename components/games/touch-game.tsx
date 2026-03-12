@@ -25,8 +25,10 @@ export function TouchGame({ userName, title }: ProjectProps) {
     const [resultTime, setResultTime] = useState<number | null>(null);
     const [ranking, setRanking] = useState<RankEntry[]>([]);
     const [showAllRanking, setShowAllRanking] = useState(false);
+    const [activeSide, setActiveSide] = useState<InputSide | null>(null);
 
     const lastInputRef = useRef<InputSide | null>(null);
+    const progressRef = useRef(0);
     const startTimeRef = useRef<number>(0);
     const timerRef = useRef<number | null>(null);
     const gameAreaRef = useRef<HTMLDivElement>(null);
@@ -43,6 +45,7 @@ export function TouchGame({ userName, title }: ProjectProps) {
     const startGame = useCallback(() => {
         setPhase("go");
         setProgress(0);
+        progressRef.current = 0;
         setElapsedTime(0);
         setResultTime(null);
         lastInputRef.current = null;
@@ -65,34 +68,12 @@ export function TouchGame({ userName, title }: ProjectProps) {
         timerRef.current = requestAnimationFrame(updateTimer);
     }, []);
 
-    const handleInput = useCallback((side: InputSide) => {
-        if (phase !== "go") return;
-
-        if (lastInputRef.current === side) {
-            // Game Over - Same side twice
-            handleGameOver("fault");
-            return;
-        }
-
-        // Correct input
-        lastInputRef.current = side;
-        const newProgress = progress + 1;
-        setProgress(newProgress);
-
-        if (newProgress >= TOTAL_TARGET) {
-            // Win
-            const endTime = performance.now();
-            const totalTime = (endTime - startTimeRef.current) / 1000;
-            handleGameWin(totalTime);
-        }
-    }, [phase, progress]);
-
     const handleGameOver = (endPhase: "fault" | "timeout") => {
         setPhase(endPhase);
         if (timerRef.current) cancelAnimationFrame(timerRef.current);
     };
 
-    const handleGameWin = (finalScoreStr: number) => {
+    const handleGameWin = useCallback((finalScoreStr: number) => {
         const finalScore = parseFloat(finalScoreStr.toFixed(3)); // 소수점 3자리
         setPhase("result");
         setResultTime(finalScore);
@@ -106,7 +87,29 @@ export function TouchGame({ userName, title }: ProjectProps) {
                 body: JSON.stringify({ score: finalScore }),
             }).then(() => loadRanking()).catch(console.error);
         }
-    };
+    }, [userName, loadRanking]);
+
+    const handleInput = useCallback((side: InputSide) => {
+        if (phase !== "go") return;
+
+        if (lastInputRef.current === side) {
+            handleGameOver("fault");
+            return;
+        }
+
+        lastInputRef.current = side;
+        progressRef.current += 1;
+        const currentProgress = progressRef.current;
+        setProgress(currentProgress);
+        setActiveSide(side);
+        setTimeout(() => setActiveSide(null), 50);
+
+        if (currentProgress >= TOTAL_TARGET) {
+            const endTime = performance.now();
+            const totalTime = (endTime - startTimeRef.current) / 1000;
+            handleGameWin(totalTime);
+        }
+    }, [handleGameWin, phase]); // phase is stable during 'go', so this is fine
 
     // Keyboard support
     useEffect(() => {
@@ -214,27 +217,29 @@ export function TouchGame({ userName, title }: ProjectProps) {
                             <>
                                 {/* 왼쪽 영역 */}
                                 <div
-                                    className="flex-1 flex items-center justify-center relative cursor-pointer group active:bg-blue-500/20 active:shadow-[inset_0_0_100px_rgba(59,130,246,0.3)] transition-colors"
+                                    className={`flex-1 flex items-center justify-center relative cursor-pointer group transition-colors touch-none ${activeSide === "left" ? "bg-blue-500/20 shadow-[inset_0_0_100px_rgba(59,130,246,0.3)]" : "active:bg-blue-500/20 active:shadow-[inset_0_0_100px_rgba(59,130,246,0.3)]"}`}
                                     onPointerDown={(e) => {
-                                        // e.preventDefault();
+                                        if (e.pointerType === 'mouse' && e.button !== 0) return;
+                                        e.preventDefault();
                                         handleInput("left");
                                     }}
                                 >
                                     <div className={`absolute inset-0 border-r-4 border-zinc-900 border-dashed ${lastInputRef.current === "left" && phase === "go" ? "bg-blue-500/10" : "bg-transparent group-hover:bg-blue-500/5 group-active:bg-transparent"}`} />
-                                    <span className="text-4xl text-blue-500/50 group-active:text-blue-500 font-black pointer-events-none drop-shadow-sm transition-all md:text-5xl group-active:scale-110">
+                                    <span className={`text-4xl pointer-events-none drop-shadow-sm transition-all md:text-5xl ${activeSide === "left" ? "text-blue-500 scale-110" : "text-blue-500/50 group-active:text-blue-500 group-active:scale-110 font-black"}`}>
                                         LEFT
                                     </span>
                                 </div>
                                 {/* 오른쪽 영역 */}
                                 <div
-                                    className="flex-1 flex items-center justify-center relative cursor-pointer group active:bg-red-500/20 active:shadow-[inset_0_0_100px_rgba(239,68,68,0.3)] transition-colors"
+                                    className={`flex-1 flex items-center justify-center relative cursor-pointer group transition-colors touch-none ${activeSide === "right" ? "bg-red-500/20 shadow-[inset_0_0_100px_rgba(239,68,68,0.3)]" : "active:bg-red-500/20 active:shadow-[inset_0_0_100px_rgba(239,68,68,0.3)]"}`}
                                     onPointerDown={(e) => {
-                                        // e.preventDefault();
+                                        if (e.pointerType === 'mouse' && e.button !== 0) return;
+                                        e.preventDefault();
                                         handleInput("right");
                                     }}
                                 >
                                     <div className={`absolute inset-0 ${lastInputRef.current === "right" && phase === "go" ? "bg-red-500/10" : "bg-transparent group-hover:bg-red-500/5 group-active:bg-transparent"}`} />
-                                    <span className="text-4xl text-red-500/50 group-active:text-red-500 font-black pointer-events-none drop-shadow-sm transition-all md:text-5xl group-active:scale-110">
+                                    <span className={`text-4xl pointer-events-none drop-shadow-sm transition-all md:text-5xl ${activeSide === "right" ? "text-red-500 scale-110" : "text-red-500/50 group-active:text-red-500 group-active:scale-110 font-black"}`}>
                                         RIGHT
                                     </span>
                                 </div>
