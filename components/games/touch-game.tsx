@@ -28,6 +28,7 @@ export function TouchGame({ userName, title }: ProjectProps) {
     const [activeSide, setActiveSide] = useState<InputSide | null>(null);
 
     const lastInputRef = useRef<InputSide | null>(null);
+    const lastInputTimeRef = useRef<number>(0);
     const progressRef = useRef(0);
     const startTimeRef = useRef<number>(0);
     const timerRef = useRef<number | null>(null);
@@ -89,25 +90,36 @@ export function TouchGame({ userName, title }: ProjectProps) {
         }
     }, [userName, loadRanking]);
 
+    const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
     const handleInput = useCallback((side: InputSide) => {
         if (phase !== "go") return;
 
+        const now = performance.now();
         if (lastInputRef.current === side) {
+            // 하드웨어/브라우저 바운스(10ms미만)만 무시하고 나머지는 엄격하게 실패 처리
+            if (now - lastInputTimeRef.current < 10) return;
+
             handleGameOver("fault");
             return;
         }
 
+        lastInputTimeRef.current = now;
         lastInputRef.current = side;
         progressRef.current += 1;
         const currentProgress = progressRef.current;
         setProgress(currentProgress);
+
+        // 시각 피드백 로직 개선: 이전 타이머가 있다면 취소하여 빛이 씹히는 현상 방지
+        if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
         setActiveSide(side);
-        setTimeout(() => setActiveSide(null), 50);
+        feedbackTimerRef.current = setTimeout(() => {
+            setActiveSide(null);
+            feedbackTimerRef.current = null;
+        }, 50);
 
         if (currentProgress >= TOTAL_TARGET) {
-            const endTime = performance.now();
-            const totalTime = (endTime - startTimeRef.current) / 1000;
-            handleGameWin(totalTime);
+            handleGameWin((now - startTimeRef.current) / 1000);
         }
     }, [handleGameWin, phase]); // phase is stable during 'go', so this is fine
 
@@ -210,36 +222,32 @@ export function TouchGame({ userName, title }: ProjectProps) {
                     {/* 게임(버튼) 영역 */}
                     <div
                         ref={gameAreaRef}
-                        className="relative w-full max-w-2xl mx-auto h-64 md:h-80 select-none flex rounded-[2.5rem] overflow-hidden border-8 border-zinc-900 shadow-2xl bg-zinc-950"
+                        className="relative w-full max-w-2xl mx-auto h-64 md:h-80 select-none flex rounded-[2.5rem] overflow-hidden border-8 border-zinc-900 shadow-2xl bg-zinc-950 cursor-pointer"
                         style={{ touchAction: 'none' }}
+                        onPointerDown={(e) => {
+                            if (phase !== "go") return;
+                            if (e.pointerType === 'mouse' && e.button !== 0) return;
+                            e.preventDefault();
+
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const side: InputSide = x < rect.width / 2 ? "left" : "right";
+                            handleInput(side);
+                        }}
                     >
                         {phase === "idle" || phase === "go" ? (
                             <>
-                                {/* 왼쪽 영역 */}
-                                <div
-                                    className={`flex-1 flex items-center justify-center relative cursor-pointer group transition-colors touch-none ${activeSide === "left" ? "bg-blue-500/20 shadow-[inset_0_0_100px_rgba(59,130,246,0.3)]" : "active:bg-blue-500/20 active:shadow-[inset_0_0_100px_rgba(59,130,246,0.3)]"}`}
-                                    onPointerDown={(e) => {
-                                        if (e.pointerType === 'mouse' && e.button !== 0) return;
-                                        e.preventDefault();
-                                        handleInput("left");
-                                    }}
-                                >
-                                    <div className={`absolute inset-0 border-r-4 border-zinc-900 border-dashed ${lastInputRef.current === "left" && phase === "go" ? "bg-blue-500/10" : "bg-transparent group-hover:bg-blue-500/5 group-active:bg-transparent"}`} />
-                                    <span className={`text-4xl pointer-events-none drop-shadow-sm transition-all md:text-5xl ${activeSide === "left" ? "text-blue-500 scale-110" : "text-blue-500/50 group-active:text-blue-500 group-active:scale-110 font-black"}`}>
+                                {/* 왼쪽 영역 시각 피드백 */}
+                                <div className={`flex-1 flex items-center justify-center relative transition-colors pointer-events-none ${activeSide === "left" ? "bg-blue-500/20 shadow-[inset_0_0_100px_rgba(59,130,246,0.3)]" : ""}`}>
+                                    <div className={`absolute inset-0 border-r-4 border-zinc-900 border-dashed ${lastInputRef.current === "left" && phase === "go" ? "bg-blue-500/10" : ""}`} />
+                                    <span className={`text-4xl drop-shadow-sm transition-all md:text-5xl font-black ${activeSide === "left" ? "text-blue-500 scale-110" : "text-blue-500/20"}`}>
                                         LEFT
                                     </span>
                                 </div>
-                                {/* 오른쪽 영역 */}
-                                <div
-                                    className={`flex-1 flex items-center justify-center relative cursor-pointer group transition-colors touch-none ${activeSide === "right" ? "bg-red-500/20 shadow-[inset_0_0_100px_rgba(239,68,68,0.3)]" : "active:bg-red-500/20 active:shadow-[inset_0_0_100px_rgba(239,68,68,0.3)]"}`}
-                                    onPointerDown={(e) => {
-                                        if (e.pointerType === 'mouse' && e.button !== 0) return;
-                                        e.preventDefault();
-                                        handleInput("right");
-                                    }}
-                                >
-                                    <div className={`absolute inset-0 ${lastInputRef.current === "right" && phase === "go" ? "bg-red-500/10" : "bg-transparent group-hover:bg-red-500/5 group-active:bg-transparent"}`} />
-                                    <span className={`text-4xl pointer-events-none drop-shadow-sm transition-all md:text-5xl ${activeSide === "right" ? "text-red-500 scale-110" : "text-red-500/50 group-active:text-red-500 group-active:scale-110 font-black"}`}>
+                                {/* 오른쪽 영역 시각 피드백 */}
+                                <div className={`flex-1 flex items-center justify-center relative transition-colors pointer-events-none ${activeSide === "right" ? "bg-red-500/20 shadow-[inset_0_0_100px_rgba(239,68,68,0.3)]" : ""}`}>
+                                    <div className={`absolute inset-0 ${lastInputRef.current === "right" && phase === "go" ? "bg-red-500/10" : ""}`} />
+                                    <span className={`text-4xl drop-shadow-sm transition-all md:text-5xl font-black ${activeSide === "right" ? "text-red-500 scale-110" : "text-red-500/20"}`}>
                                         RIGHT
                                     </span>
                                 </div>
