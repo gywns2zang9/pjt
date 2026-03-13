@@ -49,9 +49,11 @@ export default function HomeClient({
     playCount: number;
     userCount: number;
 }) {
-    const [tagline] = useState(
-        () => TAGLINES[Math.floor(Math.random() * TAGLINES.length)]
-    );
+    const [tagline, setTagline] = useState(TAGLINES[0]);
+
+    useEffect(() => {
+        setTagline(TAGLINES[Math.floor(Math.random() * TAGLINES.length)]);
+    }, []);
 
     return (
         <div className="bg-[#020617] text-slate-100 overflow-hidden selection:bg-primary/30 h-[calc(100vh-4rem)]">

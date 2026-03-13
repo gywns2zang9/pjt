@@ -14,6 +14,22 @@ interface RankEntry {
     score: number;
 }
 
+// ─── Utilities ──────────────────────────────────────────
+const isSorted = (arr: number[]) => {
+    for (let i = 1; i < arr.length; i++) {
+        if (arr[i] < arr[i - 1]) return false;
+    }
+    return true;
+};
+
+const generateShuffledBlocks = () => {
+    let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    do {
+        arr = [...arr].sort(() => Math.random() - 0.5);
+    } while (isSorted(arr));
+    return arr;
+};
+
 export function SortGame({ userName, title }: ProjectProps) {
     const [phase, setPhase] = useState<GamePhase>("idle");
     const [blocks, setBlocks] = useState<number[]>([]);
@@ -64,6 +80,17 @@ export function SortGame({ userName, title }: ProjectProps) {
         }
     }, []);
 
+    const handleTimeout = useCallback(() => {
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+        setResultType("timeout");
+        setPhase("result");
+
+        setTimeout(() => {
+            setPhase("gameover");
+        }, 500);
+    }, []);
+
     const startTimer = useCallback(() => {
         stopTimer();
         setElapsedTime(0);
@@ -79,38 +106,11 @@ export function SortGame({ userName, title }: ProjectProps) {
                 setElapsedTime(Number(elapsed.toFixed(2)));
             }
         }, 10);
-    }, [stopTimer]);
+    }, [stopTimer, handleTimeout]);
 
     useEffect(() => {
         return () => stopTimer();
     }, [stopTimer]);
-
-    // ─── Game Logic ───────────────────────────────────────
-    const generateShuffledBlocks = () => {
-        let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-        do {
-            arr = [...arr].sort(() => Math.random() - 0.5);
-        } while (isSorted(arr));
-        return arr;
-    };
-
-    const isSorted = (arr: number[]) => {
-        for (let i = 1; i < arr.length; i++) {
-            if (arr[i] < arr[i - 1]) return false;
-        }
-        return true;
-    };
-
-    const handleTimeout = useCallback(() => {
-        setShake(true);
-        setTimeout(() => setShake(false), 500);
-        setResultType("timeout");
-        setPhase("result");
-
-        setTimeout(() => {
-            setPhase("gameover");
-        }, 500);
-    }, []);
 
     const handleGiveUp = useCallback(() => {
         stopTimer();
@@ -135,24 +135,24 @@ export function SortGame({ userName, title }: ProjectProps) {
         }, 700);
     }, [saveScore, stopTimer]);
 
-    const handleStart = () => {
+    const handleStart = useCallback(() => {
         setBlocks(generateShuffledBlocks());
         setSelectedIndex(null);
         setResultType(null);
         setPhase("playing");
         startTimer();
-    };
+    }, [startTimer]);
 
-    const handleBlockClick = (index: number) => {
-        if (phase !== "playing") return;
+    const handleBlockClick = useCallback((index: number) => {
+        if (phaseRef.current !== "playing") return;
 
         if (selectedIndex === null) {
             setSelectedIndex(index);
         } else {
             if (selectedIndex === index) {
-                setSelectedIndex(null); // Deselect
+                setSelectedIndex(null);
             } else {
-                // Swap
+                // Swap logic
                 const newBlocks = [...blocks];
                 const temp = newBlocks[selectedIndex];
                 newBlocks[selectedIndex] = newBlocks[index];
@@ -162,16 +162,17 @@ export function SortGame({ userName, title }: ProjectProps) {
                 setSelectedIndex(null);
 
                 if (isSorted(newBlocks)) {
-                    // 계산된 즉시 타이머 스탑 및 시간 기록
-                    const finalTime = Number(((performance.now() - startTimeRef.current) / 1000).toFixed(2));
+                    const finalTime = Number(
+                        ((performance.now() - startTimeRef.current) / 1000).toFixed(2)
+                    );
                     setElapsedTime(finalTime);
                     handleSuccess(finalTime);
                 }
             }
         }
-    };
+    }, [selectedIndex, blocks, handleSuccess]);
 
-    // 키보드 지원 (시작/재시작/포기)
+    // 키보드 지원
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
@@ -184,11 +185,24 @@ export function SortGame({ userName, title }: ProjectProps) {
                     e.preventDefault();
                     handleGiveUp();
                 }
+            } else if (phase === "playing") {
+                // 숫자 키 및 키패드 지원 (1-9, 0)
+                const isDigit = /^[0-9]$/.test(e.key);
+                const isNumpad = /^Numpad[0-9]$/.test(e.code);
+
+                if (isDigit || isNumpad) {
+                    const digitStr = isDigit ? e.key : e.code.replace("Numpad", "");
+                    const val = digitStr === "0" ? 10 : parseInt(digitStr);
+                    const index = blocks.indexOf(val);
+                    if (index !== -1) {
+                        handleBlockClick(index);
+                    }
+                }
             }
         };
         window.addEventListener("keydown", handler);
         return () => window.removeEventListener("keydown", handler);
-    }, [handleStart, handleGiveUp]);
+    }, [handleStart, handleGiveUp, handleBlockClick, blocks, phase, selectedIndex]);
 
     // ─── Render UI ─────────────────────────────────────────
     const progressPct = (elapsedTime / TIME_LIMIT) * 100;
@@ -199,7 +213,7 @@ export function SortGame({ userName, title }: ProjectProps) {
         if (phase === "idle") {
             const previewBlocks = [3, 7, 2, 8, 4, 10, 1, 6, 9, 5];
             return previewBlocks.map((val, i) => (
-                <div key={i} className="flex-1 max-w-10 rounded-t-xl bg-muted/30 border-t-2 border-l border-r border-border/50 items-end flex justify-center pb-2 opacity-50" style={{ height: `${val * 10}%` }}></div>
+                <div key={i} className="flex-1 max-w-12 rounded-t-xl bg-muted/30 border-t-2 border-l border-r border-border/50 items-end flex justify-center pb-2 opacity-50" style={{ height: `${10 + (val * 8)}%` }}></div>
             ));
         }
 
@@ -220,8 +234,8 @@ export function SortGame({ userName, title }: ProjectProps) {
                 <div
                     key={i}
                     onClick={() => handleBlockClick(i)}
-                    className={`relative flex-1 max-w-12 rounded-t-lg md:rounded-t-2xl border-t-2 border-l border-r transition-all duration-300 flex items-start justify-center pt-2 md:pt-4 ${bgClass} ${!isSelected && !isFinished && phase === 'playing' ? 'hover:scale-105 hover:z-10' : ''}`}
-                    style={{ height: `${val * 10}%` }}
+                    className={`relative flex-1 max-w-16 rounded-t-lg md:rounded-t-2xl border-t-2 border-l border-r transition-all duration-300 flex items-start justify-center pt-2 md:pt-4 ${bgClass} ${!isSelected && !isFinished && phase === 'playing' ? 'hover:scale-105 hover:z-10' : ''}`}
+                    style={{ height: `${10 + (val * 9)}%` }}
                 >
                     <span className="text-xs md:text-sm font-black opacity-80">{val}</span>
                 </div>
@@ -425,6 +439,10 @@ function HTPSection() {
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
                         <span>제한 시간은 <strong>30초</strong>입니다.</span>
+                    </li>
+                    <li className="flex items-baseline gap-2">
+                        <span className="text-primary font-bold shrink-0 leading-none">04</span>
+                        <span><strong>숫자 키(1-9, 0)</strong>로 블록을 선택할 수 있습니다. (0은 10번 블록)</span>
                     </li>
                 </ul>
             )}
