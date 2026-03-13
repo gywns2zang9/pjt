@@ -434,15 +434,13 @@ function HTPSection() {
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>두 개의 블록을 선택해 위치를 바꾸세요.</span>
+                        <span>두 개의 블록을 선택해 <strong>위치</strong>를 바꾸세요. <br />
+                            <span><strong>숫자 키</strong>로도 선택할 수 있습니다.</span>
+                        </span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
                         <span>제한 시간은 <strong>30초</strong>입니다.</span>
-                    </li>
-                    <li className="flex items-baseline gap-2">
-                        <span className="text-primary font-bold shrink-0 leading-none">04</span>
-                        <span><strong>숫자 키(1-9, 0)</strong>로 블록을 선택할 수 있습니다. (0은 10번 블록)</span>
                     </li>
                 </ul>
             )}
