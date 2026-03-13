@@ -269,30 +269,27 @@ export function CircleGame({ userName, title }: ProjectProps) {
         let idCounter = 1;
 
         if (finalScore >= 100) {
-            newFeedbacks.push({ id: idCounter++, text: "축하합니다! 커피 살게요.", type: "success" });
-        } else if (finalScore >= 99) {
+            newFeedbacks.push({ id: idCounter++, text: "축하합니다!", type: "success" });
+        } else if (finalScore >= 96) {
             newFeedbacks.push({ id: idCounter++, text: "거의 다 왔어요!", type: "success" });
         } else if (finalScore >= 90) {
-            newFeedbacks.push({ id: idCounter++, text: "100점까지 달려볼까요? 100점은 선물이 있어요.", type: "success" });
+            newFeedbacks.push({ id: idCounter++, text: "100점까지 달려볼까요?", type: "success" });
         } else if (finalScore < 30) {
             newFeedbacks.push({ id: idCounter++, text: "처음부터 다시 그려주세요.", type: "error" });
-        } else {
-            if (sizeScore <= 19) {
-                newFeedbacks.push({ id: idCounter++, text: "원을 점선보다 크게 그려보세요.", type: "warning" });
-            }
-            if (gapScore <= 19) {
-                newFeedbacks.push({ id: idCounter++, text: "시작점과 끝점이 벗어나지 않게 그려보세요.", type: "warning" });
-            }
-            if (shapeScore <= 49) {
-                newFeedbacks.push({ id: idCounter++, text: "더 동그랗게 그려보세요.", type: "warning" });
-            }
-            if (centerScore <= 9) {
-                newFeedbacks.push({ id: idCounter++, text: "중심이 벗어나지 않게 그려보세요.", type: "warning" });
-            }
+        }
 
-            if (newFeedbacks.length === 0) {
-                newFeedbacks.push({ id: idCounter++, text: "이정도면 인정입니다.", type: "success" });
-            }
+        // 구체적인 감점 요인 (만점이 아닐 때 항상 표시)
+        if (sizeScore < 20) {
+            newFeedbacks.push({ id: idCounter++, text: `원을 점선보다 크게 그려보세요. (${sizeScore}/20)`, type: "warning" });
+        }
+        if (gapScore < 20) {
+            newFeedbacks.push({ id: idCounter++, text: `시작점과 끝점이 벗어나지 않게 그려보세요. (${gapScore}/20)`, type: "warning" });
+        }
+        if (shapeScore < 50) {
+            newFeedbacks.push({ id: idCounter++, text: `더 동그랗게 그려보세요. (${shapeScore}/50)`, type: "warning" });
+        }
+        if (centerScore < 10) {
+            newFeedbacks.push({ id: idCounter++, text: `중심이 벗어나지 않게 그려보세요. (${centerScore}/10)`, type: "warning" });
         }
 
         setFeedbacks(newFeedbacks);
