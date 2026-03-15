@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { ProjectProps } from "@/components/project-registry";
-import { Trophy, X, ChevronDown, AlertCircle } from "lucide-react";
+import { Trophy, X, ChevronDown, AlertCircle, Lock } from "lucide-react";
 import { KakaoShareButton } from "@/components/kakao-share-button";
 import { Portal } from "@/components/portal";
 
@@ -351,6 +351,7 @@ export function EyesGame({ userName, title }: ProjectProps) {
                 <RankingBoard
                     ranking={ranking}
                     onShowAll={() => setShowAllRanking(true)}
+                    isGuest={userName === "비회원"}
                 />
             </div>
 
@@ -376,14 +377,17 @@ export function EyesGame({ userName, title }: ProjectProps) {
                             </div>
                             <div className="p-5 border-t border-border/50 bg-muted/20">
                                 {(() => {
-                                    const rank = ranking.findIndex(r => r.user_name === userName) + 1;
+                                    const myRankIndex = ranking.findIndex(r => r.user_name === userName);
+                                    const myBestScore = myRankIndex !== -1 ? ranking[myRankIndex].score : undefined;
+                                    const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore.toFixed(2)}s` : undefined;
+                                    const myRank = displayScore !== undefined ? myRankIndex + 1 : null;
                                     return (
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
                                             gameUrl="/works/eyes-game"
-                                            displayScore={`${finalScore.toFixed(2)}s`}
-                                            rank={rank > 0 ? rank : null}
+                                            displayScore={displayScore}
+                                            rank={myRank}
                                         />
                                     );
                                 })()}
@@ -454,24 +458,42 @@ function HTPSection() {
     );
 }
 
-function RankingBoard({ ranking, onShowAll }: { ranking: RankEntry[], onShowAll: () => void }) {
+function RankingBoard({ ranking, onShowAll, isGuest }: { ranking: RankEntry[], onShowAll: () => void, isGuest: boolean }) {
     return (
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4 relative overflow-hidden">
             <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-500" />
                 <h2 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">TOP 3</h2>
-                {ranking.length > 0 && <button onClick={onShowAll} className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors">전체보기</button>}
+                {ranking.length > 0 && !isGuest && <button onClick={onShowAll} className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors">전체보기</button>}
             </div>
-            {ranking.length === 0 ? <p className="text-xs text-muted-foreground text-center py-6">아직 기록이 없어요</p> : (
-                <ol className="space-y-2">
-                    {ranking.slice(0, 3).map((entry, i) => (
-                        <li key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25" : i === 1 ? "bg-slate-400/10 border border-slate-400/20" : "bg-orange-400/10 border border-orange-400/20"}`}>
-                            <span className="text-base shrink-0">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
-                            <div className="flex-1 min-w-0 font-sans"><p className="text-sm font-semibold truncate text-foreground">{entry.user_name}</p></div>
-                            <span className="text-sm font-black text-primary tabular-nums">{entry.score.toFixed(2)}s</span>
-                        </li>
-                    ))}
-                </ol>
+
+            <div className={isGuest ? "filter blur-[3px] select-none pointer-events-none opacity-40" : ""}>
+                {ranking.length === 0 ? <p className="text-xs text-muted-foreground text-center py-6">아직 기록이 없어요</p> : (
+                    <ol className="space-y-2">
+                        {ranking.slice(0, 3).map((entry, i) => (
+                            <li key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25" : i === 1 ? "bg-slate-400/10 border border-slate-400/20" : "bg-orange-400/10 border border-orange-400/20"}`}>
+                                <span className="text-base shrink-0">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
+                                <div className="flex-1 min-w-0 font-sans"><p className="text-sm font-semibold truncate text-foreground">{entry.user_name}</p></div>
+                                <span className="text-sm font-black text-primary tabular-nums">{entry.score.toFixed(2)}s</span>
+                            </li>
+                        ))}
+                    </ol>
+                )}
+            </div>
+
+            {isGuest && (
+                <div className="absolute inset-0 top-[44px] flex flex-col items-center justify-center bg-card/10 backdrop-blur-[1px] z-10 p-4 text-center">
+                    <div className="p-2 rounded-full bg-primary/10 mb-2">
+                        <Lock className="w-4 h-4 text-primary" />
+                    </div>
+                    <p className="text-[11px] font-bold text-foreground mb-1 leading-tight text-balance">조회 권한이 없어요.</p>
+                    <button
+                        onClick={() => window.location.href = '/auth/login'}
+                        className="text-[10px] font-black text-primary hover:underline mt-1"
+                    >
+                        로그인하기
+                    </button>
+                </div>
             )}
         </div>
     );

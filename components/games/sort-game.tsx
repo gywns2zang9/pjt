@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Trophy, X, ChevronDown } from "lucide-react";
+import { Trophy, X, ChevronDown, Lock } from "lucide-react";
 import { type ProjectProps } from "@/components/project-registry";
 import { Button } from "@/components/ui/button";
 import { KakaoShareButton } from "@/components/kakao-share-button";
@@ -362,7 +362,7 @@ export function SortGame({ userName, title }: ProjectProps) {
                     </div>
 
                     <div className="order-2 lg:order-1 flex flex-col gap-4">
-                        <RankingBoard ranking={ranking} onShowAll={() => setShowAllRanking(true)} />
+                        <RankingBoard ranking={ranking} onShowAll={() => setShowAllRanking(true)} isGuest={userName === "비회원"} />
                     </div>
                 </div>
             </div>
@@ -448,28 +448,46 @@ function HTPSection() {
     );
 }
 
-function RankingBoard({ ranking, onShowAll }: { ranking: RankEntry[], onShowAll: () => void }) {
+function RankingBoard({ ranking, onShowAll, isGuest }: { ranking: RankEntry[], onShowAll: () => void, isGuest: boolean }) {
     return (
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-4 relative overflow-hidden">
             <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-500" />
                 <h2 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">TOP 3</h2>
-                {ranking.length > 0 && <button onClick={onShowAll} className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors">전체보기</button>}
+                {ranking.length > 0 && !isGuest && <button onClick={onShowAll} className="text-[10px] font-bold text-primary hover:text-primary/80 hover:underline transition-colors">전체보기</button>}
             </div>
-            {ranking.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-6">아직 기록이 없어요</p>
-            ) : (
-                <ol className="space-y-2">
-                    {ranking.slice(0, 3).map((entry, i) => (
-                        <li key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25" : i === 1 ? "bg-slate-400/10 border border-slate-400/20" : "bg-orange-400/10 border border-orange-400/20"}`}>
-                            <span className="text-base shrink-0">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold truncate">{entry.user_name}</p>
-                            </div>
-                            <span className="text-sm font-black text-primary shrink-0">{entry.score}s</span>
-                        </li>
-                    ))}
-                </ol>
+
+            <div className={isGuest ? "filter blur-[3px] select-none pointer-events-none opacity-40" : ""}>
+                {ranking.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-6">아직 기록이 없어요</p>
+                ) : (
+                    <ol className="space-y-2">
+                        {ranking.slice(0, 3).map((entry, i) => (
+                            <li key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25" : i === 1 ? "bg-slate-400/10 border border-slate-400/20" : "bg-orange-400/10 border border-orange-400/20"}`}>
+                                <span className="text-base shrink-0">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                                </div>
+                                <span className="text-sm font-black text-primary shrink-0">{entry.score}s</span>
+                            </li>
+                        ))}
+                    </ol>
+                )}
+            </div>
+
+            {isGuest && (
+                <div className="absolute inset-0 top-[44px] flex flex-col items-center justify-center bg-card/10 backdrop-blur-[1px] z-10 p-4 text-center">
+                    <div className="p-2 rounded-full bg-primary/10 mb-2">
+                        <Lock className="w-4 h-4 text-primary" />
+                    </div>
+                    <p className="text-[11px] font-bold text-foreground mb-1 leading-tight text-balance">조회 권한이 없어요.</p>
+                    <button
+                        onClick={() => window.location.href = '/auth/login'}
+                        className="text-[10px] font-black text-primary hover:underline mt-1"
+                    >
+                        로그인하기
+                    </button>
+                </div>
             )}
         </div>
     );
