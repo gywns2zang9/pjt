@@ -8,6 +8,7 @@ import { SizeGame } from "@/components/games/size-game";
 import { DdongGame } from "@/components/games/ddong-game";
 import { SortGame } from "@/components/games/sort-game";
 import { TouchGame } from "@/components/games/touch-game";
+import { EyesGame } from "@/components/games/eyes-game";
 
 // 모든 프로젝트 컴포넌트가 공통으로 받는 props
 export interface ProjectProps {
@@ -27,4 +28,5 @@ export const projectComponents: Record<string, React.ComponentType<ProjectProps>
     "ddong-game": DdongGame,
     "sort-game": SortGame,
     "touch-game": TouchGame,
+    "eyes-game": EyesGame,
 };

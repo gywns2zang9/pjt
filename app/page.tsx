@@ -30,9 +30,11 @@ const getCachedStats = unstable_cache(
       "chosung_scores",
       "circle_scores",
       "ddong_scores",
+      "eyes_scores",
       "size_scores",
       "sort_scores",
       "speed_scores",
+      "touch_scores",
     ];
 
     /**

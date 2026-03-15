@@ -77,7 +77,7 @@ export default async function WorksProjectPage({ params }: Props) {
     const isCompleted = config.status === "완성";
 
     // 로그인 안내 배너 표시 조건 (게임류만 표시)
-    const showLoginBanner = !user && ["chosung-game", "circle-game", "speed-game", "size-game", "ddong-game", "sort-game", "touch-game"].includes(dbConfig.id);
+    const showLoginBanner = !user && ["chosung-game", "circle-game", "speed-game", "size-game", "ddong-game", "sort-game", "touch-game", "eyes-game"].includes(dbConfig.id);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-foreground dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
