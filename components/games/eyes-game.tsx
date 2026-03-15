@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { ProjectProps } from "@/components/project-registry";
-import { Trophy, X, ChevronDown, RefreshCw, AlertCircle } from "lucide-react";
+import { Trophy, X, ChevronDown, AlertCircle } from "lucide-react";
 import { KakaoShareButton } from "@/components/kakao-share-button";
 import { Portal } from "@/components/portal";
 
@@ -25,13 +25,17 @@ export function EyesGame({ userName, title }: ProjectProps) {
     const [showAllRanking, setShowAllRanking] = useState(false);
     const [finalScore, setFinalScore] = useState(0);
     const [gameOverReason, setGameOverReason] = useState<GameOverReason>("detection");
-
+    const [showRestartMessage, setShowRestartMessage] = useState(false);
     const [idleTime, setIdleTime] = useState(0);
 
     const gameLoopRef = useRef<number | null>(null);
     const computerTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastTickRef = useRef<number>(0);
     const idleTimeRef = useRef<number>(0);
+    const isPlayingRef = useRef(false);
+    const restartTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const audioContextRef = useRef<AudioContext | null>(null);
+    const lastSoundTimeRef = useRef<number>(0);
 
     const loadRanking = useCallback(async () => {
         try {
@@ -42,8 +46,68 @@ export function EyesGame({ userName, title }: ProjectProps) {
 
     useEffect(() => { loadRanking(); }, [loadRanking]);
 
+    const playAlertSound = useCallback(() => {
+        try {
+            if (!audioContextRef.current) {
+                const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+                if (AudioContextClass) {
+                    audioContextRef.current = new AudioContextClass();
+                }
+            }
+
+            const ctx = audioContextRef.current;
+            if (!ctx) return;
+
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+
+            lastSoundTimeRef.current = Date.now();
+
+            const bufferSize = ctx.sampleRate * 1.5;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.setValueAtTime(400, ctx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 1.2);
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.4, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
+
+            const osc = ctx.createOscillator();
+            const oscGain = ctx.createGain();
+            osc.frequency.setValueAtTime(60, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, ctx.currentTime + 0.5);
+            oscGain.gain.setValueAtTime(0.3, ctx.currentTime);
+            oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            osc.connect(oscGain);
+            oscGain.connect(ctx.destination);
+
+            noise.start();
+            osc.start();
+            noise.stop(ctx.currentTime + 1.2);
+            osc.stop(ctx.currentTime + 1.2);
+        } catch (e) { }
+    }, []);
+
     const startGame = () => {
         setPhase("playing");
+        isPlayingRef.current = true;
+        setShowRestartMessage(false);
+        if (restartTimerRef.current) clearTimeout(restartTimerRef.current);
         setScore(0);
         setFinalScore(0);
         setIdleTime(0);
@@ -52,37 +116,66 @@ export function EyesGame({ userName, title }: ProjectProps) {
         setComputerEyeState("closed");
         setGameOverReason("detection");
         lastTickRef.current = performance.now();
-        scheduleComputerAction("closed");
     };
 
-    const scheduleComputerAction = useCallback((currentState: EyeState) => {
+    const endGame = useCallback((reason: GameOverReason = "detection") => {
+        setPhase("result");
+        isPlayingRef.current = false;
+        setGameOverReason(reason);
+        setFinalScore(score);
         if (computerTimerRef.current) clearTimeout(computerTimerRef.current);
 
-        const nextState = currentState === "closed" ? "open" : "closed";
-        // 0.1초 ~ 5초 사이의 랜덤 시간
-        const delay = Math.random() * 4900 + 100;
+        if (reason === "detection") {
+            playAlertSound();
+        }
 
-        computerTimerRef.current = setTimeout(() => {
-            setComputerEyeState(nextState);
-            if (nextState === "open") playAlertSound();
-            scheduleComputerAction(nextState);
-        }, delay);
-    }, []);
+        restartTimerRef.current = setTimeout(() => {
+            setShowRestartMessage(true);
+        }, 1000);
 
-    // Game Loop for scoring and collision detection
+        if (userName !== "비회원") {
+            fetch("/api/eyes-scores", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ score: score }),
+            }).then(() => loadRanking()).catch(console.error);
+        }
+    }, [score, userName, loadRanking, playAlertSound]);
+
+    // Computer eyes logic
+    useEffect(() => {
+        if (phase === 'playing') {
+            const scheduleNext = (currentState: EyeState) => {
+                const nextState = currentState === 'closed' ? 'open' : 'closed';
+                const delay = Math.random() * 4900 + 100;
+
+                computerTimerRef.current = setTimeout(() => {
+                    if (!isPlayingRef.current) return;
+                    setComputerEyeState(nextState);
+                    if (nextState === 'open') playAlertSound();
+                    scheduleNext(nextState);
+                }, delay);
+            };
+
+            scheduleNext('closed');
+
+            return () => {
+                if (computerTimerRef.current) clearTimeout(computerTimerRef.current);
+            };
+        }
+    }, [phase, playAlertSound]);
+
     const tick = useCallback((t: number) => {
         if (phase !== "playing") return;
 
         const delta = (t - lastTickRef.current) / 1000;
         lastTickRef.current = t;
 
-        // Collision Detection
         if (playerEyesOpen && computerEyeState === "open") {
             endGame("detection");
             return;
         }
 
-        // Idle Timeout Detection (15 seconds without opening eyes)
         if (!playerEyesOpen) {
             idleTimeRef.current += delta;
             setIdleTime(idleTimeRef.current);
@@ -92,14 +185,12 @@ export function EyesGame({ userName, title }: ProjectProps) {
                 return;
             }
         } else {
-            // Reset idle timer when eyes are opened
             idleTimeRef.current = 0;
-            setIdleTime(0);
             setScore(prev => prev + delta);
         }
 
         gameLoopRef.current = requestAnimationFrame(tick);
-    }, [phase, playerEyesOpen, computerEyeState]);
+    }, [phase, playerEyesOpen, computerEyeState, endGame]);
 
     useEffect(() => {
         if (phase === "playing") {
@@ -112,75 +203,18 @@ export function EyesGame({ userName, title }: ProjectProps) {
         };
     }, [phase, tick]);
 
-    const endGame = (reason: GameOverReason = "detection") => {
-        setPhase("result");
-        setGameOverReason(reason);
-        setFinalScore(score);
-        if (computerTimerRef.current) clearTimeout(computerTimerRef.current);
-
-        if (reason === "detection") {
-            playAlertSound();
-        }
-
-        if (userName !== "비회원") {
-            fetch("/api/eyes-scores", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ score: score }),
-            }).then(() => loadRanking()).catch(console.error);
-        }
-    };
-
-    const playAlertSound = () => {
-        try {
-            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-            const ctx = new AudioContext();
-
-            // 1. 노이즈 생성 (천둥/폭발의 질감)
-            const bufferSize = ctx.sampleRate * 1.5;
-            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
-
-            const noise = ctx.createBufferSource();
-            noise.buffer = buffer;
-
-            // 2. 필터 설정 (묵직한 저음만 남기기)
-            const filter = ctx.createBiquadFilter();
-            filter.type = "lowpass";
-            filter.frequency.setValueAtTime(400, ctx.currentTime);
-            filter.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 1.2);
-
-            const gain = ctx.createGain();
-            gain.gain.setValueAtTime(0.4, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
-
-            // 3. 베이스 보강 (쾅 하는 타격감)
-            const osc = ctx.createOscillator();
-            const oscGain = ctx.createGain();
-            osc.frequency.setValueAtTime(60, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(10, ctx.currentTime + 0.5);
-            oscGain.gain.setValueAtTime(0.3, ctx.currentTime);
-            oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-
-            noise.connect(filter);
-            filter.connect(gain);
-            gain.connect(ctx.destination);
-
-            osc.connect(oscGain);
-            oscGain.connect(ctx.destination);
-
-            noise.start();
-            osc.start();
-            noise.stop(ctx.currentTime + 1.2);
-            osc.stop(ctx.currentTime + 1.2);
-        } catch (e) { }
-    };
-
     const handlePointerDown = (e: React.PointerEvent) => {
-        if (phase === "idle" || phase === "result") {
+        if (!audioContextRef.current) {
+            const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
+            if (AudioContextClass) {
+                audioContextRef.current = new AudioContextClass();
+            }
+        }
+        if (audioContextRef.current?.state === 'suspended') {
+            audioContextRef.current.resume();
+        }
+
+        if (phase === "idle" || (phase === "result" && showRestartMessage)) {
             if ((e.target as HTMLElement).closest('button')) return;
             startGame();
         } else if (phase === "playing") {
@@ -194,15 +228,12 @@ export function EyesGame({ userName, title }: ProjectProps) {
         }
     };
 
-    // Keyboard Support (Spacebar)
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.code === "Space") {
-                // Ignore if user is typing in an input or textarea
                 if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
-
-                e.preventDefault(); // Prevent page scroll
-                if (phase === "idle" || phase === "result") {
+                e.preventDefault();
+                if (phase === "idle" || (phase === "result" && showRestartMessage)) {
                     startGame();
                 } else if (phase === "playing") {
                     setPlayerEyesOpen(true);
@@ -224,16 +255,14 @@ export function EyesGame({ userName, title }: ProjectProps) {
             window.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("keyup", handleKeyUp);
         };
-    }, [phase]);
+    }, [phase, showRestartMessage]);
 
     return (
         <div className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl mx-auto select-none">
-            {/* 1. How to Play (Mobile) */}
             <div className="order-1 lg:hidden">
                 <HTPSection />
             </div>
 
-            {/* 2. Game Area */}
             <div
                 className={`order-2 lg:flex-1 min-w-0 flex flex-col items-center justify-between p-8 min-h-[500px] border rounded-2xl relative overflow-hidden transition-all duration-500
                     ${(phase === 'playing' && playerEyesOpen)
@@ -243,7 +272,6 @@ export function EyesGame({ userName, title }: ProjectProps) {
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerUp}
             >
-                {/* Score Display */}
                 <div className="z-10 text-center space-y-1">
                     <div className="text-6xl font-black tabular-nums tracking-tighter text-foreground drop-shadow-sm">
                         {score.toFixed(2)}<span className="text-2xl ml-1 text-muted-foreground">s</span>
@@ -251,7 +279,6 @@ export function EyesGame({ userName, title }: ProjectProps) {
                 </div>
 
                 <div className="w-full flex items-center justify-around relative px-4">
-                    {/* Player Character (Left) */}
                     <div className="flex flex-col items-center gap-6">
                         <CharacterSVG isOpen={playerEyesOpen} color="hsl(var(--primary))" isPlayer />
                         <div className="px-5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-black text-primary tracking-[0.2em] uppercase shadow-sm">
@@ -259,14 +286,12 @@ export function EyesGame({ userName, title }: ProjectProps) {
                         </div>
                     </div>
 
-                    {/* VS Divider */}
                     <div className="flex flex-col items-center gap-3">
                         <div className="w-1 h-1 rounded-full bg-muted-foreground/20" />
                         <span className="text-sm font-black italic text-muted-foreground/30 tracking-tight">VS</span>
                         <div className="w-1 h-1 rounded-full bg-muted-foreground/20" />
                     </div>
 
-                    {/* Computer Character (Right) */}
                     <div className="flex flex-col items-center gap-6">
                         <CharacterSVG isOpen={computerEyeState === "open"} color="hsl(var(--destructive))" />
                         <div className="px-5 py-1.5 rounded-full bg-destructive/10 border border-destructive/20 text-[10px] font-black text-destructive tracking-[0.2em] uppercase shadow-sm">
@@ -283,18 +308,18 @@ export function EyesGame({ userName, title }: ProjectProps) {
                     ) : phase === "result" ? (
                         <div className="flex flex-col items-center animate-in zoom-in duration-300">
                             {gameOverReason === "timeout" ? (
-                                <>
-                                    <div className="flex items-center gap-2 text-primary font-black text-2xl mb-1 tracking-tighter">
-                                        <AlertCircle className="w-6 h-6 text-primary/60" />
-                                        너무 쫄았네요.
-                                    </div>
-                                </>
+                                <div className="flex items-center gap-2 text-primary font-black text-2xl mb-1 tracking-tighter">
+                                    <AlertCircle className="w-6 h-6 text-primary/60" />
+                                    너무 쫄았네요.
+                                </div>
                             ) : (
                                 <div className="text-destructive font-black text-2xl mb-1 tracking-tighter text-center">딱 걸렸네요.</div>
                             )}
-                            <div className="flex flex-col items-center animate-bounce mt-4">
-                                <span className="text-sm font-bold text-muted-foreground">화면을 눌러 다시 도전!</span>
-                            </div>
+                            {showRestartMessage && (
+                                <div className="flex flex-col items-center animate-bounce mt-4">
+                                    <span className="text-sm font-bold text-muted-foreground">화면을 눌러 다시 도전!</span>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="flex flex-col items-center gap-3">
@@ -302,7 +327,6 @@ export function EyesGame({ userName, title }: ProjectProps) {
                                 {playerEyesOpen ? "버티세요!" : "눈을 뜨세요!"}
                             </div>
 
-                            {/* Idle Progress Bar */}
                             {!playerEyesOpen && (
                                 <div className="w-40 h-1 bg-muted rounded-full overflow-hidden shadow-inner border border-border/50">
                                     <div
@@ -320,7 +344,6 @@ export function EyesGame({ userName, title }: ProjectProps) {
                 )}
             </div>
 
-            {/* Sidebar */}
             <div className="order-3 lg:w-64 shrink-0 flex flex-col gap-4">
                 <div className="hidden lg:block">
                     <HTPSection />
@@ -331,7 +354,6 @@ export function EyesGame({ userName, title }: ProjectProps) {
                 />
             </div>
 
-            {/* Modal */}
             {showAllRanking && (
                 <Portal>
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowAllRanking(false)}>
