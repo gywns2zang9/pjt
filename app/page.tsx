@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 import { Suspense } from "react";
-import HomeClient from "@/components/home-client";
+import HomeClient, { Counter } from "@/components/home-client";
 import { SiteHeader } from "@/components/layout/site-header";
 
 /**
@@ -26,6 +26,9 @@ const getCachedStats = unstable_cache(
      */
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+    /**
+     * DB 테이블 리스트. 각 게임의 점수 테이블에서 플레이 횟수를 집계합니다.
+     */
     const tables = [
       "chosung_scores",
       "circle_scores",
@@ -39,6 +42,8 @@ const getCachedStats = unstable_cache(
 
     /**
      * 모든 DB 조회를 병렬(Parallel)로 실행하여 전체 로딩 시간을 단축합니다.
+     * select('play_count') 대신 필요한 정보만 최소한으로 조회하도록 최적화 여지가 있으나,
+     * 현재는 병렬 실행만으로도 네트워크 대기 시간을 크게 줄일 수 있습니다.
      */
     const [visitorResult, ...results] = await Promise.all([
       // 1. 전체 방문자 수 조회
@@ -51,21 +56,15 @@ const getCachedStats = unstable_cache(
         const admin = createClient(supabaseUrl, serviceRoleKey, {
           auth: { autoRefreshToken: false, persistSession: false },
         });
-        // 실제 유저 목록이 아닌 숫자(count) 정보만 가져와 효율화
         const { data } = await admin.auth.admin.listUsers({ perPage: 1 });
         return (data as any)?.total ?? (data as any)?.users?.length ?? 0;
       })(),
     ]);
 
-    // 배열의 마지막에 넣었던 userCount 추출
     const userCount = results.pop() as number;
     const playCountResults = results;
-
     const visitorCount = visitorResult.count ?? 0;
 
-    /**
-     * 각 테이블에 흩어져 있는 play_count 실시간 합산
-     */
     const totalPlayCount = playCountResults.reduce((sum, result: any) => {
       const rows = result.data ?? [];
       return sum + rows.reduce((s: number, r: any) => s + (r.play_count ?? 0), 0);
@@ -73,31 +72,65 @@ const getCachedStats = unstable_cache(
 
     return { visitorCount, totalPlayCount, userCount };
   },
-  ["home-stats"], // 캐시 키
+  ["home-stats"],
   { revalidate: 300, tags: ["stats"] }
 );
 
-export default async function Home() {
-  /**
-   * 캐시된 통계 데이터를 가져옵니다. 
-   * 이미 생성된 데이터가 있다면 즉시 반환되며, 5분이 지나면 백그라운드에서 갱신됩니다.
-   */
+/**
+ * 통계 숫자 영역만 담당하는 서버 컴포넌트
+ */
+async function HomeStatsServer() {
   const { visitorCount, totalPlayCount, userCount } = await getCachedStats();
+  return (
+    <div className="grid grid-cols-3 gap-8 md:gap-16">
+      <StatItem label="총 방문" value={visitorCount} />
+      <StatItem label="플레이" value={totalPlayCount} />
+      <StatItem label="친구들" value={userCount} />
+    </div>
+  );
+}
 
+/**
+ * 통계 로딩 중에 보여줄 스켈레톤 UI
+ */
+function HomeStatsFallback() {
+  return (
+    <div className="grid grid-cols-3 gap-8 md:gap-16 opacity-50">
+      <StatItem label="총 방문" value={0} isFallback />
+      <StatItem label="플레이" value={0} isFallback />
+      <StatItem label="친구들" value={0} isFallback />
+    </div>
+  );
+}
+
+/**
+ * 범용 통계 아이템 컴포넌트 (HomeClient에서 사용하기 위해 export)
+ */
+export function StatItem({ label, value, isFallback }: { label: string; value: number; isFallback?: boolean }) {
+  return (
+    <div className="flex flex-col items-center">
+      <span className="text-2xl md:text-5xl font-black text-white italic tabular-nums min-w-[2ch]">
+        <Counter value={value} isLoaded={!isFallback} />
+      </span>
+      <span className="mt-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+export default function Home() {
   return (
     <>
-      {/**
-        * SiteHeader 내의 Auth 정보 확인(쿠키 기반)으로 인해 화면 전체 로딩이 멈추지 않도록
-        * Suspense 바운더리를 설정하여 메인 콘텐츠가 먼저 보이게 처리합니다.
-        */}
       <Suspense fallback={<div className="h-16 border-b border-border/80 bg-background/80 backdrop-blur" />}>
         <SiteHeader />
       </Suspense>
-      <HomeClient
-        visitorCount={visitorCount}
-        playCount={totalPlayCount}
-        userCount={userCount}
-      />
+
+      <HomeClient>
+        <Suspense fallback={<HomeStatsFallback />}>
+          <HomeStatsServer />
+        </Suspense>
+      </HomeClient>
     </>
   );
 }

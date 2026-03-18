@@ -7,12 +7,13 @@ import { Container } from "@/components/layout/container";
 import { PageViewTracker } from "@/components/page-view-tracker";
 
 /* ── Animated Counter ── */
-function Counter({ value }: { value: number }) {
+export function Counter({ value, isLoaded }: { value: number; isLoaded?: boolean }) {
     const [n, setN] = useState(0);
 
     useEffect(() => {
+        if (!isLoaded) return;
         let start: number;
-        const dur = 2000;
+        const dur = 800;
         const tick = (t: number) => {
             if (!start) start = t;
             const p = Math.min((t - start) / dur, 1);
@@ -22,8 +23,9 @@ function Counter({ value }: { value: number }) {
             else setN(value);
         };
         requestAnimationFrame(tick);
-    }, [value]);
+    }, [value, isLoaded]);
 
+    if (!isLoaded) return <span className="opacity-20 animate-pulse">---</span>;
     return <>{n.toLocaleString()}</>;
 }
 
@@ -41,13 +43,9 @@ const TAGLINES = [
 
 /* ── Main Component ── */
 export default function HomeClient({
-    visitorCount,
-    playCount,
-    userCount,
+    children
 }: {
-    visitorCount: number;
-    playCount: number;
-    userCount: number;
+    children: React.ReactNode;
 }) {
     const [tagline, setTagline] = useState(TAGLINES[0]);
 
@@ -70,54 +68,31 @@ export default function HomeClient({
                     {/* Title + Tagline */}
                     <div className="space-y-4">
                         <h1
-                            className="text-6xl md:text-9xl font-black tracking-tighter drop-shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-1000"
+                            className="text-6xl md:text-9xl font-black tracking-tighter drop-shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-700"
                             style={{ animationFillMode: "both" }}
                         >
                             뚝딱실
                         </h1>
                         <p
-                            className="text-lg md:text-2xl text-slate-400 font-medium animate-in fade-in slide-in-from-bottom-4 duration-1000"
-                            style={{ animationDelay: "400ms", animationFillMode: "both" }}
+                            className="text-lg md:text-2xl text-slate-400 font-medium animate-in fade-in slide-in-from-bottom-4 duration-700"
+                            style={{ animationDelay: "200ms", animationFillMode: "both" }}
                         >
                             {tagline}
                         </p>
                     </div>
 
-                    {/* Stats */}
+                    {/* Stats Slot */}
                     <div
-                        className="grid grid-cols-3 gap-8 md:gap-16 animate-in fade-in slide-in-from-bottom-4 duration-1000"
-                        style={{ animationDelay: "800ms", animationFillMode: "both" }}
+                        className="animate-in fade-in slide-in-from-bottom-4 duration-700"
+                        style={{ animationDelay: "400ms", animationFillMode: "both" }}
                     >
-                        <div className="flex flex-col items-center">
-                            <span className="text-2xl md:text-5xl font-black text-white italic tabular-nums">
-                                <Counter value={visitorCount} />
-                            </span>
-                            <span className="mt-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
-                                총 방문
-                            </span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                            <span className="text-2xl md:text-5xl font-black text-white italic tabular-nums">
-                                <Counter value={playCount} />
-                            </span>
-                            <span className="mt-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
-                                플레이
-                            </span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                            <span className="text-2xl md:text-5xl font-black text-white italic tabular-nums">
-                                <Counter value={userCount} />
-                            </span>
-                            <span className="mt-1.5 text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">
-                                친구들
-                            </span>
-                        </div>
+                        {children}
                     </div>
 
                     {/* CTA */}
                     <div
-                        className="animate-in fade-in slide-in-from-bottom-4 duration-1000"
-                        style={{ animationDelay: "1200ms", animationFillMode: "both" }}
+                        className="animate-in fade-in slide-in-from-bottom-4 duration-700"
+                        style={{ animationDelay: "600ms", animationFillMode: "both" }}
                     >
                         <Link
                             href="/works"
@@ -138,3 +113,6 @@ export default function HomeClient({
         </div>
     );
 }
+
+// 헬퍼로 Counter 노출
+HomeClient.Counter = Counter;
