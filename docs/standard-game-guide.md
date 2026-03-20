@@ -15,6 +15,9 @@
 | Works 목록 통계 | `app/works/page.tsx` — `TABLE_MAP`, `SCORE_ASC` 에 추가 |
 | 로그인 배너 | `app/works/[id]/page.tsx` — `showLoginBanner` 배열에 추가 |
 | Supabase 테이블 | SQL Editor에서 `[game]_scores` 테이블 + RLS 정책 생성 |
+| 전역 레이아웃 | `app/layout.tsx` — `html` 태그에 `data-scroll-behavior="smooth"` 확인 |
+
+```
 
 ### 필수 코드 구성
 
@@ -22,7 +25,7 @@
 "use client";
 // GamePhase: "idle" | "go" | "playing" | "result" | "gameover" | "fault" | "timeout" 등
 // RankEntry: { user_name: string; score: number; created_at: string; }
-// 게임 설정 상수: TOTAL_TARGET, TIME_LIMIT_MS 등
+// 사운드: Web Audio API (효과음 파일 없이 코드로 생성 권장)
 ```
 
 ---
@@ -172,7 +175,27 @@ CREATE POLICY "Enable delete for service role"
 
 ---
 
-## 6. 신규 게임 추가 체크리스트
+---
+
+## 7. 성능 최적화 및 고급 UX (Advanced)
+
+### 7-1. 스트리밍 렌더링 (Streaming SSR)
+- 페이지 전체를 기다리지 않고 **정적 레이아웃 → 동적 데이터** 순서로 보여줍니다.
+- 서버 컴포넌트 내부에서 `Suspense`를 활용하여 데이터 페칭 영역만 별도로 렌더링합니다. (예: `app/page.tsx`)
+
+### 7-2. Web Audio API 사운드
+- 무거운 `.mp3` 파일 로드 대신 코드로 사운드를 생성하여 즉각적인 피드백을 제공합니다.
+- `AudioContext`를 사용하여 화이트 노이즈(폭발), 오실레이터(부저/비율)를 합성합니다. (참고: `eyes-game.tsx`)
+
+### 7-3. 빠른 카운터 애니메이션
+- 숫자가 카운팅되는 시간(`dur`)은 **0.8초(800ms) 이하**로 설정하여 사용자가 답답함을 느끼지 않게 합니다.
+
+### 7-4. 루트 전환 스크롤 경고 해결
+- `html` 태그에 `data-scroll-behavior="smooth"` 속성을 추가하여 페이지 전환 시 Next.js의 스크롤 제어 성능을 보장합니다.
+
+---
+
+## 8. 신규 게임 추가 체크리스트
 
 ### 코드 등록 (필수)
 - [ ] `components/games/[game-name].tsx` — 게임 컴포넌트 생성
@@ -184,25 +207,15 @@ CREATE POLICY "Enable delete for service role"
 - [ ] `app/works/[id]/page.tsx` → `showLoginBanner` 배열에 `"[game-name]"` 추가
 
 ### Supabase (필수)
-- [ ] SQL Editor에서 `[game]_scores` 테이블 생성 (위 스키마 참고)
-- [ ] RLS 정책 4개 생성 (SELECT, INSERT, UPDATE, DELETE)
+- [ ] SQL Editor에서 `[game]_scores` 테이블 생성 (RLS 포함)
 
-### UI/UX 점검
-- [ ] 상단 정보 영역이 다른 게임과 동일한 스타일인지 확인
-- [ ] 타이머 바 스타일 통일 (높이 `h-2`, `rounded-full`, `bg-muted`)
-- [ ] `How to Play` 아코디언 동작 확인 (모바일/PC)
-- [ ] `RankingBoard` TOP 3 + 전체보기 모달 동작 확인
-- [ ] 카카오 공유 버튼 동작 확인
-- [ ] 다크 모드 / 라이트 모드 대응 확인
-- [ ] 모바일 터치 환경 확인 (스크롤 잠금 등)
-- [ ] 키보드 단축키 동작 확인 (Space 시작, 입력창 포커스 시 차단)
-
-### 기능 점검
-- [ ] 게임 시작이 버튼/스페이스로만 되는지 (게임 조작키로 시작 안 되게)
-- [ ] 게임 결과 화면에서 다시 시작하기 버튼 동작 확인
-- [ ] 점수 저장 → 랭킹 갱신 확인 (비회원은 저장 안 됨)
-- [ ] `/works` 리스트에서 플레이 횟수·등수 표시 확인
-- [ ] 타이머 표시 소수점 자릿수와 결과 점수 소수점 자릿수 일치 확인
+### UI/UX 및 성능 점검
+- [ ] **사운드 효과**: Web Audio API 사용 여부 (권장)
+- [ ] **성능 최적화**: 카운터 애니메이션 속도 확인 (0.8s 이하)
+- [ ] **레이아웃**: `HTPSection` 및 `RankingBoard` 탑재 유무
+- [ ] **공유 기능**: 카카오 공유 시 `displayScore`와 `rank` 값이 정확히 전달되는지 확인
+- [ ] **스크롤 제어**: 페이지 전환 시 부드러운 스크롤 관련 경고가 없는지 확인 (`data-attribute`)
+- [ ] **모바일**: 터치 영역 및 브라우저 기본 제스처 충돌 확인
 
 ---
 

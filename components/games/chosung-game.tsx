@@ -195,7 +195,7 @@ export function ChosungGame({ userName, gameConfig, title }: ChosungGameProps) {
     }, [cfg.gameDuration, cfg.numConsonants]);
 
     useEffect(() => {
-        if (phase === "playing") {
+        if (phase === "playing" && !isValidating) {
             if (timerRef.current) clearInterval(timerRef.current);
             timerRef.current = setInterval(() => {
                 setTimeLeft((prev) => {
@@ -213,7 +213,7 @@ export function ChosungGame({ userName, gameConfig, title }: ChosungGameProps) {
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
         };
-    }, [phase]);
+    }, [phase, isValidating]);
 
     useEffect(() => {
         if (phase === "checking") {
