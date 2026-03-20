@@ -312,8 +312,8 @@ export function ArrowGame({ userName, title }: ProjectProps) {
 
                     {/* HUD: Score (Minimalist In-Game, Centered background) */}
                     {phase === "playing" && (
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 text-center pointer-events-none opacity-40">
-                            <div className="text-[12rem] md:text-[20rem] font-black tabular-nums tracking-tighter text-foreground/[0.03] select-none leading-none">
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0 text-center pointer-events-none">
+                            <div className="text-[10rem] md:text-[20rem] font-black tabular-nums tracking-tighter text-foreground/[0.08] dark:text-foreground/[0.12] select-none leading-none">
                                 {score}
                             </div>
                         </div>
