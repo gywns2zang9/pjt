@@ -95,10 +95,14 @@ async function HomeStatsServer() {
  */
 function HomeStatsFallback() {
   return (
-    <div className="grid grid-cols-3 gap-8 md:gap-16 opacity-50">
-      <StatItem label="총 방문" value={0} isFallback />
-      <StatItem label="플레이" value={0} isFallback />
-      <StatItem label="친구들" value={0} isFallback />
+    <div className="grid grid-cols-3 gap-8 md:gap-16">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="flex flex-col items-center gap-2">
+          {/* stats placeholder: root loading.tsx와 동일한 크기 */}
+          <div className="w-12 h-8 md:w-20 md:h-10 bg-slate-800/50 rounded animate-pulse" />
+          <div className="w-10 h-3 bg-slate-800/30 rounded animate-pulse" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -122,9 +126,7 @@ export function StatItem({ label, value, isFallback }: { label: string; value: n
 export default function Home() {
   return (
     <>
-      <Suspense fallback={<div className="h-16 border-b border-border/80 bg-background/80 backdrop-blur" />}>
-        <SiteHeader />
-      </Suspense>
+      <SiteHeader />
 
       <HomeClient>
         <Suspense fallback={<HomeStatsFallback />}>

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Container } from "@/components/layout/container";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -22,14 +21,46 @@ const TABLE_MAP: Record<string, string> = {
 // 시간 기반(낮을수록 좋은) 게임
 const SCORE_ASC = new Set(["speed-game", "sort-game", "touch-game"]);
 
+// 모든 고유 테이블 이름 추출 (한 번에 병렬 조회하기 위해)
+const ALL_SCORE_TABLES = [...new Set(Object.values(TABLE_MAP))];
+
 export default async function WorksPage() {
     const supabase = await createClient();
 
-    // Works에 공개된 프로젝트만 가져오기
-    const { data: configs } = await supabase
-        .from("project_configs")
-        .select("*")
-        .eq("show_on_works", true);
+    // ============================================
+    // 🔥 핵심 개선: 모든 DB 쿼리를 동시에 병렬 실행
+    // 기존: auth → configs → 9테이블 → guestbook (직렬)
+    // 개선: 모든 쿼리를 한 번에 Promise.all
+    // ============================================
+    const [
+        { data: { user } },
+        { data: configs },
+        guestbookResult,
+        ...scoreResults
+    ] = await Promise.all([
+        // 1. 유저 인증 (병렬)
+        supabase.auth.getUser(),
+        // 2. 공개 프로젝트 설정 (병렬)
+        supabase.from("project_configs").select("*").eq("show_on_works", true),
+        // 3. 방명록 (병렬)
+        supabase.from("guestbook").select("*", { count: "exact" })
+            .eq("project_id", "home")
+            .order("created_at", { ascending: false })
+            .range(0, 4),
+        // 4. 모든 게임 점수 테이블 한번에 (병렬)
+        ...ALL_SCORE_TABLES.map((table) =>
+            supabase.from(table).select("user_id, score, play_count")
+        ),
+    ]);
+
+    const entriesData = guestbookResult.data;
+    const entriesCount = guestbookResult.count;
+
+    // 테이블 이름 → 데이터 매핑
+    const scoreDataMap = new Map<string, any[]>();
+    ALL_SCORE_TABLES.forEach((table, i) => {
+        scoreDataMap.set(table, scoreResults[i]?.data ?? []);
+    });
 
     // 정적 메타와 매핑
     const visibleProjects = (configs ?? [])
@@ -39,65 +70,47 @@ export default async function WorksPage() {
         }))
         .filter((p) => p.meta);
 
-    // 방명록 및 유저 정보 가져오기
-    const { data: { user } } = await supabase.auth.getUser();
+    // 이미 조회된 데이터에서 통계 계산 (추가 DB 호출 없음)
+    const projectsWithStats = visibleProjects.map((project) => {
+        const id = project.meta!.id;
+        const tableName = TABLE_MAP[id];
+        let totalPlay = 0;
+        let myPlay = 0;
+        let myRank: number | null = null;
+        let totalPlayers = 0;
 
-    // ── 통계(전체/나의 플레이 + 순위) 비동기 조회 ──
-    const projectsWithStats = await Promise.all(
-        visibleProjects.map(async (project) => {
-            const id = project.meta!.id;
-            const tableName = TABLE_MAP[id];
-            let totalPlay = 0;
-            let myPlay = 0;
-            let myRank: number | null = null;
-            let totalPlayers = 0;
+        if (tableName) {
+            const rows = scoreDataMap.get(tableName) ?? [];
+            totalPlayers = rows.length;
+            totalPlay = rows.reduce((acc: number, row: any) => acc + (row.play_count ?? 0), 0);
 
-            if (tableName) {
-                // 전체 스코어 데이터 조회 (play_count + score + user_id)
-                const { data: allData } = await supabase
-                    .from(tableName)
-                    .select("user_id, score, play_count");
-
-                const rows = allData ?? [];
-                totalPlayers = rows.length;
-                totalPlay = rows.reduce((acc: number, row: any) => acc + (row.play_count ?? 0), 0);
-
-                if (user) {
-                    // 내 플레이 횟수
-                    const myRow = rows.find((r: any) => r.user_id === user.id);
-                    if (myRow) {
-                        myPlay = myRow.play_count ?? 0;
-                        const myScore = myRow.score ?? 0;
-
-                        // 순위 계산 (동점자는 같은 등수)
-                        const isAsc = SCORE_ASC.has(id);
-                        const betterCount = rows.filter((r: any) =>
-                            isAsc
-                                ? (r.score ?? Infinity) < myScore  // 시간 기반: 나보다 빠른 사람
-                                : (r.score ?? 0) > myScore         // 점수 기반: 나보다 높은 사람
-                        ).length;
-                        myRank = betterCount + 1;
-                    }
+            if (user) {
+                const myRow = rows.find((r: any) => r.user_id === user.id);
+                if (myRow) {
+                    myPlay = myRow.play_count ?? 0;
+                    const myScore = myRow.score ?? 0;
+                    const isAsc = SCORE_ASC.has(id);
+                    const betterCount = rows.filter((r: any) =>
+                        isAsc
+                            ? (r.score ?? Infinity) < myScore
+                            : (r.score ?? 0) > myScore
+                    ).length;
+                    myRank = betterCount + 1;
                 }
             }
+        }
 
-            return {
-                config: project.config,
-                meta: { id: project.meta!.id, title: project.meta!.title },
-                totalPlay,
-                myPlay,
-                myRank,
-                totalPlayers,
-            };
-        })
-    );
+        return {
+            config: project.config,
+            meta: { id: project.meta!.id, title: project.meta!.title },
+            totalPlay,
+            myPlay,
+            myRank,
+            totalPlayers,
+        };
+    });
 
-    const { data: entriesData, count: entriesCount } = await supabase
-        .from("guestbook")
-        .select("*", { count: "exact" })
-        .eq("project_id", "home")
-        .order("created_at", { ascending: false })
-        .range(0, 4);
+    // 방명록 데이터는 위의 Promise.all에서 이미 조회 완료
 
     const meta = user?.user_metadata;
     const userName = user

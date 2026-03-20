@@ -8,15 +8,33 @@ import { NavLinks } from "./nav-links";
 import { createClient } from "@/lib/supabase/server";
 import { checkIsAdmin } from "@/lib/admin";
 
-export async function SiteHeader() {
+/**
+ * 관리자 전용 네비게이션 링크 — Suspense 안에서 비동기로 렌더링됩니다.
+ * SiteHeader 본체의 렌더링을 차단하지 않습니다.
+ */
+async function AdminNavItems() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getUser();
-  const user = data.user;
-  const isAdmin = checkIsAdmin(user?.id);
+  const isAdmin = checkIsAdmin(data.user?.id);
 
-  const navItems = [
+  if (!isAdmin) return null;
+
+  return (
+    <NavLinks
+      items={[{ href: "/labs", label: "뚝딱~ing" }]}
+      className="flex items-center gap-4 text-sm text-muted-foreground"
+    />
+  );
+}
+
+/**
+ * SiteHeader — 인증 호출 없이 즉시 렌더링됩니다.
+ * 인증이 필요한 부분(AdminNavItems, AuthButton)은 Suspense로 감싸서
+ * 나머지 UI를 차단하지 않습니다.
+ */
+export function SiteHeader() {
+  const defaultNavItems = [
     { href: "/works", label: "뚝-딱!" },
-    ...(isAdmin ? [{ href: "/labs", label: "뚝딱~ing" }] : []),
   ];
 
   return (
@@ -30,25 +48,16 @@ export async function SiteHeader() {
             뚝딱실
           </Link>
           <NavLinks
-            items={navItems}
+            items={defaultNavItems}
             className="flex items-center gap-4 text-sm text-muted-foreground md:flex"
           />
+          <Suspense>
+            <AdminNavItems />
+          </Suspense>
         </div>
         <div className="flex items-center gap-2">
-          {/* <Link
-            href="https://pf.kakao.com/_xohxazX"
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-foreground transition hover:text-primary"
-            aria-label="카카오톡 문의"
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
-              <path d="M12 3C6.477 3 2 6.58 2 11.02c0 2.64 1.75 4.96 4.4 6.35-.14.53-.9 3.35-.93 3.57 0 0-.02.17.09.24.11.07.24.02.24.02.32-.05 3.72-2.45 4.31-2.86.6.09 1.21.14 1.84.14 5.523 0 10-3.58 10-8.02C22 6.58 17.523 3 12 3Z" />
-            </svg>
-            <span className="hidden sm:inline">카카오톡 문의</span>
-          </Link> */}
           <ThemeSwitcher />
-          <Suspense>
+          <Suspense fallback={<div className="w-16 h-8" />}>
             <AuthButton />
           </Suspense>
         </div>

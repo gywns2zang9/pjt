@@ -23,22 +23,16 @@ interface Props {
 export default async function WorksProjectPage({ params }: Props) {
     const { id: slug } = await params;
 
-    // 로그인 확인
     const supabase = await createClient();
-    // const {
-    //     data: { user },
-    // } = await supabase.auth.getUser();
 
-    // if (!user) redirect("/auth/login");
-
-    // 유저 정보 가져오기 (인증 여부 상관없이 진행)
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // slug 또는 id로 공개된 프로젝트 검색
-    const { data: configs } = await supabase
-        .from("project_configs")
-        .select("*")
-        .eq("show_on_works", true);
+    // 🔥 인증 + 프로젝트 설정을 동시에 병렬 조회
+    const [
+        { data: { user } },
+        { data: configs },
+    ] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from("project_configs").select("*").eq("show_on_works", true),
+    ]);
 
     const dbConfig = configs?.find(
         (c) => (c.slug?.trim() || c.id) === slug
@@ -46,6 +40,7 @@ export default async function WorksProjectPage({ params }: Props) {
 
     if (!dbConfig) notFound();
 
+    // 방명록은 dbConfig 확정 후 조회
     const { data: entriesData, count: entriesCount } = await supabase
         .from("guestbook")
         .select("*", { count: "exact" })

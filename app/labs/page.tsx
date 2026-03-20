@@ -10,21 +10,19 @@ import { ProjectAdminCard } from "@/components/labs/project-admin-card";
 export default async function LabPage() {
     // 관리자 인증
     const supabase = await createClient();
-    const {
-        data: { user },
-    } = await supabase.auth.getUser();
 
-    if (!user) redirect("/auth/login");
-    if (!checkIsAdmin(user.id)) redirect("/");
-
-    // DB에서 설정 가져오기
-    const { data: configs } = await supabase
-        .from("project_configs")
-        .select("*");
+    // 🔥 인증 + 프로젝트 설정을 동시에 병렬 조회
+    const [
+        { data: { user } },
+        { data: configs },
+    ] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from("project_configs").select("*"),
+    ]);
 
     // 정적 프로젝트 목록과 DB 설정 병합
     const projectsWithConfig = projects.map((p) => {
-        const dbConfig = configs?.find((c) => c.id === p.id);
+        const dbConfig = configs?.find((c: any) => c.id === p.id);
         const config: ProjectConfig = dbConfig
             ? {
                 id: p.id,

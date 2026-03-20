@@ -426,7 +426,7 @@ function HTPSection() {
 
 function RankingBoard({ ranking, onShowAll, phase, resultTime, isGuest }: { ranking: RankEntry[], onShowAll: () => void, phase: GamePhase, resultTime: number | null, isGuest: boolean }) {
     return (
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-4 relative overflow-hidden">
+        <div className={`rounded-2xl border border-border bg-card p-5 space-y-4 relative overflow-hidden ${isGuest ? "min-h-[200px]" : ""}`}>
             <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-amber-500" />
                 <h2 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">TOP 3</h2>
