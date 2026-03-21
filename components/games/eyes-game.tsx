@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { ProjectProps } from "@/components/project-registry";
-import { Trophy, X, ChevronDown, AlertCircle, Lock } from "lucide-react";
+import { Trophy, X, ChevronDown, Lock, AlertCircle } from "lucide-react";
 import { KakaoShareButton } from "@/components/kakao-share-button";
 import { Portal } from "@/components/portal";
 
@@ -30,12 +30,11 @@ export function EyesGame({ userName, title }: ProjectProps) {
 
     const gameLoopRef = useRef<number | null>(null);
     const computerTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const restartTimerRef = useRef<NodeJS.Timeout | null>(null);
     const lastTickRef = useRef<number>(0);
     const idleTimeRef = useRef<number>(0);
     const isPlayingRef = useRef(false);
-    const restartTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
-    const lastSoundTimeRef = useRef<number>(0);
+
 
     const loadRanking = useCallback(async () => {
         try {
@@ -45,63 +44,6 @@ export function EyesGame({ userName, title }: ProjectProps) {
     }, []);
 
     useEffect(() => { loadRanking(); }, [loadRanking]);
-
-    const playAlertSound = useCallback(() => {
-        try {
-            if (!audioContextRef.current) {
-                const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
-                if (AudioContextClass) {
-                    audioContextRef.current = new AudioContextClass();
-                }
-            }
-
-            const ctx = audioContextRef.current;
-            if (!ctx) return;
-
-            if (ctx.state === 'suspended') {
-                ctx.resume();
-            }
-
-            lastSoundTimeRef.current = Date.now();
-
-            const bufferSize = ctx.sampleRate * 1.5;
-            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-            const data = buffer.getChannelData(0);
-            for (let i = 0; i < bufferSize; i++) {
-                data[i] = Math.random() * 2 - 1;
-            }
-
-            const noise = ctx.createBufferSource();
-            noise.buffer = buffer;
-
-            const filter = ctx.createBiquadFilter();
-            filter.type = "lowpass";
-            filter.frequency.setValueAtTime(400, ctx.currentTime);
-            filter.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 1.2);
-
-            const gain = ctx.createGain();
-            gain.gain.setValueAtTime(0.4, ctx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 1.2);
-
-            const osc = ctx.createOscillator();
-            const oscGain = ctx.createGain();
-            osc.frequency.setValueAtTime(60, ctx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(10, ctx.currentTime + 0.5);
-            oscGain.gain.setValueAtTime(0.3, ctx.currentTime);
-            oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-
-            noise.connect(filter);
-            filter.connect(gain);
-            gain.connect(ctx.destination);
-            osc.connect(oscGain);
-            oscGain.connect(ctx.destination);
-
-            noise.start();
-            osc.start();
-            noise.stop(ctx.currentTime + 1.2);
-            osc.stop(ctx.currentTime + 1.2);
-        } catch (e) { }
-    }, []);
 
     const startGame = () => {
         setPhase("playing");
@@ -125,10 +67,6 @@ export function EyesGame({ userName, title }: ProjectProps) {
         setFinalScore(score);
         if (computerTimerRef.current) clearTimeout(computerTimerRef.current);
 
-        if (reason === "detection") {
-            playAlertSound();
-        }
-
         restartTimerRef.current = setTimeout(() => {
             setShowRestartMessage(true);
         }, 1000);
@@ -140,7 +78,7 @@ export function EyesGame({ userName, title }: ProjectProps) {
                 body: JSON.stringify({ score: score }),
             }).then(() => loadRanking()).catch(console.error);
         }
-    }, [score, userName, loadRanking, playAlertSound]);
+    }, [score, userName, loadRanking]);
 
     // Computer eyes logic
     useEffect(() => {
@@ -152,7 +90,6 @@ export function EyesGame({ userName, title }: ProjectProps) {
                 computerTimerRef.current = setTimeout(() => {
                     if (!isPlayingRef.current) return;
                     setComputerEyeState(nextState);
-                    if (nextState === 'open') playAlertSound();
                     scheduleNext(nextState);
                 }, delay);
             };
@@ -163,7 +100,7 @@ export function EyesGame({ userName, title }: ProjectProps) {
                 if (computerTimerRef.current) clearTimeout(computerTimerRef.current);
             };
         }
-    }, [phase, playAlertSound]);
+    }, [phase]);
 
     const tick = useCallback((t: number) => {
         if (phase !== "playing") return;
@@ -204,16 +141,6 @@ export function EyesGame({ userName, title }: ProjectProps) {
     }, [phase, tick]);
 
     const handlePointerDown = (e: React.PointerEvent) => {
-        if (!audioContextRef.current) {
-            const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
-            if (AudioContextClass) {
-                audioContextRef.current = new AudioContextClass();
-            }
-        }
-        if (audioContextRef.current?.state === 'suspended') {
-            audioContextRef.current.resume();
-        }
-
         if (phase === "idle" || (phase === "result" && showRestartMessage)) {
             if ((e.target as HTMLElement).closest('button')) return;
             startGame();
@@ -442,7 +369,7 @@ function HTPSection() {
                 <ul className="space-y-3 text-xs text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200 font-medium font-sans">
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>화면을 <strong>누르면</strong> 눈을 떠요. <br />눈을 뜨고 있는 <strong>시간만</strong> 누적해요.</span>
+                        <span>화면을 <strong>누르면</strong> 눈을 떠요. <br />PC에서는 <strong>스페이스바로도</strong> 눈을 뜰 수 있어요.</span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
