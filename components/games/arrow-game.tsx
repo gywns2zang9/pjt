@@ -27,6 +27,7 @@ export function ArrowGame({ userName, title }: ProjectProps) {
     const [arrowY, setArrowY] = useState(50);
     const [topBoundary, setTopBoundary] = useState(0);
     const [bottomBoundary, setBottomBoundary] = useState(100);
+    const [boundaryHistory, setBoundaryHistory] = useState<{ y: number, type: 'top' | 'bottom' }[]>([]);
 
     // 게임 로직용 ref (리렌더 유발 없음)
     const gameLoopRef = useRef<number | null>(null);
@@ -40,7 +41,6 @@ export function ArrowGame({ userName, title }: ProjectProps) {
     const scoreRef = useRef(0);
     const isPlayingRef = useRef(false);
     const restartTimerRef = useRef<NodeJS.Timeout | null>(null);
-    const audioContextRef = useRef<AudioContext | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const characterRef = useRef<HTMLDivElement>(null);
     const pulseTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -54,44 +54,6 @@ export function ArrowGame({ userName, title }: ProjectProps) {
 
     useEffect(() => { loadRanking(); }, [loadRanking]);
 
-    const playSound = useCallback((type: "click" | "fail") => {
-        try {
-            if (!audioContextRef.current) {
-                const AudioContextClass = (window.AudioContext || (window as any).webkitAudioContext);
-                if (AudioContextClass) {
-                    audioContextRef.current = new AudioContextClass();
-                }
-            }
-            const ctx = audioContextRef.current;
-            if (!ctx) return;
-            if (ctx.state === 'suspended') ctx.resume();
-
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-
-            if (type === "click") {
-                osc.type = "sine";
-                osc.frequency.setValueAtTime(400 + (scoreRef.current * 10), ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(800 + (scoreRef.current * 10), ctx.currentTime + 0.1);
-                gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.1);
-            } else {
-                osc.type = "sawtooth";
-                osc.frequency.setValueAtTime(200, ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.5);
-                gain.gain.setValueAtTime(0.4, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                osc.stop(ctx.currentTime + 0.5);
-            }
-        } catch (e) { }
-    }, []);
 
     // endGame을 ref로 감싸서 tick에서 최신 버전 참조
     const endGameRef = useRef<() => void>(() => { });
@@ -116,6 +78,10 @@ export function ArrowGame({ userName, title }: ProjectProps) {
         topBoundaryRef.current = 0;
         setBottomBoundary(100);
         bottomBoundaryRef.current = 100;
+        setBoundaryHistory([
+            { y: 0, type: 'top' },
+            { y: 100, type: 'bottom' }
+        ]);
 
         lastTickRef.current = performance.now();
 
@@ -170,7 +136,6 @@ export function ArrowGame({ userName, title }: ProjectProps) {
         setPhase("result");
         isPlayingRef.current = false;
         setFinalScore(scoreRef.current);
-        playSound("fail");
 
         restartTimerRef.current = setTimeout(() => {
             setShowRestartMessage(true);
@@ -183,7 +148,7 @@ export function ArrowGame({ userName, title }: ProjectProps) {
                 body: JSON.stringify({ score: scoreRef.current }),
             }).then(() => loadRanking()).catch(console.error);
         }
-    }, [userName, loadRanking, playSound]);
+    }, [userName, loadRanking]);
 
     // endGame이 업데이트될 때마다 ref도 동기화
     useEffect(() => {
@@ -203,16 +168,17 @@ export function ArrowGame({ userName, title }: ProjectProps) {
                 const newBoundary = currentY - tipOffset;
                 setTopBoundary(newBoundary);
                 topBoundaryRef.current = newBoundary;
+                setBoundaryHistory(prev => [...prev, { y: newBoundary, type: 'top' }]);
             } else {
                 const newBoundary = currentY + tipOffset;
                 setBottomBoundary(newBoundary);
                 bottomBoundaryRef.current = newBoundary;
+                setBoundaryHistory(prev => [...prev, { y: newBoundary, type: 'bottom' }]);
             }
 
             directionRef.current = prevDir === "up" ? "down" : "up";
             scoreRef.current += 1;
             setScore(scoreRef.current);
-            playSound("click");
 
             // 시각적 피드백 (DOM 직접 조작 → 리렌더 없음)
             if (characterRef.current) {
@@ -225,7 +191,7 @@ export function ArrowGame({ userName, title }: ProjectProps) {
                 }, 120);
             }
         }
-    }, [phase, showRestartMessage, startGame, playSound]);
+    }, [phase, showRestartMessage, startGame]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -283,7 +249,23 @@ export function ArrowGame({ userName, title }: ProjectProps) {
                         />
                     </svg>
 
-                    {/* Boundaries */}
+                    {/* Boundary Trailing History */}
+                    {boundaryHistory.map((b, i) => (
+                        <div
+                            key={i}
+                            className={`absolute w-full h-[3px] bg-destructive z-10 pointer-events-none 
+                                ${b.type === 'top'
+                                    ? "shadow-[0_5px_15px_rgba(239,68,68,0.15)] dark:shadow-[0_5px_15px_rgba(239,68,68,0.3)]"
+                                    : "shadow-[0_-5px_15px_rgba(239,68,68,0.15)] dark:shadow-[0_-5px_15px_rgba(239,68,68,0.3)]"
+                                }`}
+                            style={{
+                                top: `${b.y}%`,
+                                transform: b.type === 'top' ? 'translateY(0)' : 'translateY(-100%)',
+                            }}
+                        />
+                    ))}
+
+                    {/* Active Boundaries */}
                     <div
                         className="absolute w-full h-[3px] bg-destructive shadow-[0_5px_15px_rgba(239,68,68,0.15)] dark:shadow-[0_5px_15px_rgba(239,68,68,0.3)] z-20 pointer-events-none"
                         style={{ top: `${topBoundary}%`, transform: 'translateY(0)' }}
@@ -459,7 +441,7 @@ function HTPSection() {
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>방향을 꺾으면 <strong>빨간 선의 위치도</strong> 바뀌어요.</span>
+                        <span>방향을 꺾으면 <strong>새로운 경계선</strong>이 쌓여요.</span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
