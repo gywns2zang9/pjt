@@ -12,7 +12,7 @@ export async function GET() {
         .from("touch_scores")
         .select("user_name, score, created_at")
         .order("score", { ascending: true }) // 시간은 짧을수록 좋으므로 ASC
-        .order("created_at", { ascending: true }) // 동점 시 먼저 달성한 사람 우선
+        .order("created_at", { ascending: false }) // 동점 시 나중에 달성한 사람 우선
         .limit(100);
 
     if (error) {
@@ -76,7 +76,8 @@ export async function POST(req: Request) {
                 user_name: userName,
                 score: score,
                 play_count: playCount,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
             },
             { onConflict: 'user_id' }
         );
@@ -86,7 +87,14 @@ export async function POST(req: Request) {
         await supabase.from("touch_scores").delete().eq("user_id", user.id);
         const { error: insertError } = await supabase
             .from("touch_scores")
-            .insert({ user_id: user.id, user_name: userName, score, play_count: playCount, updated_at: new Date().toISOString() });
+            .insert({
+                user_id: user.id,
+                user_name: userName,
+                score,
+                play_count: playCount,
+                updated_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
+            });
 
         if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
     }

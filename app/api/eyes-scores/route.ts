@@ -12,7 +12,7 @@ export async function GET() {
         .from("eyes_scores")
         .select("user_name, score, created_at")
         .order("score", { ascending: false })
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(100);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -71,7 +71,8 @@ export async function POST(req: Request) {
                 user_name: userName,
                 score: score,
                 play_count: playCount,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
             },
             { onConflict: 'user_id' }
         );
@@ -80,7 +81,14 @@ export async function POST(req: Request) {
         await supabase.from("eyes_scores").delete().eq("user_id", user.id);
         const { error: insertError } = await supabase
             .from("eyes_scores")
-            .insert({ user_id: user.id, user_name: userName, score, play_count: playCount, updated_at: new Date().toISOString() });
+            .insert({
+                user_id: user.id,
+                user_name: userName,
+                score,
+                play_count: playCount,
+                updated_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
+            });
 
         if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
     }

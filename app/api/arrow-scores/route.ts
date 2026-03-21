@@ -12,7 +12,7 @@ export async function GET() {
         .from("arrow_scores")
         .select("user_name, score, created_at")
         .order("score", { ascending: false })
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: false })
         .limit(100);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -64,7 +64,8 @@ export async function POST(req: Request) {
             user_name: userName,
             score: score,
             play_count: playCount,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            created_at: new Date().toISOString()
         }, { onConflict: 'user_id' });
 
     if (upsertError) return NextResponse.json({ error: upsertError.message }, { status: 500 });
