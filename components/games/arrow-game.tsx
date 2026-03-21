@@ -455,11 +455,11 @@ function HTPSection() {
                 <ul className="space-y-3 text-xs text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200 font-medium font-sans">
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>클릭하면 <strong>진행 방향이 반전</strong>돼요.</span>
+                        <span>클릭하면 <strong>진행 방향이 반전</strong>돼요. <br />PC로는 스페이스바로도 가능해요.</span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>방향을 꺾으면 <strong>빨간 선의 위치도</strong>바뀌어요.</span>
+                        <span>방향을 꺾으면 <strong>빨간 선의 위치도</strong> 바뀌어요.</span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
