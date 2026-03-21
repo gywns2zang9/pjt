@@ -16,6 +16,7 @@ const TABLE_MAP: Record<string, string> = {
     "touch-game": "touch_scores",
     "eyes-game": "eyes_scores",
     "arrow-game": "arrow_scores",
+    "balloon-game": "balloon_scores",
 };
 
 // 시간 기반(낮을수록 좋은) 게임

@@ -25,6 +25,7 @@ const SortGame = dynamic(() => import("@/components/games/sort-game").then(m => 
 const TouchGame = dynamic(() => import("@/components/games/touch-game").then(m => m.TouchGame));
 const EyesGame = dynamic(() => import("@/components/games/eyes-game").then(m => m.EyesGame));
 const ArrowGame = dynamic(() => import("@/components/games/arrow-game").then(m => m.ArrowGame));
+const BalloonGame = dynamic(() => import("@/components/games/balloon-game").then(m => m.BalloonGame));
 
 // 프로젝트 ID → 컴포넌트 매핑
 // 새 프로젝트 추가 시 여기에도 등록하세요.
@@ -39,5 +40,6 @@ export const projectComponents: Record<string, React.ComponentType<ProjectProps>
     "touch-game": TouchGame,
     "eyes-game": EyesGame,
     "arrow-game": ArrowGame,
+    "balloon-game": BalloonGame,
 };
 

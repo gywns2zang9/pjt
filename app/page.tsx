@@ -38,6 +38,8 @@ const getCachedStats = unstable_cache(
       "sort_scores",
       "speed_scores",
       "touch_scores",
+      "arrow_scores",
+      "balloon_scores",
     ];
 
     /**
