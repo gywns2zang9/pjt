@@ -61,6 +61,59 @@ function createGrid(): BalloonCell[] {
     return distribution.map((colorIndex, id) => ({ id, colorIndex, popped: false, popEffect: false }));
 }
 
+// ─── 풍선 렌더링 최적화 컴포넌트 ─────────────────────────────────
+const Balloon = React.memo(({
+    cell,
+    phase,
+    onPop
+}: {
+    cell: BalloonCell,
+    phase: GamePhase,
+    onPop: (id: number, colorIdx: number) => void
+}) => {
+    return (
+        <div className="relative aspect-square">
+            {cell.popEffect && (
+                <div className="absolute inset-0 z-10 pointer-events-none">
+                    {[...Array(6)].map((_, i) => (
+                        <div
+                            key={i}
+                            className={`absolute w-2 h-2 rounded-full ${COLORS[cell.colorIndex].bg}`}
+                            style={{
+                                top: '50%', left: '50%',
+                                animation: `pop-particle-${i} 0.4s ease-out forwards`,
+                            }}
+                        />
+                    ))}
+                    <div className="absolute inset-0 rounded-full bg-white/80 animate-ping" style={{ animationDuration: '0.3s' }} />
+                </div>
+            )}
+            <button
+                disabled={cell.popped || phase !== "playing"}
+                onClick={() => onPop(cell.id, cell.colorIndex)}
+                className={`relative w-full h-full transition-all duration-300
+            ${cell.popped ? "scale-0 opacity-0 pointer-events-none" : cell.popEffect ? "scale-125 opacity-0" : "scale-100 opacity-100 hover:scale-110 active:scale-75"}`}
+            >
+                {/* 풍선 몸체 (타원) */}
+                <div
+                    className={`w-full h-[88%] rounded-[50%_50%_45%_45%] shadow-lg
+                ${COLORS[cell.colorIndex].bg} ${COLORS[cell.colorIndex].shadow}
+                relative transition-all`}
+                >
+                    {/* 반사광 */}
+                    <div className="absolute top-[12%] left-[18%] w-[28%] h-[18%] bg-white/40 rounded-full blur-[1px]" />
+                </div>
+                {/* 매듭 */}
+                <div
+                    className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[18%] h-[12%] ${COLORS[cell.colorIndex].bg} brightness-75`}
+                    style={{ clipPath: "polygon(50% 0%, 20% 100%, 80% 100%)" }}
+                />
+            </button>
+        </div>
+    );
+});
+Balloon.displayName = "Balloon";
+
 export function BalloonGame({ userName, title }: ProjectProps) {
     const [phase, setPhase] = useState<GamePhase>("idle");
     const [score, setScore] = useState(0);
@@ -149,7 +202,7 @@ export function BalloonGame({ userName, title }: ProjectProps) {
     }, [bonusAnim]);
 
     // ─── 풍선 클릭 ──────────────────────────────────────────
-    const handlePop = (id: number, colorIdx: number) => {
+    const handlePop = useCallback((id: number, colorIdx: number) => {
         if (phase !== "playing") return;
 
         const isCorrectColor = (colorIdx === currentColorIndex) || (colorIdx === currentColorIndex + 1);
@@ -166,14 +219,15 @@ export function BalloonGame({ userName, title }: ProjectProps) {
 
         // 짧은 딜레이 후 실제로 제거
         setTimeout(() => {
-            if (!isPlayingRef.current) return; // 게임이 이미 끝났다면 무시
-
             setGrid((prev) => {
                 // 이전 보드에서 등록된 setTimeout 이 새 보드(newGrid) 생성 이후에 실행되는 것을 방지
                 if (!prev[id] || !prev[id].popEffect) return prev;
 
                 const next = [...prev];
                 next[id] = { ...next[id], popped: true, popEffect: false };
+
+                // 게임이 끝난 상태라면 상태 정리(popEffect 제거)만 하고 부가 로직(보너스, 새판 등)은 생략
+                if (!isPlayingRef.current) return next;
 
                 // 보라색(마지막 색) 풍선이 모두 터졌는지 확인
                 const violetIndex = COLORS.length - 1;
@@ -201,7 +255,7 @@ export function BalloonGame({ userName, title }: ProjectProps) {
         setScore((prev) => { const ns = prev + 1; scoreRef.current = ns; return ns; });
 
         if (colorIdx === currentColorIndex + 1) setCurrentColorIndex(colorIdx);
-    };
+    }, [phase, currentColorIndex, endGame]);
 
     // ─── 단축키 ─────────────────────────────────────────────
     useEffect(() => {
@@ -323,45 +377,12 @@ export function BalloonGame({ userName, title }: ProjectProps) {
                                     <div className="flex w-full justify-center items-center py-2 relative">
                                         <div className={`grid grid-cols-5 gap-2 sm:gap-3 w-full max-w-[480px] aspect-square select-none ${phase === "playing" ? "touch-none" : ""}`}>
                                             {grid.map((cell) => (
-                                                <div key={cell.id} className="relative aspect-square">
-                                                    {/* 터지는 파티클 이펙트 */}
-                                                    {cell.popEffect && (
-                                                        <div className="absolute inset-0 z-10 pointer-events-none">
-                                                            {[...Array(6)].map((_, i) => (
-                                                                <div
-                                                                    key={i}
-                                                                    className={`absolute w-2 h-2 rounded-full ${COLORS[cell.colorIndex].bg}`}
-                                                                    style={{
-                                                                        top: '50%', left: '50%',
-                                                                        animation: `pop-particle-${i} 0.4s ease-out forwards`,
-                                                                    }}
-                                                                />
-                                                            ))}
-                                                            <div className="absolute inset-0 rounded-full bg-white/80 animate-ping" style={{ animationDuration: '0.3s' }} />
-                                                        </div>
-                                                    )}
-                                                    <button
-                                                        disabled={cell.popped || phase !== "playing"}
-                                                        onClick={() => handlePop(cell.id, cell.colorIndex)}
-                                                        className={`relative w-full h-full transition-all duration-300
-                                                    ${cell.popped ? "scale-0 opacity-0 pointer-events-none" : cell.popEffect ? "scale-125 opacity-0" : "scale-100 opacity-100 hover:scale-110 active:scale-75"}`}
-                                                    >
-                                                        {/* 풍선 몸체 (타원) */}
-                                                        <div
-                                                            className={`w-full h-[88%] rounded-[50%_50%_45%_45%] shadow-lg
-                                                        ${COLORS[cell.colorIndex].bg} ${COLORS[cell.colorIndex].shadow}
-                                                        relative transition-all`}
-                                                        >
-                                                            {/* 반사광 */}
-                                                            <div className="absolute top-[12%] left-[18%] w-[28%] h-[18%] bg-white/40 rounded-full blur-[1px]" />
-                                                        </div>
-                                                        {/* 매듭 */}
-                                                        <div
-                                                            className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-[18%] h-[12%] ${COLORS[cell.colorIndex].bg} brightness-75`}
-                                                            style={{ clipPath: "polygon(50% 0%, 20% 100%, 80% 100%)" }}
-                                                        />
-                                                    </button>
-                                                </div>
+                                                <Balloon
+                                                    key={cell.id}
+                                                    cell={cell}
+                                                    phase={phase}
+                                                    onPop={handlePop}
+                                                />
                                             ))}
                                         </div>
                                     </div>
