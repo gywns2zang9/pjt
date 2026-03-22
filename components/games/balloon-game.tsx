@@ -446,7 +446,7 @@ function HTPSection() {
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>10초가 지나거나 다른 색 풍선을 터뜨리면 게임이 끝나요.</span>
+                        <span>10초가 지나거나 다른 색 풍선을 터뜨리면 게임이 끝나요. <br />보라색 풍선을 모두 터뜨리면 새로운 판이 형성돼요.</span>
                     </li>
                 </ul>
             )}

@@ -23,7 +23,7 @@ export default function WorksGameLoading() {
                                 <div className="w-48 h-8 bg-muted rounded-lg animate-pulse" />
                                 <div className="w-14 h-6 bg-muted/40 rounded-full animate-pulse" />
                             </div>
-                            <div className="w-80 h-4 bg-muted/30 rounded animate-pulse" />
+                            <div className="w-full max-w-[320px] sm:w-80 h-4 bg-muted/30 rounded animate-pulse" />
                         </div>
                     </div>
 
