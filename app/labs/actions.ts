@@ -13,7 +13,6 @@ function getAdminSupabase() {
 }
 
 type ConfigUpdate = {
-    status?: string;
     show_on_works?: boolean;
     sort_order?: number;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

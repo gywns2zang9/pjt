@@ -26,7 +26,6 @@ export default async function LabPage() {
         const config: ProjectConfig = dbConfig
             ? {
                 id: p.id,
-                status: dbConfig.status,
                 show_on_works: dbConfig.show_on_works,
                 sort_order: dbConfig.sort_order ?? 0,
                 title: dbConfig.title,

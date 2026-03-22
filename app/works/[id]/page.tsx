@@ -6,10 +6,8 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { createClient } from "@/lib/supabase/server";
 import {
     getProjectById,
-    STATUS_STYLES,
     effectiveTitle,
     effectiveDescription,
-    type ProjectStatus,
     type ProjectConfig,
 } from "@/lib/projects";
 import { ProjectRenderer } from "@/components/project-renderer";
@@ -53,14 +51,12 @@ export default async function WorksProjectPage({ params }: Props) {
 
     const config: ProjectConfig = {
         id: dbConfig.id,
-        status: dbConfig.status as ProjectStatus,
         show_on_works: true,
         title: dbConfig.title,
         description: dbConfig.description,
         slug: dbConfig.slug,
     };
 
-    const statusStyle = STATUS_STYLES[config.status];
     const displayTitle = effectiveTitle(project, config);
     const displayDesc = effectiveDescription(config);
 
@@ -69,7 +65,6 @@ export default async function WorksProjectPage({ params }: Props) {
         ? (meta?.full_name ?? meta?.name ?? meta?.preferred_username ?? user.email?.split("@")[0] ?? "익명")
         : "비회원";
 
-    const isCompleted = config.status === "완성";
 
     // 로그인 안내 배너 표시 조건 (게임류만 표시)
     const showLoginBanner = !user && ["chosung-game", "circle-game", "speed-game", "size-game", "ddong-game", "sort-game", "touch-game", "eyes-game", "arrow-game"].includes(dbConfig.id);
@@ -106,40 +101,22 @@ export default async function WorksProjectPage({ params }: Props) {
                     <div className="space-y-4">
                         <div className="flex items-center gap-3">
                             <h1 className="text-2xl font-semibold tracking-tight">{displayTitle}</h1>
-                            <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusStyle.className}`}>
-                                {statusStyle.label}
-                            </span>
                         </div>
                         {displayDesc && <p className="text-muted-foreground text-sm">{displayDesc}</p>}
                     </div>
 
-                    {isCompleted ? (
-                        <>
-                            <ProjectRenderer id={dbConfig.id} userName={userName} gameConfig={dbConfig.game_config ?? undefined} title={displayTitle} />
+                    <ProjectRenderer id={dbConfig.id} userName={userName} gameConfig={dbConfig.game_config ?? undefined} title={displayTitle} />
 
-                            <div className="pt-16 mt-16 border-t border-border/50">
-                                <Guestbook
-                                    projectId={dbConfig.id}
-                                    initialEntries={entriesData ?? []}
-                                    userEmail={user?.email ?? null}
-                                    userId={user?.id ?? null}
-                                    userName={userName}
-                                    initialCount={entriesCount ?? (entriesData?.length ?? 0)}
-                                />
-                            </div>
-                        </>
-                    ) : (
-                        <div className="flex flex-col items-center justify-center py-32 bg-background border rounded-2xl border-dashed">
-                            <div className="text-5xl mb-6 opacity-30">🚧</div>
-                            <h2 className="text-xl font-semibold mb-2">제한됨</h2>
-                            <p className="text-muted-foreground text-center max-w-sm px-6">
-                                현재 <span className="font-bold text-foreground">[{statusStyle.label}]</span> 상태의 프로젝트입니다.<br />
-                            </p>
-                            <Link href="/works" className="mt-8 px-5 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-all text-sm">
-                                다른 프로젝트 보기
-                            </Link>
-                        </div>
-                    )}
+                    <div className="pt-16 mt-16 border-t border-border/50">
+                        <Guestbook
+                            projectId={dbConfig.id}
+                            initialEntries={entriesData ?? []}
+                            userEmail={user?.email ?? null}
+                            userId={user?.id ?? null}
+                            userName={userName}
+                            initialCount={entriesCount ?? (entriesData?.length ?? 0)}
+                        />
+                    </div>
                 </Container>
             </main>
             <SiteFooter />

@@ -66,7 +66,8 @@ export function BalloonGame({ userName, title }: ProjectProps) {
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
     const [grid, setGrid] = useState<BalloonCell[]>([]);
-    const [currentColorIndex, setCurrentColorIndex] = useState(0);
+    const [currentColorIndex, setCurrentColorIndex] = useState(-1);
+    const [bonusAnim, setBonusAnim] = useState<number>(0);
     const [ranking, setRanking] = useState<RankEntry[]>([]);
     const [showAllRanking, setShowAllRanking] = useState(false);
     const [finalScore, setFinalScore] = useState(0);
@@ -94,7 +95,8 @@ export function BalloonGame({ userName, title }: ProjectProps) {
         setScore(0);
         scoreRef.current = 0;
         setTimeLeft(TIME_LIMIT);
-        setCurrentColorIndex(0);
+        setCurrentColorIndex(-1);
+        setBonusAnim(0);
         setGameOverReason(null);
         isPlayingRef.current = true;
 
@@ -138,6 +140,14 @@ export function BalloonGame({ userName, title }: ProjectProps) {
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
     }, []);
 
+    // 보너스 점수 애니메이션 타이머
+    useEffect(() => {
+        if (bonusAnim > 0) {
+            const timer = setTimeout(() => setBonusAnim(0), 1200);
+            return () => clearTimeout(timer);
+        }
+    }, [bonusAnim]);
+
     // ─── 풍선 클릭 ──────────────────────────────────────────
     const handlePop = (id: number, colorIdx: number) => {
         if (phase !== "playing") return;
@@ -156,7 +166,12 @@ export function BalloonGame({ userName, title }: ProjectProps) {
 
         // 짧은 딜레이 후 실제로 제거
         setTimeout(() => {
+            if (!isPlayingRef.current) return; // 게임이 이미 끝났다면 무시
+
             setGrid((prev) => {
+                // 이전 보드에서 등록된 setTimeout 이 새 보드(newGrid) 생성 이후에 실행되는 것을 방지
+                if (!prev[id] || !prev[id].popEffect) return prev;
+
                 const next = [...prev];
                 next[id] = { ...next[id], popped: true, popEffect: false };
 
@@ -164,9 +179,18 @@ export function BalloonGame({ userName, title }: ProjectProps) {
                 const violetIndex = COLORS.length - 1;
                 const hasRemainingViolet = next.some(c => c.colorIndex === violetIndex && !c.popped);
                 if (!hasRemainingViolet) {
+                    // 모든 풍선을(25개) 전부 터뜨렸는지 확인
+                    const isAllPopped = next.every(c => c.popped);
+                    if (isAllPopped) {
+                        setTimeout(() => {
+                            setTimeLeft(t => t + 2); // 2초 보너스
+                            setBonusAnim(Date.now());
+                        }, 0);
+                    }
+
                     // 모든 보라 풍선이 터짐 → 새 판 생성, 빨강부터 다시
                     const newGrid = createGrid();
-                    setCurrentColorIndex(0);
+                    setCurrentColorIndex(-1);
                     return newGrid;
                 }
 
@@ -226,17 +250,27 @@ export function BalloonGame({ userName, title }: ProjectProps) {
 
                                 {/* 타이머 바 */}
                                 <div className="space-y-1">
-                                    <div className="flex justify-between items-center">
+                                    <div className="flex justify-between items-center relative">
                                         <span className="text-[10px] text-muted-foreground font-medium">TIME</span>
-                                        <span className={`text-sm font-black tabular-nums transition-colors ${phase === "playing" ? timerTextCls : "text-muted-foreground"}`}>
-                                            {phase === "playing" ? `${timeLeft.toFixed(1)}s` : `${TIME_LIMIT.toFixed(1)}s`}
-                                        </span>
+                                        <div className="relative flex items-center">
+                                            {bonusAnim > 0 && (
+                                                <span
+                                                    key={bonusAnim}
+                                                    className="absolute right-full mr-2 text-sm font-black text-emerald-500 drop-shadow-md animate-in slide-in-from-bottom-2 fade-in duration-300"
+                                                >
+                                                    +2.0s
+                                                </span>
+                                            )}
+                                            <span className={`text-sm font-black tabular-nums transition-colors ${phase === "playing" ? timerTextCls : "text-muted-foreground"}`}>
+                                                {phase === "playing" ? `${timeLeft.toFixed(1)}s` : `${TIME_LIMIT.toFixed(1)}s`}
+                                            </span>
+                                        </div>
                                     </div>
                                     <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
                                         <div
                                             className="h-full rounded-full"
                                             style={{
-                                                width: phase === "playing" ? `${progressPct}%` : "100%",
+                                                width: phase === "playing" ? `${Math.min(100, progressPct)}%` : "100%",
                                                 backgroundColor: phase === "playing" ? timerColor : "#cbd5e1",
                                                 transition: "width 100ms linear, background-color 0.3s",
                                             }}
@@ -287,7 +321,7 @@ export function BalloonGame({ userName, title }: ProjectProps) {
                                 <>
                                     {/* 5×5 풍선 그리드 */}
                                     <div className="flex w-full justify-center items-center py-2 relative">
-                                        <div className="grid grid-cols-5 gap-2 sm:gap-3 w-full max-w-[480px] aspect-square">
+                                        <div className={`grid grid-cols-5 gap-2 sm:gap-3 w-full max-w-[480px] aspect-square select-none ${phase === "playing" ? "touch-none" : ""}`}>
                                             {grid.map((cell) => (
                                                 <div key={cell.id} className="relative aspect-square">
                                                     {/* 터지는 파티클 이펙트 */}

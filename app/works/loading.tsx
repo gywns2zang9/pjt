@@ -12,8 +12,8 @@ import { Container } from "@/components/layout/container";
  * - 방명록 영역
  */
 export default function WorksLoading() {
-    // 실제 카드 개수에 근사한 스켈레톤 (9개)
-    const CARD_COUNT = 9;
+    // 실제 카드 개수에 근사한 스켈레톤 (10개)
+    const CARD_COUNT = 10;
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-foreground dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
@@ -45,10 +45,10 @@ export default function WorksLoading() {
                                 >
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="space-y-1.5 min-w-0 flex-1">
-                                            {/* 타이틀 + 상태 뱃지 */}
+                                            {/* 타이틀 + 플레이 횟수 뱃지 (기존 상태 뱃지 위치) */}
                                             <div className="flex items-center gap-2">
                                                 <div className="w-20 h-5 bg-muted rounded animate-pulse" />
-                                                <div className="w-10 h-4 bg-emerald-400/15 border border-emerald-400/30 rounded-full animate-pulse" />
+                                                <div className="w-14 h-4 bg-primary/10 border border-primary/20 rounded-full animate-pulse" />
                                             </div>
                                             {/* 설명 */}
                                             <div className="space-y-1 pt-0.5">

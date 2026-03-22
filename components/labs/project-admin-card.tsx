@@ -6,13 +6,9 @@ import { updateProjectConfig } from "@/app/labs/actions";
 import {
     type ProjectMeta,
     type ProjectConfig,
-    type ProjectStatus,
-    STATUS_STYLES,
     effectiveTitle,
     effectiveDescription,
 } from "@/lib/projects";
-
-const STATUS_OPTIONS: ProjectStatus[] = ["개발중", "점검중", "완성", "중단"];
 
 interface Props {
     project: ProjectMeta;
@@ -25,16 +21,6 @@ export function ProjectAdminCard({ project, config: initialConfig }: Props) {
 
     const displayTitle = effectiveTitle(project, config);
     const displayDesc = effectiveDescription(config);
-    const statusStyle = STATUS_STYLES[config.status];
-
-    const handleStatus = (status: ProjectStatus) => {
-        const prev = config;
-        setConfig((c) => ({ ...c, status }));
-        startTransition(async () => {
-            try { await updateProjectConfig(project.id, { status }); }
-            catch { setConfig(prev); }
-        });
-    };
 
     const handleToggleWorks = () => {
         const newVal = !config.show_on_works;
@@ -71,9 +57,6 @@ export function ProjectAdminCard({ project, config: initialConfig }: Props) {
                 <div className="space-y-0.5 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                         <h2 className="font-semibold text-base text-foreground">{displayTitle}</h2>
-                        <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${statusStyle.className}`}>
-                            {statusStyle.label}
-                        </span>
                     </div>
                     {displayDesc && (
                         <p className="text-sm text-muted-foreground leading-relaxed">{displayDesc}</p>
@@ -93,27 +76,7 @@ export function ProjectAdminCard({ project, config: initialConfig }: Props) {
                 </Link>
             </div>
 
-            {/* 상태 변경 */}
-            <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">상태</p>
-                <div className="flex gap-2 flex-wrap">
-                    {STATUS_OPTIONS.map((s) => {
-                        const style = STATUS_STYLES[s];
-                        return (
-                            <button
-                                key={s}
-                                onClick={() => handleStatus(s)}
-                                className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${config.status === s
-                                    ? style.className
-                                    : "border-border text-muted-foreground hover:border-border/80 hover:text-foreground"
-                                    }`}
-                            >
-                                {style.label}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
+
 
             {/* 뚝-딱! 표시 토글 */}
             <div className="flex items-center justify-between pt-1 border-t border-border/60">

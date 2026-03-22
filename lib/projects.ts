@@ -6,11 +6,8 @@ export interface ProjectMeta {
     title: string;  // DB title 미설정 시 표시되는 기본값
 }
 
-export type ProjectStatus = "개발중" | "점검중" | "완성" | "중단";
-
 export interface ProjectConfig {
     id: string;
-    status: ProjectStatus;
     show_on_works: boolean;
     sort_order?: number;
     title?: string | null;
@@ -18,28 +15,8 @@ export interface ProjectConfig {
     slug?: string | null;  // 커스텀 URL 경로 (미설정 시 id 사용)
 }
 
-export const STATUS_STYLES: Record<ProjectStatus, { label: string; className: string }> = {
-    "개발중": {
-        label: "개발중",
-        className: "bg-yellow-400/15 text-yellow-600 dark:text-yellow-400 border-yellow-400/30",
-    },
-    "점검중": {
-        label: "점검중",
-        className: "bg-orange-400/15 text-orange-600 dark:text-orange-400 border-orange-400/30",
-    },
-    "완성": {
-        label: "완성",
-        className: "bg-emerald-400/15 text-emerald-600 dark:text-emerald-400 border-emerald-400/30",
-    },
-    "중단": {
-        label: "중단",
-        className: "bg-slate-400/15 text-slate-500 dark:text-slate-400 border-slate-400/30",
-    },
-};
-
 export const DEFAULT_CONFIG: Omit<ProjectConfig, "id"> = {
-    status: "개발중",
-    show_on_works: false,
+    show_on_works: true,
     sort_order: 0,
 };
 

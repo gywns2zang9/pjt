@@ -2,7 +2,7 @@ import { Container } from "@/components/layout/container";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { createClient } from "@/lib/supabase/server";
-import { projects, STATUS_STYLES, effectiveTitle, effectiveDescription, effectiveSlug, type ProjectConfig } from "@/lib/projects";
+import { projects, effectiveTitle, effectiveDescription, effectiveSlug, type ProjectConfig } from "@/lib/projects";
 import { Guestbook } from "@/components/guestbook";
 import ProjectListClient from "@/components/project-list-client";
 
@@ -28,31 +28,38 @@ const ALL_SCORE_TABLES = [...new Set(Object.values(TABLE_MAP))];
 export default async function WorksPage() {
     const supabase = await createClient();
 
-    // 1. 유저 인증 (쿠키 조회)
+    // 1. 유저 ID가 필요 없는 쿼리는 먼저 Promise로 실행 (워터폴 방지)
+    const configsPromise = supabase.from("project_configs").select("*").eq("show_on_works", true);
+    const guestbookPromise = supabase.from("guestbook").select("*", { count: "exact" })
+        .eq("project_id", "home")
+        .order("created_at", { ascending: false })
+        .range(0, 4);
+
+    // 2. 유저 인증 병렬 대기
     const { data: { user } } = await supabase.auth.getUser();
 
-    // 2. RPC로 넘길 모든 게임 테이블 목록 구성
+    // 3. RPC로 넘길 모든 게임 테이블 목록 구성
     const tablesPayload = Object.keys(TABLE_MAP).map(key => ({
         id: key,
         table: TABLE_MAP[key],
         isAsc: SCORE_ASC.has(key)
     }));
 
-    // 3. 메인 콘텐츠 병렬 조회 (설정, 방명록, 통계)
+    // 4. 유저 ID가 필요한 통계 쿼리 실행
+    const statsPromise = supabase.rpc("get_all_game_stats", {
+        p_tables: tablesPayload,
+        p_user_id: user?.id ?? null
+    });
+
+    // 5. 모든 비동기 작업 결과 병합 대기
     const [
         { data: configs },
         guestbookResult,
         { data: statsData }
     ] = await Promise.all([
-        supabase.from("project_configs").select("*").eq("show_on_works", true),
-        supabase.from("guestbook").select("*", { count: "exact" })
-            .eq("project_id", "home")
-            .order("created_at", { ascending: false })
-            .range(0, 4),
-        supabase.rpc("get_all_game_stats", {
-            p_tables: tablesPayload,
-            p_user_id: user?.id ?? null
-        })
+        configsPromise,
+        guestbookPromise,
+        statsPromise
     ]);
 
     const entriesData = guestbookResult.data;

@@ -66,9 +66,9 @@ export default function WorksGameLoading() {
                                     </div>
 
                                     {/* 중앙 게임 영역 Placeholder */}
-                                    <div className="aspect-[4/3] md:aspect-video min-h-[300px] flex items-center justify-center bg-muted/5 rounded-2xl border border-dashed border-border/60 relative overflow-hidden">
+                                    <div className="w-full aspect-[4/3] md:aspect-video min-h-[300px] bg-muted/5 rounded-2xl border border-dashed border-border/60 relative overflow-hidden">
                                         {/* 로딩 인디케이터 (중앙) */}
-                                        <div className="relative flex flex-col items-center gap-4">
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10">
                                             <div className="w-12 h-12 rounded-full border-4 border-primary/10 border-t-primary/30 animate-spin" />
                                             <div className="w-20 h-3 bg-muted/40 rounded animate-pulse" />
                                         </div>
