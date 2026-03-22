@@ -228,24 +228,15 @@ export function TouchGame({ userName, title }: ProjectProps) {
                         ref={gameAreaRef}
                         className="relative w-full max-w-2xl mx-auto h-64 md:h-80 select-none flex rounded-[2.5rem] overflow-hidden border-8 border-zinc-900 shadow-2xl bg-zinc-950 cursor-pointer"
                         style={{ touchAction: 'none' }}
-                        onTouchStart={(e) => {
+                        onPointerDown={(e) => {
                             if (phase !== "go") return;
-                            // 멀티터치(여러 손가락) 즉시 동시 인식
-                            for (let i = 0; i < e.changedTouches.length; i++) {
-                                const touch = e.changedTouches[i];
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                const x = touch.clientX - rect.left;
-                                const side: InputSide = x < rect.width / 2 ? "left" : "right";
-                                handleInput(side, true);
-                            }
-                        }}
-                        onMouseDown={(e) => {
-                            if (phase !== "go") return;
-                            if (e.button !== 0) return; // 좌클릭만
+                            if (e.pointerType === 'mouse' && e.button !== 0) return;
+                            // e.preventDefault()
+
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = e.clientX - rect.left;
                             const side: InputSide = x < rect.width / 2 ? "left" : "right";
-                            handleInput(side, false);
+                            handleInput(side, e.pointerType === 'touch');
                         }}
                     >
                         {phase === "idle" || phase === "go" ? (
