@@ -92,16 +92,22 @@ export function TouchGame({ userName, title }: ProjectProps) {
 
     const feedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const handleInput = useCallback((side: InputSide) => {
+    const handleInput = useCallback((side: InputSide, isTouch: boolean = false) => {
         if (phase !== "go") return;
 
         const now = performance.now();
         if (lastInputRef.current === side) {
-            // 하드웨어/브라우저 바운스(10ms미만)만 무시하고 나머지는 엄격하게 실패 처리
+            // 하드웨어/브라우저 바운스(10ms미만) 무시
             if (now - lastInputTimeRef.current < 10) return;
 
-            handleGameOver("fault");
-            return;
+            if (isTouch) {
+                // 모바일 터치 환경: 씹힘 방지를 위해 게임오버 없이 무시 (카운트 미증가)
+                return;
+            } else {
+                // PC 마우스/키보드 환경: 엄격하게 실패 처리
+                handleGameOver("fault");
+                return;
+            }
         }
 
         lastInputTimeRef.current = now;
@@ -130,10 +136,10 @@ export function TouchGame({ userName, title }: ProjectProps) {
 
             if (e.code === "ArrowLeft") {
                 e.preventDefault();
-                if (!e.repeat) handleInput("left");
+                if (!e.repeat) handleInput("left", false);
             } else if (e.code === "ArrowRight") {
                 e.preventDefault();
-                if (!e.repeat) handleInput("right");
+                if (!e.repeat) handleInput("right", false);
             } else if (e.code === "Space" || e.code === "Enter") {
                 // Allow starting/resetting with Space
                 if (phase === "idle" || phase === "result" || phase === "fault" || phase === "timeout") {
@@ -150,6 +156,7 @@ export function TouchGame({ userName, title }: ProjectProps) {
     useEffect(() => {
         return () => {
             if (timerRef.current) cancelAnimationFrame(timerRef.current);
+            if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
         };
     }, []);
 
@@ -232,7 +239,7 @@ export function TouchGame({ userName, title }: ProjectProps) {
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = e.clientX - rect.left;
                             const side: InputSide = x < rect.width / 2 ? "left" : "right";
-                            handleInput(side);
+                            handleInput(side, e.pointerType === 'touch');
                         }}
                     >
                         {phase === "idle" || phase === "go" ? (
