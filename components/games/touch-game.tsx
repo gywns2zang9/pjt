@@ -33,6 +33,7 @@ export function TouchGame({ userName, title }: ProjectProps) {
     const startTimeRef = useRef<number>(0);
     const timerRef = useRef<number | null>(null);
     const gameAreaRef = useRef<HTMLDivElement>(null);
+    const isTouchDeviceRef = useRef(false);
 
     const loadRanking = useCallback(async () => {
         try {
@@ -50,6 +51,7 @@ export function TouchGame({ userName, title }: ProjectProps) {
         setElapsedTime(0);
         setResultTime(null);
         lastInputRef.current = null;
+        isTouchDeviceRef.current = false;
         if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
         startTimeRef.current = performance.now();
@@ -230,6 +232,7 @@ export function TouchGame({ userName, title }: ProjectProps) {
                         style={{ touchAction: 'none' }}
                         onTouchStart={(e) => {
                             if (phase !== "go") return;
+                            isTouchDeviceRef.current = true;
                             e.preventDefault();
                             const rect = e.currentTarget.getBoundingClientRect();
                             for (let i = 0; i < e.changedTouches.length; i++) {
@@ -241,6 +244,7 @@ export function TouchGame({ userName, title }: ProjectProps) {
                         }}
                         onMouseDown={(e) => {
                             if (phase !== "go") return;
+                            if (isTouchDeviceRef.current) return;
                             if (e.button !== 0) return;
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = e.clientX - rect.left;
@@ -248,161 +252,161 @@ export function TouchGame({ userName, title }: ProjectProps) {
                             handleInput(side, false);
                         }}
                     >
-                    {phase === "idle" || phase === "go" ? (
-                        <>
-                            {/* 왼쪽 영역 시각 피드백 */}
-                            <div className={`flex-1 flex items-center justify-center relative transition-colors pointer-events-none ${activeSide === "left" ? "bg-blue-500/20 shadow-[inset_0_0_100px_rgba(59,130,246,0.3)]" : ""}`}>
-                                <div className={`absolute inset-0 border-r-4 border-zinc-900 border-dashed ${lastInputRef.current === "left" && phase === "go" ? "bg-blue-500/10" : ""}`} />
-                                <span className={`text-4xl drop-shadow-sm transition-all md:text-5xl font-black ${activeSide === "left" ? "text-blue-500 scale-110" : "text-blue-500/20"}`}>
-                                    LEFT
-                                </span>
-                            </div>
-                            {/* 오른쪽 영역 시각 피드백 */}
-                            <div className={`flex-1 flex items-center justify-center relative transition-colors pointer-events-none ${activeSide === "right" ? "bg-red-500/20 shadow-[inset_0_0_100px_rgba(239,68,68,0.3)]" : ""}`}>
-                                <div className={`absolute inset-0 ${lastInputRef.current === "right" && phase === "go" ? "bg-red-500/10" : ""}`} />
-                                <span className={`text-4xl drop-shadow-sm transition-all md:text-5xl font-black ${activeSide === "right" ? "text-red-500 scale-110" : "text-red-500/20"}`}>
-                                    RIGHT
-                                </span>
-                            </div>
-
-                            {phase === "idle" && (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 backdrop-blur-sm z-10">
-                                    <div className="text-white px-8 py-6 rounded-3xl flex flex-col items-center animate-in zoom-in duration-300">
-                                        <Hand className="w-12 h-12 mb-4 animate-bounce text-primary" />
-                                        <button
-                                            type="button"
-                                            className="px-8 py-4 bg-primary text-primary-foreground rounded-full font-bold text-lg shadow-[0_0_30px_theme(colors.primary.DEFAULT/40)] hover:scale-105 active:scale-95 transition-all outline-none"
-                                            onClick={(e) => { e.stopPropagation(); startGame(); }}
-                                        >
-                                            게임 시작
-                                        </button>
-                                    </div>
+                        {phase === "idle" || phase === "go" ? (
+                            <>
+                                {/* 왼쪽 영역 시각 피드백 */}
+                                <div className={`flex-1 flex items-center justify-center relative transition-colors pointer-events-none ${activeSide === "left" ? "bg-blue-500/20 shadow-[inset_0_0_100px_rgba(59,130,246,0.3)]" : ""}`}>
+                                    <div className={`absolute inset-0 border-r-4 border-zinc-900 border-dashed ${lastInputRef.current === "left" && phase === "go" ? "bg-blue-500/10" : ""}`} />
+                                    <span className={`text-4xl drop-shadow-sm transition-all md:text-5xl font-black ${activeSide === "left" ? "text-blue-500 scale-110" : "text-blue-500/20"}`}>
+                                        LEFT
+                                    </span>
                                 </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 pointer-events-none">
-                            <div className="animate-in zoom-in duration-300 flex flex-col items-center">
-                                {phase === "result" && resultTime !== null ? (
-                                    <>
-                                        <div className="text-5xl md:text-7xl font-black text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)] tabular-nums tracking-tighter">
-                                            {resultTime.toFixed(3)}
-                                            <span className="text-2xl md:text-3xl ml-1 text-emerald-400/70">s</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        {phase === "fault" ? (
-                                            <span
-                                                className="font-black text-destructive italic tracking-tighter text-center drop-shadow-[0_0_15px_rgba(239,68,68,0.3)] whitespace-nowrap"
-                                                style={{ fontSize: "clamp(1.2rem, 6vw, 3rem)" }}
+                                {/* 오른쪽 영역 시각 피드백 */}
+                                <div className={`flex-1 flex items-center justify-center relative transition-colors pointer-events-none ${activeSide === "right" ? "bg-red-500/20 shadow-[inset_0_0_100px_rgba(239,68,68,0.3)]" : ""}`}>
+                                    <div className={`absolute inset-0 ${lastInputRef.current === "right" && phase === "go" ? "bg-red-500/10" : ""}`} />
+                                    <span className={`text-4xl drop-shadow-sm transition-all md:text-5xl font-black ${activeSide === "right" ? "text-red-500 scale-110" : "text-red-500/20"}`}>
+                                        RIGHT
+                                    </span>
+                                </div>
+
+                                {phase === "idle" && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900/80 backdrop-blur-sm z-10">
+                                        <div className="text-white px-8 py-6 rounded-3xl flex flex-col items-center animate-in zoom-in duration-300">
+                                            <Hand className="w-12 h-12 mb-4 animate-bounce text-primary" />
+                                            <button
+                                                type="button"
+                                                className="px-8 py-4 bg-primary text-primary-foreground rounded-full font-bold text-lg shadow-[0_0_30px_theme(colors.primary.DEFAULT/40)] hover:scale-105 active:scale-95 transition-all outline-none"
+                                                onClick={(e) => { e.stopPropagation(); startGame(); }}
                                             >
-                                                성격 너무 급하시당ㅎㅎ
-                                            </span>
-                                        ) : (
-                                            <span className="text-5xl md:text-6xl font-black text-destructive italic tracking-tighter text-center uppercase drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
-                                                시간 초과!
-                                            </span>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                            <div className="mt-8 flex flex-col items-center gap-3 pointer-events-auto">
-                                <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); startGame(); }}
-                                    className="px-8 py-4 bg-primary text-primary-foreground rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-sm uppercase tracking-wider"
-                                >
-                                    다시 시작하기
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* 3. 사이드바 */}
-            <div className="order-3 lg:w-64 shrink-0 flex flex-col gap-4 pointer-events-auto">
-                <div className="hidden lg:block">
-                    <HTPSection />
-                </div>
-
-                <RankingBoard
-                    ranking={ranking}
-                    onShowAll={() => setShowAllRanking(true)}
-                    phase={phase}
-                    resultTime={resultTime}
-                    isGuest={userName === "비회원"}
-                />
-            </div>
-        </div >
-
-            {/* 전체 랭킹 모달 */ }
-    {
-        showAllRanking && (
-            <Portal>
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
-                    onClick={() => setShowAllRanking(false)}
-                >
-                    <div
-                        className="relative w-full max-w-sm mx-4 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
-                            <Trophy className="w-5 h-5 text-amber-500" />
-                            <h3 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">전체 랭킹</h3>
-                            <button
-                                onClick={() => setShowAllRanking(false)}
-                                className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-                        <div className="p-4 max-h-[60vh] overflow-y-auto">
-                            <ol className="space-y-2">
-                                {ranking.map((entry, i) => (
-                                    <li
-                                        key={i}
-                                        className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
-                                            : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
-                                                : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
-                                                    : "bg-muted/30 border border-transparent"
-                                            }`}
-                                    >
-                                        <span className="text-sm font-black w-6 text-center shrink-0 text-muted-foreground">
-                                            {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
-                                        </span>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                                                게임 시작
+                                            </button>
                                         </div>
-                                        <span className="text-sm font-black text-primary shrink-0 tabular-nums">{entry.score.toFixed(3)}s</span>
-                                    </li>
-                                ))}
-                            </ol>
-                        </div>
-                        <div className="p-4 border-t border-border bg-muted/20">
-                            {(() => {
-                                const myRankIndex = ranking.findIndex((r) => r.user_name === userName);
-                                const myBestScore = myRankIndex !== -1 ? ranking[myRankIndex].score : undefined;
-                                const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore.toFixed(3)}s` : undefined;
-                                const myRank = displayScore !== undefined ? myRankIndex + 1 : null;
-                                return (
-                                    <KakaoShareButton
-                                        userName={userName}
-                                        gameTitle={title!}
-                                        gameUrl="/works/touch-game"
-                                        displayScore={displayScore}
-                                        rank={myRank}
-                                    />
-                                );
-                            })()}
-                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 pointer-events-none">
+                                <div className="animate-in zoom-in duration-300 flex flex-col items-center">
+                                    {phase === "result" && resultTime !== null ? (
+                                        <>
+                                            <div className="text-5xl md:text-7xl font-black text-emerald-500 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)] tabular-nums tracking-tighter">
+                                                {resultTime.toFixed(3)}
+                                                <span className="text-2xl md:text-3xl ml-1 text-emerald-400/70">s</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {phase === "fault" ? (
+                                                <span
+                                                    className="font-black text-destructive italic tracking-tighter text-center drop-shadow-[0_0_15px_rgba(239,68,68,0.3)] whitespace-nowrap"
+                                                    style={{ fontSize: "clamp(1.2rem, 6vw, 3rem)" }}
+                                                >
+                                                    성격 너무 급하시당ㅎㅎ
+                                                </span>
+                                            ) : (
+                                                <span className="text-5xl md:text-6xl font-black text-destructive italic tracking-tighter text-center uppercase drop-shadow-[0_0_15px_rgba(239,68,68,0.3)]">
+                                                    시간 초과!
+                                                </span>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                                <div className="mt-8 flex flex-col items-center gap-3 pointer-events-auto">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); startGame(); }}
+                                        className="px-8 py-4 bg-primary text-primary-foreground rounded-full font-bold shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-sm uppercase tracking-wider"
+                                    >
+                                        다시 시작하기
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </Portal>
-        )
-    }
+
+                {/* 3. 사이드바 */}
+                <div className="order-3 lg:w-64 shrink-0 flex flex-col gap-4 pointer-events-auto">
+                    <div className="hidden lg:block">
+                        <HTPSection />
+                    </div>
+
+                    <RankingBoard
+                        ranking={ranking}
+                        onShowAll={() => setShowAllRanking(true)}
+                        phase={phase}
+                        resultTime={resultTime}
+                        isGuest={userName === "비회원"}
+                    />
+                </div>
+            </div >
+
+            {/* 전체 랭킹 모달 */}
+            {
+                showAllRanking && (
+                    <Portal>
+                        <div
+                            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                            onClick={() => setShowAllRanking(false)}
+                        >
+                            <div
+                                className="relative w-full max-w-sm mx-4 bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex items-center gap-2 px-5 py-4 border-b border-border">
+                                    <Trophy className="w-5 h-5 text-amber-500" />
+                                    <h3 className="font-bold text-sm tracking-wide text-foreground uppercase flex-1">전체 랭킹</h3>
+                                    <button
+                                        onClick={() => setShowAllRanking(false)}
+                                        className="w-7 h-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                                    >
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <div className="p-4 max-h-[60vh] overflow-y-auto">
+                                    <ol className="space-y-2">
+                                        {ranking.map((entry, i) => (
+                                            <li
+                                                key={i}
+                                                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25"
+                                                    : i === 1 ? "bg-slate-400/10 border border-slate-400/20"
+                                                        : i === 2 ? "bg-orange-400/10 border border-orange-400/20"
+                                                            : "bg-muted/30 border border-transparent"
+                                                    }`}
+                                            >
+                                                <span className="text-sm font-black w-6 text-center shrink-0 text-muted-foreground">
+                                                    {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}
+                                                </span>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                                                </div>
+                                                <span className="text-sm font-black text-primary shrink-0 tabular-nums">{entry.score.toFixed(3)}s</span>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </div>
+                                <div className="p-4 border-t border-border bg-muted/20">
+                                    {(() => {
+                                        const myRankIndex = ranking.findIndex((r) => r.user_name === userName);
+                                        const myBestScore = myRankIndex !== -1 ? ranking[myRankIndex].score : undefined;
+                                        const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore.toFixed(3)}s` : undefined;
+                                        const myRank = displayScore !== undefined ? myRankIndex + 1 : null;
+                                        return (
+                                            <KakaoShareButton
+                                                userName={userName}
+                                                gameTitle={title!}
+                                                gameUrl="/works/touch-game"
+                                                displayScore={displayScore}
+                                                rank={myRank}
+                                            />
+                                        );
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+                    </Portal>
+                )
+            }
         </>
     );
 }
