@@ -33,7 +33,6 @@ export function TouchGame({ userName, title }: ProjectProps) {
     const startTimeRef = useRef<number>(0);
     const timerRef = useRef<number | null>(null);
     const gameAreaRef = useRef<HTMLDivElement>(null);
-    const isTouchDeviceRef = useRef(false);
 
     const loadRanking = useCallback(async () => {
         try {
@@ -51,7 +50,6 @@ export function TouchGame({ userName, title }: ProjectProps) {
         setElapsedTime(0);
         setResultTime(null);
         lastInputRef.current = null;
-        isTouchDeviceRef.current = false;
         if (timerRef.current) cancelAnimationFrame(timerRef.current);
 
         startTimeRef.current = performance.now();
@@ -98,9 +96,11 @@ export function TouchGame({ userName, title }: ProjectProps) {
         if (phase !== "go") return;
 
         const now = performance.now();
-        if (lastInputRef.current === side) {
+
+        // 중복 입력 체크 로직
+        if (lastInputRef.current !== null && lastInputRef.current === side) {
             if (isTouch) {
-                // 모바일 터치 환경: 씹힘 방지를 위해 게임오버 없이 무시 (카운트 미증가)
+                // 모바일 터치 환경: 씹힘 방지 및 유저 요청에 따라 중복 터치 시 게임오버 없이 무시
                 return;
             } else {
                 // PC 마우스/키보드 환경: 엄격하게 실패 처리
@@ -157,17 +157,6 @@ export function TouchGame({ userName, title }: ProjectProps) {
             if (timerRef.current) cancelAnimationFrame(timerRef.current);
             if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
         };
-    }, []);
-
-    // Scroll lock for touch area
-    useEffect(() => {
-        const blockTouchScroll = (e: TouchEvent) => {
-            if (gameAreaRef.current && gameAreaRef.current.contains(e.target as Node)) {
-                e.preventDefault();
-            }
-        };
-        document.addEventListener('touchmove', blockTouchScroll, { passive: false });
-        return () => document.removeEventListener('touchmove', blockTouchScroll);
     }, []);
 
     const displayedSeconds = Math.min(TIME_LIMIT_MS / 1000, elapsedTime / 1000).toFixed(3);
@@ -230,26 +219,13 @@ export function TouchGame({ userName, title }: ProjectProps) {
                         ref={gameAreaRef}
                         className="relative w-full max-w-2xl mx-auto h-64 md:h-80 select-none flex rounded-[2.5rem] overflow-hidden border-8 border-zinc-900 shadow-2xl bg-zinc-950 cursor-pointer"
                         style={{ touchAction: 'none' }}
-                        onTouchStart={(e) => {
+                        onPointerDown={(e) => {
                             if (phase !== "go") return;
-                            isTouchDeviceRef.current = true;
-                            e.preventDefault();
-                            const rect = e.currentTarget.getBoundingClientRect();
-                            for (let i = 0; i < e.changedTouches.length; i++) {
-                                const touch = e.changedTouches[i];
-                                const x = touch.clientX - rect.left;
-                                const side: InputSide = x < rect.width / 2 ? "left" : "right";
-                                handleInput(side, true);
-                            }
-                        }}
-                        onMouseDown={(e) => {
-                            if (phase !== "go") return;
-                            if (isTouchDeviceRef.current) return;
-                            if (e.button !== 0) return;
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = e.clientX - rect.left;
                             const side: InputSide = x < rect.width / 2 ? "left" : "right";
-                            handleInput(side, false);
+                            const isTouch = e.pointerType === "touch" || e.pointerType === "pen";
+                            handleInput(side, isTouch);
                         }}
                     >
                         {phase === "idle" || phase === "go" ? (
@@ -435,7 +411,7 @@ function HTPSection() {
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span><strong>연속으로 같은 쪽</strong>을 터치하면 바로 끝나요.</span>
+                        <span>PC(키보드/마우스)로는 <strong>연속으로 같은 쪽</strong>을 터치하면 바로 끝나요.</span>
                     </li>
                 </ul>
             )}
