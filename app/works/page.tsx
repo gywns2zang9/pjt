@@ -28,40 +28,35 @@ const ALL_SCORE_TABLES = [...new Set(Object.values(TABLE_MAP))];
 export default async function WorksPage() {
     const supabase = await createClient();
 
-    // ============================================
-    // 🔥 핵심 개선: 모든 DB 쿼리를 동시에 병렬 실행
-    // 기존: auth → configs → 9테이블 → guestbook (직렬)
-    // 개선: 모든 쿼리를 한 번에 Promise.all
-    // ============================================
+    // 1. 유저 인증 (쿠키 조회)
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // 2. RPC로 넘길 모든 게임 테이블 목록 구성
+    const tablesPayload = Object.keys(TABLE_MAP).map(key => ({
+        id: key,
+        table: TABLE_MAP[key],
+        isAsc: SCORE_ASC.has(key)
+    }));
+
+    // 3. 메인 콘텐츠 병렬 조회 (설정, 방명록, 통계)
     const [
-        { data: { user } },
         { data: configs },
         guestbookResult,
-        ...scoreResults
+        { data: statsData }
     ] = await Promise.all([
-        // 1. 유저 인증 (병렬)
-        supabase.auth.getUser(),
-        // 2. 공개 프로젝트 설정 (병렬)
         supabase.from("project_configs").select("*").eq("show_on_works", true),
-        // 3. 방명록 (병렬)
         supabase.from("guestbook").select("*", { count: "exact" })
             .eq("project_id", "home")
             .order("created_at", { ascending: false })
             .range(0, 4),
-        // 4. 모든 게임 점수 테이블 한번에 (병렬)
-        ...ALL_SCORE_TABLES.map((table) =>
-            supabase.from(table).select("user_id, score, play_count")
-        ),
+        supabase.rpc("get_all_game_stats", {
+            p_tables: tablesPayload,
+            p_user_id: user?.id ?? null
+        })
     ]);
 
     const entriesData = guestbookResult.data;
     const entriesCount = guestbookResult.count;
-
-    // 테이블 이름 → 데이터 매핑
-    const scoreDataMap = new Map<string, any[]>();
-    ALL_SCORE_TABLES.forEach((table, i) => {
-        scoreDataMap.set(table, scoreResults[i]?.data ?? []);
-    });
 
     // 정적 메타와 매핑
     const visibleProjects = (configs ?? [])
@@ -71,43 +66,16 @@ export default async function WorksPage() {
         }))
         .filter((p) => p.meta);
 
-    // 이미 조회된 데이터에서 통계 계산 (추가 DB 호출 없음)
+    // RPC 결과와 매핑
     const projectsWithStats = visibleProjects.map((project) => {
-        const id = project.meta!.id;
-        const tableName = TABLE_MAP[id];
-        let totalPlay = 0;
-        let myPlay = 0;
-        let myRank: number | null = null;
-        let totalPlayers = 0;
-
-        if (tableName) {
-            const rows = scoreDataMap.get(tableName) ?? [];
-            totalPlayers = rows.length;
-            totalPlay = rows.reduce((acc: number, row: any) => acc + (row.play_count ?? 0), 0);
-
-            if (user) {
-                const myRow = rows.find((r: any) => r.user_id === user.id);
-                if (myRow) {
-                    myPlay = myRow.play_count ?? 0;
-                    const myScore = myRow.score ?? 0;
-                    const isAsc = SCORE_ASC.has(id);
-                    const betterCount = rows.filter((r: any) =>
-                        isAsc
-                            ? (r.score ?? Infinity) < myScore
-                            : (r.score ?? 0) > myScore
-                    ).length;
-                    myRank = betterCount + 1;
-                }
-            }
-        }
-
+        const stat = (statsData as any[])?.find(s => s.id === project.meta!.id);
         return {
             config: project.config,
             meta: { id: project.meta!.id, title: project.meta!.title },
-            totalPlay,
-            myPlay,
-            myRank,
-            totalPlayers,
+            totalPlay: stat?.totalPlay ?? 0,
+            myPlay: stat?.myPlay ?? 0,
+            myRank: stat?.myRank ?? null,
+            totalPlayers: stat?.totalPlayers ?? 0,
         };
     });
 

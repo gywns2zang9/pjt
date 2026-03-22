@@ -42,16 +42,13 @@ const getCachedStats = unstable_cache(
       "balloon_scores",
     ];
 
-    /**
-     * 모든 DB 조회를 병렬(Parallel)로 실행하여 전체 로딩 시간을 단축합니다.
-     * select('play_count') 대신 필요한 정보만 최소한으로 조회하도록 최적화 여지가 있으나,
-     * 현재는 병렬 실행만으로도 네트워크 대기 시간을 크게 줄일 수 있습니다.
-     */
-    const [visitorResult, ...results] = await Promise.all([
+    const tablesPayload = tables.map((t) => ({ id: t, table: t, isAsc: false }));
+
+    const [visitorResult, statsResult, userCount] = await Promise.all([
       // 1. 전체 방문자 수 조회
       supabase.from("page_views").select("*", { count: "exact", head: true }),
-      // 2. 각 게임별 플레이 횟수 데이터 조회
-      ...tables.map((table) => supabase.from(table).select("play_count")),
+      // 2. 각 게임별 플레이 횟수 데이터 집계 (RPC로 한번에 고속 조회)
+      supabase.rpc("get_all_game_stats", { p_tables: tablesPayload }),
       // 3. 전체 가입 사용자 수 조회 (Service Role 필요)
       (async () => {
         if (!serviceRoleKey) return 0;
@@ -63,14 +60,13 @@ const getCachedStats = unstable_cache(
       })(),
     ]);
 
-    const userCount = results.pop() as number;
-    const playCountResults = results;
     const visitorCount = visitorResult.count ?? 0;
 
-    const totalPlayCount = playCountResults.reduce((sum, result: any) => {
-      const rows = result.data ?? [];
-      return sum + rows.reduce((s: number, r: any) => s + (r.play_count ?? 0), 0);
-    }, 0);
+    // RPC에서 받아온 각 게임별 totalPlay를 합산
+    const totalPlayCount = (statsResult.data as any[])?.reduce(
+      (sum, item) => sum + (item.totalPlay ?? 0),
+      0
+    ) ?? 0;
 
     return { visitorCount, totalPlayCount, userCount };
   },
