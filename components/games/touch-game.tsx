@@ -97,9 +97,6 @@ export function TouchGame({ userName, title }: ProjectProps) {
 
         const now = performance.now();
         if (lastInputRef.current === side) {
-            // 하드웨어/브라우저 바운스(10ms미만) 무시
-            if (now - lastInputTimeRef.current < 10) return;
-
             if (isTouch) {
                 // 모바일 터치 환경: 씹힘 방지를 위해 게임오버 없이 무시 (카운트 미증가)
                 return;
@@ -231,15 +228,24 @@ export function TouchGame({ userName, title }: ProjectProps) {
                         ref={gameAreaRef}
                         className="relative w-full max-w-2xl mx-auto h-64 md:h-80 select-none flex rounded-[2.5rem] overflow-hidden border-8 border-zinc-900 shadow-2xl bg-zinc-950 cursor-pointer"
                         style={{ touchAction: 'none' }}
-                        onPointerDown={(e) => {
+                        onTouchStart={(e) => {
                             if (phase !== "go") return;
-                            if (e.pointerType === 'mouse' && e.button !== 0) return;
-                            e.preventDefault();
-
+                            // 멀티터치(여러 손가락) 즉시 동시 인식
+                            for (let i = 0; i < e.changedTouches.length; i++) {
+                                const touch = e.changedTouches[i];
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                const x = touch.clientX - rect.left;
+                                const side: InputSide = x < rect.width / 2 ? "left" : "right";
+                                handleInput(side, true);
+                            }
+                        }}
+                        onMouseDown={(e) => {
+                            if (phase !== "go") return;
+                            if (e.button !== 0) return; // 좌클릭만
                             const rect = e.currentTarget.getBoundingClientRect();
                             const x = e.clientX - rect.left;
                             const side: InputSide = x < rect.width / 2 ? "left" : "right";
-                            handleInput(side, e.pointerType === 'touch');
+                            handleInput(side, false);
                         }}
                     >
                         {phase === "idle" || phase === "go" ? (
