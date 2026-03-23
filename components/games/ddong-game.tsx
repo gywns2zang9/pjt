@@ -44,6 +44,7 @@ export function DdongGame({ userName, title }: ProjectProps) {
     const phaseRef = useRef<GamePhase>("idle");
     const isCancelledRef = useRef(false);
     const mainTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const endTimeRef = useRef<number>(0);
 
     // 짧은 피드백(잔상)을 위한 상태
     const [clickedFeedbackHole, setClickedFeedbackHole] = useState<number | null>(null);
@@ -85,15 +86,16 @@ export function DdongGame({ userName, title }: ProjectProps) {
     const startMainTimer = useCallback(() => {
         stopMainTimer();
         setTimeLeft(TIME_LIMIT);
+        endTimeRef.current = Date.now() + TIME_LIMIT * 1000;
         mainTimerRef.current = setInterval(() => {
-            setTimeLeft(prev => {
-                const next = +(prev - 0.05).toFixed(2);
-                if (next <= 0) {
-                    stopMainTimer();
-                    return 0;
-                }
-                return next;
-            });
+            const now = Date.now();
+            const remaining = (endTimeRef.current - now) / 1000;
+            if (remaining <= 0) {
+                stopMainTimer();
+                setTimeLeft(0);
+            } else {
+                setTimeLeft(Number(remaining.toFixed(2)));
+            }
         }, 50);
     }, [stopMainTimer]);
 

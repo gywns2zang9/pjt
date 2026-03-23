@@ -118,6 +118,7 @@ export function SizeGame({ userName, title }: ProjectProps) {
     const [shake, setShake] = useState(false);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const endTimeRef = useRef<number>(0);
     const resultTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const currentScoreRef = useRef(0);
     const roundRef = useRef(1);
@@ -141,12 +142,16 @@ export function SizeGame({ userName, title }: ProjectProps) {
     const startTimer = useCallback((limit: number) => {
         stopTimer();
         setTimeLeft(limit);
+        endTimeRef.current = Date.now() + limit * 1000;
         timerRef.current = setInterval(() => {
-            setTimeLeft(prev => {
-                const next = +(prev - 0.05).toFixed(2);
-                if (next <= 0) { stopTimer(); return 0; }
-                return next;
-            });
+            const now = Date.now();
+            const remaining = (endTimeRef.current - now) / 1000;
+            if (remaining <= 0) {
+                stopTimer();
+                setTimeLeft(0);
+            } else {
+                setTimeLeft(Number(remaining.toFixed(2)));
+            }
         }, 50);
     }, [stopTimer]);
 

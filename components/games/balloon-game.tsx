@@ -127,6 +127,7 @@ export function BalloonGame({ userName, title }: ProjectProps) {
     const [gameOverReason, setGameOverReason] = useState<"wrong_color" | "timeout" | null>(null);
 
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const endTimeRef = useRef<number>(0);
     const scoreRef = useRef(0);
     const isPlayingRef = useRef(false);
     const endGameRef = useRef<(reason: "wrong_color" | "timeout") => void>(() => { });
@@ -153,12 +154,18 @@ export function BalloonGame({ userName, title }: ProjectProps) {
         setGameOverReason(null);
         isPlayingRef.current = true;
 
+        endTimeRef.current = Date.now() + TIME_LIMIT * 1000;
+
         if (timerRef.current) clearInterval(timerRef.current);
         timerRef.current = setInterval(() => {
-            setTimeLeft((prev) => {
-                if (prev <= 0.1) { endGameRef.current("timeout"); return 0; }
-                return +(prev - 0.1).toFixed(1);
-            });
+            const now = Date.now();
+            const remaining = (endTimeRef.current - now) / 1000;
+            if (remaining <= 0) {
+                endGameRef.current("timeout");
+                setTimeLeft(0);
+            } else {
+                setTimeLeft(Number(remaining.toFixed(1)));
+            }
         }, 100);
     }, []);
 
@@ -237,7 +244,9 @@ export function BalloonGame({ userName, title }: ProjectProps) {
                     const isAllPopped = next.every(c => c.popped);
                     if (isAllPopped) {
                         setTimeout(() => {
-                            setTimeLeft(t => t + 2); // 2초 보너스
+                            endTimeRef.current += 2000;
+                            const remaining = (endTimeRef.current - Date.now()) / 1000;
+                            setTimeLeft(remaining);
                             setBonusAnim(Date.now());
                         }, 0);
                     }

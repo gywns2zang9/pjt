@@ -123,6 +123,8 @@ export function ChosungGame({ userName, gameConfig, title }: ChosungGameProps) {
 
     const inputRef = useRef<HTMLInputElement>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const endTimeRef = useRef<number>(0);
+    const parkedTimeRef = useRef<number | null>(null);
     const impactIdRef = useRef(0);
     const roundScoredRef = useRef(false);
     const currentScoreRef = useRef(0);
@@ -183,6 +185,8 @@ export function ChosungGame({ userName, gameConfig, title }: ChosungGameProps) {
         // 라운드마다 0.1초 감소, 최소 1초 보장
         const roundDuration = Math.max(1, Number((cfg.gameDuration - roundCountRef.current * 0.1).toFixed(2)));
         setTimeLeft(roundDuration);
+        endTimeRef.current = Date.now() + roundDuration * 1000;
+        parkedTimeRef.current = null;
         setInput("");
         setRoundScore(0);
         setFeedback(null);
@@ -195,20 +199,34 @@ export function ChosungGame({ userName, gameConfig, title }: ChosungGameProps) {
     }, [cfg.gameDuration, cfg.numConsonants]);
 
     useEffect(() => {
-        if (phase === "playing" && !isValidating) {
-            if (timerRef.current) clearInterval(timerRef.current);
-            timerRef.current = setInterval(() => {
-                setTimeLeft((prev) => {
-                    if (prev <= 0) {
-                        clearInterval(timerRef.current!);
+        if (phase === "playing") {
+            if (!isValidating) {
+                // Resume or start
+                if (parkedTimeRef.current !== null) {
+                    endTimeRef.current = Date.now() + parkedTimeRef.current;
+                    parkedTimeRef.current = null;
+                }
+
+                if (timerRef.current) clearInterval(timerRef.current);
+                timerRef.current = setInterval(() => {
+                    const now = Date.now();
+                    const remaining = (endTimeRef.current - now) / 1000;
+                    if (remaining <= 0) {
+                        if (timerRef.current) clearInterval(timerRef.current);
+                        setTimeLeft(0);
                         setPhase("checking");
-                        return 0;
+                    } else {
+                        setTimeLeft(Number(remaining.toFixed(2)));
                     }
-                    return Number((prev - 0.01).toFixed(2));
-                });
-            }, 10);
+                }, 10);
+            } else {
+                // Pausing for validation
+                parkedTimeRef.current = endTimeRef.current - Date.now();
+                if (timerRef.current) clearInterval(timerRef.current);
+            }
         } else {
             if (timerRef.current) clearInterval(timerRef.current);
+            parkedTimeRef.current = null;
         }
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
