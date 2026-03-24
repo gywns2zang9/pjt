@@ -604,7 +604,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowUp"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowUp"] ? "scale-90" : "hover:scale-105"}`}
+                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowUp"] ? "scale-90" : "hover:scale-105"}`}
                                         onPointerDown={() => { movePlayer(0, -1); setActiveKeys(prev => ({ ...prev, ArrowUp: true })); }}
                                         onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
                                         onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
@@ -618,7 +618,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowLeft"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowLeft"] ? "scale-90" : "hover:scale-105"}`}
+                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowLeft"] ? "scale-90" : "hover:scale-105"}`}
                                         onPointerDown={() => { movePlayer(-1, 0); setActiveKeys(prev => ({ ...prev, ArrowLeft: true })); }}
                                         onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
                                         onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
@@ -628,7 +628,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowDown"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
+                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
                                         onPointerDown={() => { movePlayer(0, 1); setActiveKeys(prev => ({ ...prev, ArrowDown: true })); }}
                                         onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
                                         onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
@@ -638,7 +638,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowRight"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowRight"] ? "scale-90" : "hover:scale-105"}`}
+                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowRight"] ? "scale-90" : "hover:scale-105"}`}
                                         onPointerDown={() => { movePlayer(1, 0); setActiveKeys(prev => ({ ...prev, ArrowRight: true })); }}
                                         onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
                                         onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
