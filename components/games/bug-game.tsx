@@ -397,7 +397,7 @@ export function BugGame({ userName, title }: ProjectProps) {
 
                 if (it.type === 'cleaner') {
                     boxColor = "#a855f7"; // 보라색 (클리너)
-                    label = "CLEAR";
+                    label = "???";
                 } else {
                     // 먹은 개수에 따른 동/은/금 진화 (0개 먹었을 때 동색, 1개 먹었을 때 은색, 2개 먹었을 때 금색)
                     if (boxCountRef.current === 0) boxColor = "#b45309"; // Bronze
@@ -737,14 +737,6 @@ function HTPSection() {
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">03</span>
                         <span><strong>캐릭터가 빨간 덩어리와 부딪히면 끝나요.</strong></span>
-                    </li>
-                    <li className="flex gap-2">
-                        <span className="text-primary font-bold shrink-0">04</span>
-                        <span><strong>아이템 진화: 동 → 은 → 금 박스를 순서대로 먹으면 보라색 클리너 박스가 나타나요!</strong></span>
-                    </li>
-                    <li className="flex gap-2">
-                        <span className="text-primary font-bold shrink-0">05</span>
-                        <span><strong>클리너 박스(CLEAR): 보라색 박스를 먹으면 내가 지나온 보라색 길이 모두 사라져요!</strong></span>
                     </li>
                 </ul>
             )}
