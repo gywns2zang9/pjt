@@ -57,6 +57,7 @@ export function BugGame({ userName, title }: ProjectProps) {
     const lastSplitTimeRef = useRef<number>(0);
     const scoreRef = useRef(1); // 버그 수
     const nextBugIdRef = useRef(1);
+    const lastFrameTimeRef = useRef<number>(0);
 
     const loadRanking = useCallback(async () => {
         try {
@@ -118,19 +119,30 @@ export function BugGame({ userName, title }: ProjectProps) {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        // 1. 버그 분열 로직 (2초마다)
+        // 1. 버그 분열 로직 (1초마다)
         const dt = time - lastSplitTimeRef.current;
-        if (dt >= 2000) {
+        if (dt >= 1500) {
             lastSplitTimeRef.current = time;
             const currentBugs = bugsRef.current;
             const newBugs: Bug[] = [];
 
-            for (const b of currentBugs) {
-                // 각각 2마리 혹은 3마리로 분열 (기존 버그 유지 + 2or3마리 추가 = 3or4마리)
-                const splitYield = Math.random() < 0.5 ? 2 : 3;
-                for (let i = 0; i < splitYield - 1; i++) {
+            if (currentBugs.length === 0) {
+                // [유지] 필드에 벌레가 한 마리도 없으면 새로 하나 생성
+                const margin = 100;
+                newBugs.push({
+                    id: ++nextBugIdRef.current,
+                    x: margin + Math.random() * (CANVAS_SIZE - margin * 2),
+                    y: margin + Math.random() * (CANVAS_SIZE - margin * 2),
+                    vx: (Math.random() - 0.5) * 1.5,
+                    vy: (Math.random() - 0.5) * 1.5,
+                    radius: 6,
+                    spawnTime: time
+                });
+            } else {
+                // [수정] 모든 벌레가 1초마다 각각 1마리씩 분열
+                for (const b of currentBugs) {
                     const angle = Math.random() * Math.PI * 2;
-                    const speed = 0.7;
+                    const speed = 1.0; // 분열 후 속도 1.0
 
                     newBugs.push({
                         id: ++nextBugIdRef.current,
@@ -143,6 +155,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                     });
                 }
             }
+
             bugsRef.current.push(...newBugs);
             scoreRef.current += newBugs.length;
             setScore(scoreRef.current);
@@ -182,6 +195,12 @@ export function BugGame({ userName, title }: ProjectProps) {
             ctx.fillRect(gx * STEP + 1, gy * STEP + 1, STEP - 2, STEP - 2);
         });
 
+        // 1.5. 시간차(DeltaTime)를 이용한 프레임 독립 이동 (60FPS 기준 정규화)
+        // 144Hz 등 고주사율 모니터에서도 벌레 속도가 일정하도록 보정합니다.
+        if (lastFrameTimeRef.current === 0) lastFrameTimeRef.current = time;
+        const deltaTimeMult = Math.min(2.0, (time - lastFrameTimeRef.current) / (1000 / 60)) || 1;
+        lastFrameTimeRef.current = time;
+
         // 4. 버그 이동 및 충돌 체크
         let isGameOver = false;
 
@@ -213,48 +232,53 @@ export function BugGame({ userName, title }: ProjectProps) {
         ctx.arc(p.x + 3, p.y - 2, 1, 0, Math.PI * 2);
         ctx.fill();
         ctx.closePath();
-        const currentBugs = bugsRef.current;
+
+        const activeBugs = bugsRef.current;
         const bugsToRemove = new Set<number>();
 
         // 1단계: 버그 이동 및 벽 충돌
         const WALL_MARGIN = 4;
-        for (const b of currentBugs) {
-            b.x += b.vx;
-            b.y += b.vy;
+        for (const b of activeBugs) {
+            b.x += b.vx * deltaTimeMult;
+            b.y += b.vy * deltaTimeMult;
             if (b.x < b.radius + WALL_MARGIN) { b.x = b.radius + WALL_MARGIN; b.vx = Math.abs(b.vx); }
             else if (b.x > CANVAS_SIZE - b.radius - WALL_MARGIN) { b.x = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vx = -Math.abs(b.vx); }
             if (b.y < b.radius + WALL_MARGIN) { b.y = b.radius + WALL_MARGIN; b.vy = Math.abs(b.vy); }
-            else if (b.y > CANVAS_SIZE - b.radius - WALL_MARGIN) { b.y = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vx = -Math.abs(b.vx); }
+            else if (b.y > CANVAS_SIZE - b.radius - WALL_MARGIN) { b.y = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vy = -Math.abs(b.vy); }
         }
 
         // 2단계: 버그끼리 충돌 체크 (부딪히면 소멸)
-        for (let i = 0; i < currentBugs.length; i++) {
-            const b1 = currentBugs[i];
-            // 태어난지 1초가 지나지 않은 버그는 충돌 소멸 면제
-            if (time - b1.spawnTime < 1000) continue;
+        for (let i = 0; i < activeBugs.length; i++) {
+            const b1 = activeBugs[i];
+            const isB1Immune = (time - b1.spawnTime < 250); // 0.25초 무적
 
-            for (let j = i + 1; j < currentBugs.length; j++) {
-                const b2 = currentBugs[j];
-                // 상대방 버그도 면제면 넘어감
-                if (time - b2.spawnTime < 1000) continue;
+            for (let j = i + 1; j < activeBugs.length; j++) {
+                const b2 = activeBugs[j];
+                const isB2Immune = (time - b2.spawnTime < 250);
 
                 const dx = b1.x - b2.x;
                 const dy = b1.y - b2.y;
                 const distSq = dx * dx + dy * dy;
                 const minDist = b1.radius + b2.radius;
+
                 if (distSq < minDist * minDist) {
-                    bugsToRemove.add(b1.id);
-                    bugsToRemove.add(b2.id);
+                    if (isB1Immune || isB2Immune) {
+                        // 한쪽이라도 무적 상태면 서로 통과 (소멸 없음)
+                        continue;
+                    } else {
+                        // 둘 다 무적이 아니면 동귀어진 (둘 다 소멸)
+                        bugsToRemove.add(b1.id);
+                        bugsToRemove.add(b2.id);
+                    }
                 }
             }
         }
 
         // 3단계: 소멸된 버그 제외 (점수는 누적이므로 갱신하지 않음)
         if (bugsToRemove.size > 0) {
-            bugsRef.current = currentBugs.filter(b => !bugsToRemove.has(b.id));
+            bugsRef.current = activeBugs.filter(b => !bugsToRemove.has(b.id));
         }
 
-        const activeBugs = bugsRef.current;
         const timeInSeconds = time / 1000;
 
         // 4단계: 버그 렌더링 및 플레이어 충돌 체크
@@ -407,10 +431,10 @@ export function BugGame({ userName, title }: ProjectProps) {
                             )}
                         </div>
 
-                        {/* 하단 컨트롤 영역 - 모바일 최적화 (분할형 가로 배치) */}
-                        <div className="flex justify-between items-center w-full max-w-[480px] mx-auto pt-6 pb-2 px-2">
-                            {/* 왼쪽: 상하 키 (가로 배치) */}
-                            <div className="flex gap-4 items-center">
+                        {/* 하단 컨트롤 영역 - 방향키(십자/ㅗ) 배열 배치 */}
+                        <div className="flex flex-col items-center justify-center w-full max-w-[480px] mx-auto pt-4 pb-2 px-2 gap-2">
+                            {/* 윗줄: 상 */}
+                            <div className="flex justify-center w-full">
                                 <Button
                                     variant={activeKeys["ArrowUp"] ? "default" : "secondary"}
                                     size="icon"
@@ -421,20 +445,10 @@ export function BugGame({ userName, title }: ProjectProps) {
                                 >
                                     <ChevronDown className="w-10 h-10 rotate-180" />
                                 </Button>
-                                <Button
-                                    variant={activeKeys["ArrowDown"] ? "default" : "secondary"}
-                                    size="icon"
-                                    className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
-                                    onPointerDown={() => { movePlayer(0, 1); setActiveKeys(prev => ({ ...prev, ArrowDown: true })); }}
-                                    onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
-                                    onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
-                                >
-                                    <ChevronDown className="w-10 h-10" />
-                                </Button>
                             </div>
 
-                            {/* 오른쪽: 좌우 키 (가로 배치) */}
-                            <div className="flex gap-4 items-center">
+                            {/* 아랫줄: 좌 하 우 */}
+                            <div className="flex justify-center gap-2 w-full">
                                 <Button
                                     variant={activeKeys["ArrowLeft"] ? "default" : "secondary"}
                                     size="icon"
@@ -444,6 +458,16 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
                                 >
                                     <ChevronDown className="w-10 h-10 rotate-90" />
+                                </Button>
+                                <Button
+                                    variant={activeKeys["ArrowDown"] ? "default" : "secondary"}
+                                    size="icon"
+                                    className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
+                                    onPointerDown={() => { movePlayer(0, 1); setActiveKeys(prev => ({ ...prev, ArrowDown: true })); }}
+                                    onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
+                                    onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
+                                >
+                                    <ChevronDown className="w-10 h-10" />
                                 </Button>
                                 <Button
                                     variant={activeKeys["ArrowRight"] ? "default" : "secondary"}
