@@ -42,7 +42,7 @@ const STEP = CANVAS_SIZE / GRID_DIVISIONS;
 // --- 게임 설정 (여기서 밸런스를 조절하세요) ---
 const INITIAL_BUG_SPEED = 2.0;    // 초기 대장 버그 속도
 const SPLIT_BUG_SPEED = 1.0;      // 분열되는 버그 속도
-const SPLIT_INTERVAL = 1500;     // 분열 주기 (ms)
+const SPLIT_INTERVAL = 2000;     // 분열 주기 (ms)
 const BUG_SIZE = 10;               // 버그 크기 (반경, 파란색 대장 버그 기준)
 // ------------------------------------------
 
@@ -133,7 +133,7 @@ export function BugGame({ userName, title }: ProjectProps) {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        // 1. 버그 분열 로직 (1.5초마다)
+        // 1. 버그 분열 로직 (2초마다)
         const dt = time - lastSplitTimeRef.current;
         if (dt >= SPLIT_INTERVAL) {
             lastSplitTimeRef.current = time;
@@ -298,8 +298,11 @@ export function BugGame({ userName, title }: ProjectProps) {
                     if (hitTop) { b.y = b.radius + WALL_MARGIN; b.vy = Math.abs(b.vy); }
                     else if (hitBottom) { b.y = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vy = -Math.abs(b.vy); }
                 } else {
-                    // 일반 벌레(빨간색)는 벽에 닿으면 즉시 소멸
-                    bugsToRemove.add(b.id);
+                    // 일반 벌레(빨간색)는 벽에 닿으면 즉시 소멸 (단, 0.5초 무적 기간 동안은 소생)
+                    const isImmune = (time - b.spawnTime < 500);
+                    if (!isImmune) {
+                        bugsToRemove.add(b.id);
+                    }
                 }
             }
         }
@@ -318,9 +321,9 @@ export function BugGame({ userName, title }: ProjectProps) {
                 const distSq = dx * dx + dy * dy;
                 const minDist = b1.radius + b2.radius;
 
-                // 닿는 순간(<=) 즉시 판정 및 무적 시간을 0.2초로 단축
+                // 닿는 순간(<=) 즉시 판정 및 무적 시간을 0.5초로 유지
                 if (distSq <= minDist * minDist) {
-                    if (time - b1.spawnTime < 200 || time - b2.spawnTime < 200) continue;
+                    if (time - b1.spawnTime < 500 || time - b2.spawnTime < 500) continue;
 
                     if (b1.isPermanent && b2.isPermanent) {
                         continue;
@@ -350,7 +353,11 @@ export function BugGame({ userName, title }: ProjectProps) {
 
             // 본체 구체 (그라데이션)
             const bGradient = ctx.createRadialGradient(-2, -2, 0, 0, 0, currentBRadius);
-            if (b.isPermanent) {
+
+            // 새로 태어난 버그는 0.5초 동안 파란색 (무적 상태)
+            const isImmune = !b.isPermanent && (time - b.spawnTime < 500);
+
+            if (b.isPermanent || isImmune) {
                 bGradient.addColorStop(0, "#60a5fa");
                 bGradient.addColorStop(1, "#2563eb");
             } else {
@@ -374,7 +381,10 @@ export function BugGame({ userName, title }: ProjectProps) {
 
             // [수정] 플레이어(정사각형) vs 버그(원형) 충돌 체크 (AABB vs Circle)
             // 사용자 요청: 빨간 버그(isPermanent 아님)와 닿았을 때만 게임 오버
-            if (!b.isPermanent) {
+            // (단, 0.5초 무적 기간 동안은 캐릭터와 부딪혀도 게임 오버 처리 제외)
+            const isImmuneForGameOver = !b.isPermanent && (time - b.spawnTime < 500);
+
+            if (!b.isPermanent && !isImmuneForGameOver) {
                 const halfSize = 14;
                 const px = playerRef.current.x;
                 const py = playerRef.current.y;
@@ -641,7 +651,7 @@ function HTPSection() {
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">02</span>
-                        <span><strong>1.5초마다 빨간 덩어리가 늘어나요. <br />덩어리끼리 부딪히거나 벽에 닿으면 사라져요.</strong></span>
+                        <span><strong>2초마다 빨간 덩어리가 늘어나요. <br />덩어리끼리 부딪히거나 벽에 닿으면 사라져요.</strong></span>
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">03</span>
