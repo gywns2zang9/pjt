@@ -73,6 +73,8 @@ export function BugGame({ userName, title }: ProjectProps) {
     const scoreRef = useRef(1); // 버그 수
     const nextBugIdRef = useRef(1);
     const lastFrameTimeRef = useRef<number>(0);
+    const itemRef = useRef<{ gx: number, gy: number, value: number, type: 'point' | 'cleaner' } | null>(null);
+    const boxCountRef = useRef<number>(0); // 먹은 일반 박스 개수 (3개마다 클리너 등장)
 
     const loadRanking = useCallback(async () => {
         try {
@@ -94,6 +96,12 @@ export function BugGame({ userName, title }: ProjectProps) {
         visitedRef.current.clear();
         visitedRef.current.add(`${startGX},${startGY}`);
         nextBugIdRef.current = 1;
+
+        // 보너스 점수 박스 초기화 (+100 고정, 동색부터 시작)
+        const itemGX = Math.floor(Math.random() * GRID_DIVISIONS);
+        const itemGY = Math.floor(Math.random() * GRID_DIVISIONS);
+        itemRef.current = { gx: itemGX, gy: itemGY, value: 50, type: 'point' };
+        boxCountRef.current = 0;
 
         const startTime = performance.now();
         // 초기 버그 생성 (4개 모서리 영구 버그: 중앙으로 향함)
@@ -209,9 +217,9 @@ export function BugGame({ userName, title }: ProjectProps) {
         const pSize = STEP - 4; // 칸보다 약간 작게 실선 처리
         const halfSize = pSize / 2;
 
-        // 미세하게 떨리는 효과 부여 (겁에 질림)
-        const shakeX = (Math.random() - 0.5) * 1.5;
-        const shakeY = (Math.random() - 0.5) * 1.5;
+        // 미세하게 떨리는 효과 약간 부여 (겁에 질림)
+        const shakeX = (Math.random() - 0.5) * 0.4;
+        const shakeY = (Math.random() - 0.5) * 0.4;
 
         ctx.save();
         ctx.translate(p.x + shakeX, p.y + shakeY);
@@ -261,7 +269,7 @@ export function BugGame({ userName, title }: ProjectProps) {
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(-3, 6);
-        ctx.lineTo(3, 5 + Math.sin(time / 50) * 2);
+        ctx.lineTo(3, 6); // 입을 고정 시킴
         ctx.stroke();
         ctx.closePath();
 
@@ -298,8 +306,8 @@ export function BugGame({ userName, title }: ProjectProps) {
                     if (hitTop) { b.y = b.radius + WALL_MARGIN; b.vy = Math.abs(b.vy); }
                     else if (hitBottom) { b.y = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vy = -Math.abs(b.vy); }
                 } else {
-                    // 일반 벌레(빨간색)는 벽에 닿으면 즉시 소멸 (단, 0.5초 무적 기간 동안은 소생)
-                    const isImmune = (time - b.spawnTime < 500);
+                    // 일반 벌레(빨간색)는 벽에 닿으면 즉시 소멸 (단, 0.2초 무적 기간 동안은 소멸 제외)
+                    const isImmune = (time - b.spawnTime < 200);
                     if (!isImmune) {
                         bugsToRemove.add(b.id);
                     }
@@ -321,9 +329,9 @@ export function BugGame({ userName, title }: ProjectProps) {
                 const distSq = dx * dx + dy * dy;
                 const minDist = b1.radius + b2.radius;
 
-                // 닿는 순간(<=) 즉시 판정 및 무적 시간을 0.5초로 유지
+                // 닿는 순간(<=) 즉시 판정 및 무적 시간을 0.2초로 유지 (생성 시 중첩 파괴 방지)
                 if (distSq <= minDist * minDist) {
-                    if (time - b1.spawnTime < 500 || time - b2.spawnTime < 500) continue;
+                    if (time - b1.spawnTime < 200 || time - b2.spawnTime < 200) continue;
 
                     if (b1.isPermanent && b2.isPermanent) {
                         continue;
@@ -354,14 +362,11 @@ export function BugGame({ userName, title }: ProjectProps) {
             // 본체 구체 (그라데이션)
             const bGradient = ctx.createRadialGradient(-2, -2, 0, 0, 0, currentBRadius);
 
-            // 새로 태어난 버그는 0.5초 동안 파란색 (무적 상태)
-            const isImmune = !b.isPermanent && (time - b.spawnTime < 500);
-
-            if (b.isPermanent || isImmune) {
+            if (b.isPermanent) {
                 bGradient.addColorStop(0, "#60a5fa");
                 bGradient.addColorStop(1, "#2563eb");
             } else {
-                bGradient.addColorStop(0, "#f87171");
+                bGradient.addColorStop(0, "#f87171"); // 태어날 때부터 빨간색
                 bGradient.addColorStop(1, "#dc2626");
             }
 
@@ -379,10 +384,57 @@ export function BugGame({ userName, title }: ProjectProps) {
             ctx.closePath();
             ctx.restore();
 
+            // 4.5단계: 보너스 아이템 박스 렌더링
+            if (itemRef.current) {
+                const it = itemRef.current;
+                const ix = it.gx * STEP + STEP / 2;
+                const iy = it.gy * STEP + STEP / 2;
+                const iSize = STEP - 2; // 칸에 꽉 차게
+
+                // 아이템 타입에 따른 색상 결정
+                let boxColor = "#fbbf24"; // 기본 골드
+                let label = it.value.toString();
+
+                if (it.type === 'cleaner') {
+                    boxColor = "#a855f7"; // 보라색 (클리너)
+                    label = "CLEAR";
+                } else {
+                    // 먹은 개수에 따른 동/은/금 진화 (0개 먹었을 때 동색, 1개 먹었을 때 은색, 2개 먹었을 때 금색)
+                    if (boxCountRef.current === 0) boxColor = "#b45309"; // Bronze
+                    else if (boxCountRef.current === 1) boxColor = "#94a3b8"; // Silver
+                    else boxColor = "#fbbf24"; // Gold
+                }
+
+                ctx.save();
+                ctx.translate(ix, iy);
+
+                // 상자 디자인
+                ctx.fillStyle = boxColor;
+                ctx.fillRect(-iSize / 2, -iSize / 2, iSize, iSize);
+
+                // 테두리
+                ctx.strokeStyle = "rgba(0,0,0,0.2)";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-iSize / 2, -iSize / 2, iSize, iSize);
+
+                // 점수 텍스트 (숫자 크게)
+                ctx.fillStyle = (it.type === 'point' && boxCountRef.current === 1) ? "#000000" : "#ffffff";
+                if (it.type === 'point' && boxCountRef.current === 2) ctx.fillStyle = "#000000"; // Gold에는 검정 글씨
+                if (it.type === 'point' && boxCountRef.current === 0) ctx.fillStyle = "#ffffff"; // Bronze에는 흰 글씨
+                if (it.type === 'cleaner') ctx.fillStyle = "#ffffff"; // Purple에는 흰 글씨
+
+                ctx.font = "bold 14px sans-serif";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(label, 0, 0);
+
+                ctx.restore();
+            }
+
             // [수정] 플레이어(정사각형) vs 버그(원형) 충돌 체크 (AABB vs Circle)
             // 사용자 요청: 빨간 버그(isPermanent 아님)와 닿았을 때만 게임 오버
-            // (단, 0.5초 무적 기간 동안은 캐릭터와 부딪혀도 게임 오버 처리 제외)
-            const isImmuneForGameOver = !b.isPermanent && (time - b.spawnTime < 500);
+            // (단, 0.2초 무적 기간 동안은 캐릭터와 부딪혀도 게임 오버 처리 제외)
+            const isImmuneForGameOver = !b.isPermanent && (time - b.spawnTime < 200);
 
             if (!b.isPermanent && !isImmuneForGameOver) {
                 const halfSize = 14;
@@ -437,6 +489,35 @@ export function BugGame({ userName, title }: ProjectProps) {
             playerRef.current.x = nextX;
             playerRef.current.y = nextY;
             visitedRef.current.add(key);
+
+            // 보너스 아이템 획득 체크
+            if (itemRef.current && itemRef.current.gx === gx && itemRef.current.gy === gy) {
+                const it = itemRef.current;
+
+                if (it.type === 'cleaner') {
+                    // 보라색 경로 초기화
+                    visitedRef.current.clear();
+                    visitedRef.current.add(key); // 현재 위치는 유지
+                    boxCountRef.current = 0;
+                } else {
+                    scoreRef.current += it.value;
+                    boxCountRef.current++;
+                }
+
+                // 다음 아이템 결정
+                const nextType = boxCountRef.current >= 3 ? 'cleaner' : 'point';
+
+                // 다음 아이템 위치 결정 (아직 방문하지 않은 곳 우선)
+                let attempts = 0;
+                let nextGX, nextGY;
+                do {
+                    nextGX = Math.floor(Math.random() * GRID_DIVISIONS);
+                    nextGY = Math.floor(Math.random() * GRID_DIVISIONS);
+                    attempts++;
+                } while (visitedRef.current.has(`${nextGX},${nextGY}`) && attempts < 100);
+
+                itemRef.current = { gx: nextGX, gy: nextGY, value: 50, type: nextType };
+            }
         }
     }, [phase]);
 
@@ -484,7 +565,7 @@ export function BugGame({ userName, title }: ProjectProps) {
 
                         {/* 게임 영역 */}
                         <div
-                            className={`relative w-full mx-auto aspect-square bg-slate-50 dark:bg-zinc-950 rounded-3xl overflow-hidden shadow-inner border-[6px] border-slate-200 dark:border-zinc-900 transition-all duration-300 ${showControls ? 'max-w-[480px]' : 'max-w-[640px] my-4'}`}
+                            className={`relative w-full mx-auto aspect-square bg-slate-50 dark:bg-zinc-950 rounded-none overflow-hidden shadow-inner border-[6px] border-slate-200 dark:border-zinc-900 transition-all duration-300 ${showControls ? 'max-w-[480px]' : 'max-w-[640px] my-4'}`}
                             onClick={() => phase !== "playing" && startGame()}
                         >
                             <canvas
@@ -523,7 +604,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowUp"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowUp"] ? "scale-90" : "hover:scale-105"}`}
+                                        className={`w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowUp"] ? "scale-90" : "hover:scale-105"}`}
                                         onPointerDown={() => { movePlayer(0, -1); setActiveKeys(prev => ({ ...prev, ArrowUp: true })); }}
                                         onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
                                         onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
@@ -537,7 +618,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowLeft"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowLeft"] ? "scale-90" : "hover:scale-105"}`}
+                                        className={`w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowLeft"] ? "scale-90" : "hover:scale-105"}`}
                                         onPointerDown={() => { movePlayer(-1, 0); setActiveKeys(prev => ({ ...prev, ArrowLeft: true })); }}
                                         onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
                                         onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
@@ -547,7 +628,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowDown"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
+                                        className={`w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
                                         onPointerDown={() => { movePlayer(0, 1); setActiveKeys(prev => ({ ...prev, ArrowDown: true })); }}
                                         onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
                                         onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
@@ -557,7 +638,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowRight"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowRight"] ? "scale-90" : "hover:scale-105"}`}
+                                        className={`w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowRight"] ? "scale-90" : "hover:scale-105"}`}
                                         onPointerDown={() => { movePlayer(1, 0); setActiveKeys(prev => ({ ...prev, ArrowRight: true })); }}
                                         onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
                                         onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
@@ -656,6 +737,14 @@ function HTPSection() {
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">03</span>
                         <span><strong>캐릭터가 빨간 덩어리와 부딪히면 끝나요.</strong></span>
+                    </li>
+                    <li className="flex gap-2">
+                        <span className="text-primary font-bold shrink-0">04</span>
+                        <span><strong>아이템 진화: 동 → 은 → 금 박스를 순서대로 먹으면 보라색 클리너 박스가 나타나요!</strong></span>
+                    </li>
+                    <li className="flex gap-2">
+                        <span className="text-primary font-bold shrink-0">05</span>
+                        <span><strong>클리너 박스(CLEAR): 보라색 박스를 먹으면 내가 지나온 보라색 길이 모두 사라져요!</strong></span>
                     </li>
                 </ul>
             )}
