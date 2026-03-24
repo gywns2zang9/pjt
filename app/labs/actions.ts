@@ -64,41 +64,33 @@ export async function updateProjectMeta(
     revalidatePath("/works");
 }
 
-export async function resetChosungRanking() {
+export async function resetGameRanking(projectId: string) {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
 
-    const adminSupabase = getAdminSupabase();
-    const { error } = await adminSupabase
-        .from("chosung_scores")
-        .delete()
-        .gte("score", 0); // 전체 삭제
-    if (error) throw error;
-}
+    const tableMap: Record<string, string> = {
+        "chosung-game": "chosung_scores",
+        "circle-game": "circle_scores",
+        "ddong-game": "ddong_scores",
+        "eyes-game": "eyes_scores",
+        "size-game": "size_scores",
+        "sort-game": "sort_scores",
+        "speed-game": "speed_scores",
+        "touch-game": "touch_scores",
+        "arrow-game": "arrow_scores",
+        "balloon-game": "balloon_scores",
+        "bug-game": "bug_scores",
+    };
 
-export async function resetCircleRanking() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
-
-    const adminSupabase = getAdminSupabase();
-    const { error } = await adminSupabase
-        .from("circle_scores")
-        .delete()
-        .not("id", "is", null);
-    if (error) throw error;
-}
-
-export async function resetSpeedRanking() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!checkIsAdmin(user?.id)) throw new Error("Unauthorized");
+    const tableName = tableMap[projectId];
+    if (!tableName) throw new Error("Invalid project ID for ranking reset");
 
     const adminSupabase = getAdminSupabase();
     const { error } = await adminSupabase
-        .from("speed_scores")
+        .from(tableName)
         .delete()
         .not("id", "is", null);
+
     if (error) throw error;
 }

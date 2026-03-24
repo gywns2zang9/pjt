@@ -4,9 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
     updateProjectMeta,
-    resetChosungRanking,
-    resetCircleRanking,
-    resetSpeedRanking,
+    resetGameRanking,
 } from "@/app/labs/actions";
 import {
     type ProjectMeta,
@@ -47,12 +45,13 @@ export function ProjectSettings({ project, config: initialConfig, hasRanking }: 
     const handleResetRanking = () => {
         if (!window.confirm("랭킹을 초기화하시겠습니까?\n전체 점수 기록이 삭제되며 복구할 수 없습니다.")) return;
         startResetTransition(async () => {
-            if (project.id === "chosung-game") {
-                await resetChosungRanking();
-            } else if (project.id === "circle-game") {
-                await resetCircleRanking();
-            } else if (project.id === "speed-game") {
-                await resetSpeedRanking();
+            try {
+                await resetGameRanking(project.id);
+                alert("랭킹이 초기화되었습니다.");
+                router.refresh();
+            } catch (error) {
+                console.error(error);
+                alert("초기화 실패");
             }
         });
     };

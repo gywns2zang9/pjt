@@ -78,6 +78,10 @@ export const projects: ProjectMeta[] = [
         id: "balloon-game",
         title: "풍선 게임",
     },
+    {
+        id: "bug-game",
+        title: "버그 게임",
+    },
 ];
 
 export function getProjectById(id: string): ProjectMeta | undefined {
