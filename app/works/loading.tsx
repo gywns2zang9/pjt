@@ -23,7 +23,7 @@ export default function WorksLoading() {
                     {/* 타이틀 — 실제 텍스트 사용 (로딩과 무관하게 동일) */}
                     <div className="space-y-1">
                         <h1 className="text-2xl font-semibold tracking-tight">뚝-딱!</h1>
-                        <p className="text-muted-foreground">재미로 즐겨주세요~^^</p>
+                        <p className="text-muted-foreground">재밌게 즐겨주세요~^^</p>
                     </div>
 
                     {/* ProjectListClient 스켈레톤 */}

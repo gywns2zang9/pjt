@@ -633,15 +633,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>매 라운드마다 <strong>서로 다른 크기</strong>의 도형이 2개 주어져요</span>
+                        <span><strong>매 라운드마다 서로 다른 크기의 도형이 2개 주어져요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>제한 시간<strong>(2초)</strong> 내에 <strong className="text-foreground">더 작은 도형</strong> 또는 <strong className="text-foreground">더 큰 도형</strong>을 찾으세요</span>
+                        <span><strong>제한 시간(2초) 내에 더 작은 도형 또는 더 큰 도형을 찾으세요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>문제를 <strong>꼼꼼히</strong> 읽으세요</span>
+                        <span><strong>문제를 꼼꼼히 읽으세요.</strong></span>
                     </li>
                 </ul>
             )}

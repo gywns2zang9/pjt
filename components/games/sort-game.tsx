@@ -430,17 +430,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>블록을 <strong>오름차순</strong> 정렬하세요.</span>
+                        <span><strong>블록을 오름차순 정렬하세요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>두 개의 블록을 선택해 <strong>위치</strong>를 바꾸세요. <br />
-                            <span><strong>숫자 키</strong>로도 선택할 수 있습니다.</span>
-                        </span>
+                        <span><strong>두 개의 블록을 선택해 위치를 바꾸세요. <br /> 숫자 키로도 선택할 수 있습니다.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>제한 시간은 <strong>30초</strong>입니다.</span>
+                        <span><strong>제한 시간은 30초입니다.</strong></span>
                     </li>
                 </ul>
             )}

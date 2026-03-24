@@ -502,15 +502,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>랜덤한 위치에 <strong className="text-foreground">똥(💩)</strong>이 나타나요.</span>
+                        <span><strong>랜덤한 위치에 똥(💩)이 나타나요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>제한시간 <strong>(30초)</strong> 내에 똥(💩)이 나타났던 칸을 <strong className="text-foreground">순서대로</strong> 칮으세요!</span>
+                        <span><strong>제한시간 (30초) 내에 똥(💩)이 나타났던 칸을 순서대로 찾으세요!</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>라운드가 지날수록 똥(💩)이 <strong>1개씩</strong> 증가해요.</span>
+                        <span><strong>라운드가 지날수록 똥(💩)이 1개씩 증가해요.</strong></span>
                     </li>
                 </ul>
             )}

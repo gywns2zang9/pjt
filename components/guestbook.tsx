@@ -164,11 +164,14 @@ export function Guestbook({
   };
 
   useEffect(() => {
-    // initial fetch not needed; initialEntries provided
-    setEntries(initialEntries);
-    setTotalCount(initialCount);
-    setPage(1);
-  }, [initialEntries, initialCount]);
+    if (initialEntries.length === 0 && initialCount === 0) {
+      loadPage(1);
+    } else {
+      setEntries(initialEntries);
+      setTotalCount(initialCount);
+      setPage(1);
+    }
+  }, [initialEntries, initialCount, projectId]);
 
   const isLoggedIn = Boolean(user?.id);
   const isAdmin = user?.id === ADMIN_UID;

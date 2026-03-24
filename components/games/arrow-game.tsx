@@ -437,15 +437,15 @@ function HTPSection() {
                 <ul className="space-y-3 text-xs text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200 font-medium font-sans">
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>클릭하면 <strong>진행 방향이 반전</strong>돼요. <br />PC로는 스페이스바로도 가능해요.</span>
+                        <span><strong>클릭하면 진행 방향이 반전돼요. <br />PC로는 스페이스바로도 가능해요.</strong></span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>방향을 꺾으면 <strong>새로운 경계선</strong>이 쌓여요.</span>
+                        <span><strong>방향을 꺾으면 새로운 경계선이 쌓여요.</strong></span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>빨간 선에 닿으면 게임이 종료돼요.</span>
+                        <span><strong>빨간 선에 닿으면 게임이 종료돼요.</strong></span>
                     </li>
                 </ul>
             )}

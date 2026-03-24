@@ -2,7 +2,7 @@ import { Container } from "@/components/layout/container";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { createClient } from "@/lib/supabase/server";
-import { projects, effectiveTitle, effectiveDescription, effectiveSlug, type ProjectConfig } from "@/lib/projects";
+import { projects, type ProjectConfig, type ProjectMeta } from "@/lib/projects";
 import { Guestbook } from "@/components/guestbook";
 import ProjectListClient from "@/components/project-list-client";
 
@@ -29,65 +29,21 @@ const ALL_SCORE_TABLES = [...new Set(Object.values(TABLE_MAP))];
 export default async function WorksPage() {
     const supabase = await createClient();
 
-    // 1. 유저 ID가 필요 없는 쿼리는 먼저 Promise로 실행 (워터폴 방지)
-    const configsPromise = supabase.from("project_configs").select("*").eq("show_on_works", true);
-    const guestbookPromise = supabase.from("guestbook").select("*", { count: "exact" })
-        .eq("project_id", "home")
-        .order("created_at", { ascending: false })
-        .range(0, 4);
+    // 1. 최소한의 프로젝트 설정만 조회 (매우 빠름)
+    const { data: configs } = await supabase.from("project_configs")
+        .select("*")
+        .eq("show_on_works", true);
 
-    // 2. 유저 인증 병렬 대기
+    // 2. 유저 정보 (세션 확인 - 필수)
     const { data: { user } } = await supabase.auth.getUser();
 
-    // 3. RPC로 넘길 모든 게임 테이블 목록 구성
-    const tablesPayload = Object.keys(TABLE_MAP).map(key => ({
-        id: key,
-        table: TABLE_MAP[key],
-        isAsc: SCORE_ASC.has(key)
-    }));
-
-    // 4. 유저 ID가 필요한 통계 쿼리 실행
-    const statsPromise = supabase.rpc("get_all_game_stats", {
-        p_tables: tablesPayload,
-        p_user_id: user?.id ?? null
-    });
-
-    // 5. 모든 비동기 작업 결과 병합 대기
-    const [
-        { data: configs },
-        guestbookResult,
-        { data: statsData }
-    ] = await Promise.all([
-        configsPromise,
-        guestbookPromise,
-        statsPromise
-    ]);
-
-    const entriesData = guestbookResult.data;
-    const entriesCount = guestbookResult.count;
-
-    // 정적 메타와 매핑
-    const visibleProjects = (configs ?? [])
+    // 정적 메타와 매핑 (서버에서 구조는 잡아줌)
+    const initialProjects = (configs ?? [])
         .map((c: ProjectConfig) => ({
             config: c,
             meta: projects.find((p) => p.id === c.id),
         }))
-        .filter((p) => p.meta);
-
-    // RPC 결과와 매핑
-    const projectsWithStats = visibleProjects.map((project) => {
-        const stat = (statsData as any[])?.find(s => s.id === project.meta!.id);
-        return {
-            config: project.config,
-            meta: { id: project.meta!.id, title: project.meta!.title },
-            totalPlay: stat?.totalPlay ?? 0,
-            myPlay: stat?.myPlay ?? 0,
-            myRank: stat?.myRank ?? null,
-            totalPlayers: stat?.totalPlayers ?? 0,
-        };
-    });
-
-    // 방명록 데이터는 위의 Promise.all에서 이미 조회 완료
+        .filter((p) => p.meta) as { config: ProjectConfig; meta: ProjectMeta }[];
 
     const meta = user?.user_metadata;
     const userName = user
@@ -101,21 +57,21 @@ export default async function WorksPage() {
                 <Container className="py-12 lg:py-16 space-y-8">
                     <div className="space-y-1">
                         <h1 className="text-2xl font-semibold tracking-tight">뚝-딱!</h1>
-                        <p className="text-muted-foreground">재미로 즐겨주세요~^^</p>
+                        <p className="text-muted-foreground">재밌게 즐겨주세요~^^</p>
                     </div>
 
-                    <ProjectListClient projects={projectsWithStats} />
+                    <ProjectListClient initialProjects={initialProjects} />
                 </Container>
 
                 <div className="border-t border-border/50 bg-slate-50/50 dark:bg-slate-900/30 py-16">
                     <Container>
                         <Guestbook
                             projectId="home"
-                            initialEntries={entriesData ?? []}
+                            initialEntries={[]}
                             userEmail={user?.email ?? null}
                             userId={user?.id ?? null}
                             userName={userName}
-                            initialCount={entriesCount ?? 0}
+                            initialCount={0}
                         />
                     </Container>
                 </div>

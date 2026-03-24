@@ -403,15 +403,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span><strong>왼쪽</strong>과 <strong>오른쪽</strong>을 번갈아 터치하세요. <br />PC로는 <strong>방향키</strong>로도 가능해요.</span>
+                        <span><strong>왼쪽과 오른쪽을 번갈아 터치하세요. <br />PC로는 방향키로도 가능해요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span><strong>30회</strong>를 채우는데 걸리는 시간을 측정해요.</span>
+                        <span><strong>30회를 채우는데 걸리는 시간을 측정해요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>PC(키보드/마우스)로는 <strong>연속으로 같은 쪽</strong>을 터치하면 바로 끝나요.</span>
+                        <span><strong>PC(키보드/마우스)로는 연속으로 같은 쪽을 터치하면 바로 끝나요.</strong></span>
                     </li>
                 </ul>
             )}

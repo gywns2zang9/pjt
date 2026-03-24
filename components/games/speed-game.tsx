@@ -375,15 +375,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>화면을 누르면 <strong>불</strong>이 하나씩 켜져요.</span>
+                        <span><strong>화면을 누르면 불이 하나씩 켜져요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>불이 모두 꺼지면 <strong>0.5초</strong> 이내로 손을 떼세요.</span>
+                        <span><strong>불이 모두 꺼지면 0.5초 이내로 손을 떼세요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>불은 <strong>5초</strong> 안에 꺼지므로 집중하세요.</span>
+                        <span><strong>불은 5초 안에 꺼지므로 집중하세요.</strong></span>
                     </li>
                 </ul>
             )}

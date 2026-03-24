@@ -502,15 +502,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span><strong>빨간색 풍선부터</strong> 시작해서 <strong>10초</strong> 안에 최대한 많은 풍선을 터뜨리세요.</span>
+                        <span><strong>빨간색 풍선부터 시작해서 10초 안에 최대한 많은 풍선을 터뜨리세요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>다음 풍선은 <strong>같은 색 또는 무지개 다음 색</strong> 풍선을 터뜨려야 해요. <br />ex) 빨강 → 빨강 또는 주황, 초록 → 초록 또는 파랑</span>
+                        <span><strong>다음 풍선은 같은 색 또는 무지개 다음 색 풍선을 터뜨려야 해요. <br />ex) 빨강 → 빨강 또는 주황, 초록 → 초록 또는 파랑</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span><strong>보라색 풍선</strong>을 모두 터뜨리면 새로운 판이 형성돼요. 25개의 풍선을 모두 터뜨리면 <strong>2초</strong>가 추가돼요.</span>
+                        <span><strong>보라색 풍선들을 모두 터뜨리면 새로운 판이 형성돼요. 25개의 풍선을 모두 터뜨리면 2초가 추가돼요.</strong></span>
                     </li>
                 </ul>
             )}

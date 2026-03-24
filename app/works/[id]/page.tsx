@@ -38,13 +38,7 @@ export default async function WorksProjectPage({ params }: Props) {
 
     if (!dbConfig) notFound();
 
-    // 방명록은 dbConfig 확정 후 조회
-    const { data: entriesData, count: entriesCount } = await supabase
-        .from("guestbook")
-        .select("*", { count: "exact" })
-        .eq("project_id", dbConfig.id)
-        .order("created_at", { ascending: false })
-        .range(0, 4);
+    // 방명록 데이터는 클라이언트에서 비동기로 조회하도록 변경
 
     const project = getProjectById(dbConfig.id);
     if (!project) notFound();
@@ -55,6 +49,7 @@ export default async function WorksProjectPage({ params }: Props) {
         title: dbConfig.title,
         description: dbConfig.description,
         slug: dbConfig.slug,
+        game_config: dbConfig.game_config,
     };
 
     const displayTitle = effectiveTitle(project, config);
@@ -67,7 +62,7 @@ export default async function WorksProjectPage({ params }: Props) {
 
 
     // 로그인 안내 배너 표시 조건 (게임류만 표시)
-    const showLoginBanner = !user && ["chosung-game", "circle-game", "speed-game", "size-game", "ddong-game", "sort-game", "touch-game", "eyes-game", "arrow-game"].includes(dbConfig.id);
+    const showLoginBanner = !user && ["chosung-game", "circle-game", "speed-game", "size-game", "ddong-game", "sort-game", "touch-game", "eyes-game", "arrow-game", "balloon-game", "bug-game"].includes(dbConfig.id);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-foreground dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
@@ -110,11 +105,11 @@ export default async function WorksProjectPage({ params }: Props) {
                     <div className="pt-16 mt-16 border-t border-border/50">
                         <Guestbook
                             projectId={dbConfig.id}
-                            initialEntries={entriesData ?? []}
+                            initialEntries={[]}
                             userEmail={user?.email ?? null}
                             userId={user?.id ?? null}
                             userName={userName}
-                            initialCount={entriesCount ?? (entriesData?.length ?? 0)}
+                            initialCount={0}
                         />
                     </div>
                 </Container>

@@ -87,7 +87,7 @@ export function BugGame({ userName, title }: ProjectProps) {
             y: STEP,
             vx: 2.0,
             vy: 2.0,
-            radius: 6,
+            radius: 8,
             spawnTime: startTime
         }];
         lastSplitTimeRef.current = startTime;
@@ -119,7 +119,7 @@ export function BugGame({ userName, title }: ProjectProps) {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        // 1. 버그 분열 로직 (1초마다)
+        // 1. 버그 분열 로직 (1.5초마다)
         const dt = time - lastSplitTimeRef.current;
         if (dt >= 1500) {
             lastSplitTimeRef.current = time;
@@ -135,7 +135,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                     y: margin + Math.random() * (CANVAS_SIZE - margin * 2),
                     vx: (Math.random() - 0.5) * 1.5,
                     vy: (Math.random() - 0.5) * 1.5,
-                    radius: 6,
+                    radius: 8,
                     spawnTime: time
                 });
             } else {
@@ -283,43 +283,38 @@ export function BugGame({ userName, title }: ProjectProps) {
 
         // 4단계: 버그 렌더링 및 플레이어 충돌 체크
         for (const b of activeBugs) {
-            const bScale = 1 + 0.15 * Math.sin(timeInSeconds * 10 + b.id);
-            const currentBRadius = b.radius * bScale;
+            // 사용자 요청: 움찔거리는(Pulsing) 효과 제거하여 시각적 안정성 확보
+            const currentBRadius = b.radius;
 
             ctx.save();
             ctx.translate(b.x, b.y);
-            ctx.beginPath();
-            ctx.strokeStyle = "#ef4444";
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 6; i++) {
-                const angle = (i / 6) * Math.PI * 2 + timeInSeconds * 2;
-                ctx.moveTo(0, 0);
-                ctx.lineTo(Math.cos(angle) * (currentBRadius + 4), Math.sin(angle) * (currentBRadius + 4));
-            }
-            ctx.stroke();
-            ctx.closePath();
 
-            const bGradient = ctx.createRadialGradient(-1, -1, 0, 0, 0, currentBRadius);
-            bGradient.addColorStop(0, "#f87171");
-            bGradient.addColorStop(1, "#ef4444");
+            // 1. 본체 구체 (그라데이션)
+            const bGradient = ctx.createRadialGradient(-2, -2, 0, 0, 0, currentBRadius);
+            bGradient.addColorStop(0, "#f87171"); // 밝은 빨강
+            bGradient.addColorStop(1, "#dc2626"); // 어두운 빨강
+
             ctx.beginPath();
             ctx.arc(0, 0, currentBRadius, 0, Math.PI * 2);
             ctx.fillStyle = bGradient;
             ctx.fill();
             ctx.closePath();
 
+            // 3. 상단 하이라이트 (구 형태 강조)
             ctx.beginPath();
-            ctx.arc(0, 0, currentBRadius * 0.4, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.arc(-currentBRadius * 0.3, -currentBRadius * 0.3, currentBRadius * 0.2, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
             ctx.fill();
             ctx.closePath();
+
             ctx.restore();
 
             const bPos = { x: b.x, y: b.y };
             const p1 = { x: prevPlayerRef.current.x, y: prevPlayerRef.current.y };
             const p2 = { x: playerRef.current.x, y: playerRef.current.y };
             const distSq = distToSegmentSq(bPos.x, bPos.y, p1.x, p1.y, p2.x, p2.y);
-            const thresholdSq = Math.pow(b.radius + playerRef.current.radius - 1.5, 2);
+            // 사용자 요청: 겹쳐야 죽는 게 아니라 닿기만 해도 죽도록 (-2 마진 제거)
+            const thresholdSq = Math.pow(b.radius + playerRef.current.radius, 2);
             if (distSq < thresholdSq) isGameOver = true;
         }
 
@@ -509,9 +504,9 @@ export function BugGame({ userName, title }: ProjectProps) {
                                         <li key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25" : i === 1 ? "bg-slate-400/10 border border-slate-400/20" : i === 2 ? "bg-orange-400/10 border border-orange-400/20" : "bg-muted/30 border border-transparent"}`}>
                                             <span className="text-sm font-black w-6 text-center text-muted-foreground">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`}</span>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-semibold truncate">{entry.user_name}</p>
+                                                <p className="text-sm font-semibold truncate text-foreground">{entry.user_name}</p>
                                             </div>
-                                            <span className="text-sm font-black text-destructive shrink-0">{entry.score}</span>
+                                            <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
                                         </li>
                                     ))}
                                 </ol>
@@ -520,7 +515,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                 {(() => {
                                     const myRankIndex = ranking.findIndex((r) => r.user_name === userName);
                                     const myBestScore = myRankIndex !== -1 ? ranking[myRankIndex].score : undefined;
-                                    const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore}` : undefined;
+                                    const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore}점` : undefined;
                                     const myRank = displayScore !== undefined ? myRankIndex + 1 : null;
                                     return (
                                         <KakaoShareButton userName={userName} gameTitle={title!} gameUrl="/works/bug-game" displayScore={displayScore} rank={myRank} />
@@ -552,7 +547,7 @@ function HTPSection() {
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">02</span>
-                        <span><strong>2초마다 빨간 덩어리가 무섭게 늘어나요. <br />덩어리끼리 닿아도 사라져요.</strong></span>
+                        <span><strong>1.5초마다 빨간 덩어리가 무섭게 늘어나요. <br />덩어리끼리 닿아도 사라져요.</strong></span>
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">03</span>
@@ -582,8 +577,8 @@ function RankingBoard({ ranking, onShowAll, isGuest }: { ranking: RankEntry[], o
                         {ranking.slice(0, 3).map((entry, i) => (
                             <li key={i} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${i === 0 ? "bg-yellow-400/10 border border-yellow-400/25" : i === 1 ? "bg-slate-400/10 border border-slate-400/20" : "bg-orange-400/10 border border-orange-400/20"}`}>
                                 <span className="text-base shrink-0">{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"}</span>
-                                <div className="flex-1 min-w-0"><p className="text-sm font-semibold truncate">{entry.user_name}</p></div>
-                                <span className="text-sm font-black text-destructive shrink-0">{entry.score}</span>
+                                <div className="flex-1 min-w-0"><p className="text-sm font-semibold truncate text-foreground">{entry.user_name}</p></div>
+                                <span className="text-sm font-black text-primary shrink-0">{entry.score}점</span>
                             </li>
                         ))}
                     </ol>

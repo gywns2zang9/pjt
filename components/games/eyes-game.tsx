@@ -369,15 +369,15 @@ function HTPSection() {
                 <ul className="space-y-3 text-xs text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200 font-medium font-sans">
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span>화면을 <strong>누르면</strong> 눈을 떠요. <br />PC에서는 <strong>스페이스바로도</strong> 눈을 뜰 수 있어요.</span>
+                        <span><strong>화면을 누르면 눈을 떠요. <br />PC에서는 스페이스바로도 눈을 뜰 수 있어요.</strong></span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>Bot과 <strong>눈을 마주치면</strong> 끝나요. <br /><strong>15초 동안</strong> 눈을 뜨지 않아도 끝나요.</span>
+                        <span><strong>Bot과 눈을 마주치면 끝나요. <br />15초 동안 눈을 뜨지 않아도 끝나요.</strong></span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span>Bot은 <strong>0.1초 ~ 5초</strong>마다 눈을 뜨거나 감아요.</span>
+                        <span><strong>Bot은 0.1초 ~ 5초마다 눈을 뜨거나 감아요.</strong></span>
                     </li>
                 </ul>
             )}

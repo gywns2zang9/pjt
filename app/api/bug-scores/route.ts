@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     // 현재 사용자의 최고기록 조회
     const { data: existingData, error: fetchError } = await supabase
         .from("bug_scores")
-        .select("id, score")
+        .select("id, score, play_count")
         .eq("user_id", user.id)
         .maybeSingle();
 
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: fetchError.message }, { status: 500 });
     }
 
+    const playCount = (existingData?.play_count ?? 0) + 1;
     let upsertError;
 
     if (!existingData) {
@@ -49,17 +50,30 @@ export async function POST(request: Request) {
             user_id: user.id,
             user_name: userName,
             score: body.score,
+            play_count: playCount,
             created_at: new Date().toISOString()
         });
         upsertError = error;
     } else {
-        // 기존 기록이 있을 시 최고 점수(높을수록 좋음) 업데이트
+        // 기존 기록이 있을 시
         if (body.score > existingData.score) {
+            // 최고 점수 업데이트 (높을수록 좋음)
             const { error } = await supabase
                 .from("bug_scores")
                 .update({
                     score: body.score,
                     user_name: userName,
+                    play_count: playCount,
+                    updated_at: new Date().toISOString()
+                })
+                .eq("id", existingData.id);
+            upsertError = error;
+        } else {
+            // 점수가 안 좋더라도 플레이 횟수는 플러스
+            const { error } = await supabase
+                .from("bug_scores")
+                .update({
+                    play_count: playCount,
                     updated_at: new Date().toISOString()
                 })
                 .eq("id", existingData.id);

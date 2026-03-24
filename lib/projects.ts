@@ -13,6 +13,7 @@ export interface ProjectConfig {
     title?: string | null;
     description?: string | null;
     slug?: string | null;  // 커스텀 URL 경로 (미설정 시 id 사용)
+    game_config?: any;     // 게임별 추가 설정
 }
 
 export const DEFAULT_CONFIG: Omit<ProjectConfig, "id"> = {

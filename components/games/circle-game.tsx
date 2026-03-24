@@ -478,15 +478,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span><strong>빨간 점</strong>을 중심으로 하는 원을 그리세요</span>
+                        <span><strong>빨간 점을 중심으로 하는 원을 그리세요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span>가이드라인보다 원이 <strong>작으면</strong> 점수가 깎여요. <br /> <strong>찌그러짐</strong>, <strong>시작점과 끝점의 위치</strong>, <strong>원 중심의 위치</strong>를 평가해요.</span>
+                        <span><strong>가이드라인보다 원이 작으면 점수가 깎여요. <br /> 찌그러짐, 시작점과 끝점의 위치, 원 중심의 위치를 평가해요.</strong></span>
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span><strong>시간 제한</strong>은 없어요. 예쁘게 그려보세요.</span>
+                        <span><strong>시간 제한은 없어요. 예쁘게 그려보세요.</strong></span>
                     </li>
                 </ul>
             )}
