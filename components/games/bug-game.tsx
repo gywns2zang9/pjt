@@ -23,6 +23,7 @@ interface Bug {
     vy: number;
     radius: number;
     spawnTime: number;
+    isPermanent?: boolean;
 }
 
 // 점과 선분 사이의 거리 제곱을 구하는 헬퍼 함수
@@ -38,9 +39,16 @@ const CANVAS_SIZE = 480;
 const GRID_DIVISIONS = 15;
 const STEP = CANVAS_SIZE / GRID_DIVISIONS;
 
+// --- 게임 설정 (여기서 밸런스를 조절하세요) ---
+const INITIAL_BUG_SPEED = 2.0;    // 초기 대장 버그 속도
+const SPLIT_BUG_SPEED = 1.0;      // 분열되는 버그 속도
+const SPLIT_INTERVAL = 1500;     // 분열 주기 (ms)
+const BUG_SIZE = 10;               // 버그 크기 (반경, 파란색 대장 버그 기준)
+// ------------------------------------------
+
 export function BugGame({ userName, title }: ProjectProps) {
     const [phase, setPhase] = useState<GamePhase>("idle");
-    const [score, setScore] = useState(1);
+    const [showControls, setShowControls] = useState(false); // 컨트롤 표시 여부 (기본값: 숨김)
     const [finalScore, setFinalScore] = useState(0);
     const [ranking, setRanking] = useState<RankEntry[]>([]);
     const [showAllRanking, setShowAllRanking] = useState(false);
@@ -49,8 +57,15 @@ export function BugGame({ userName, title }: ProjectProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const requestRef = useRef<number>(0);
 
+    // 모바일 기기 감지하여 컨트롤 자동 표시
+    useEffect(() => {
+        if (typeof window !== "undefined" && window.innerWidth < 1024) {
+            setShowControls(true);
+        }
+    }, []);
+
     // 게임 로직을 위한 Ref
-    const playerRef = useRef({ x: CANVAS_SIZE - STEP / 2, y: CANVAS_SIZE - STEP / 2, radius: 10 });
+    const playerRef = useRef({ x: CANVAS_SIZE - STEP / 2, y: CANVAS_SIZE - STEP / 2, radius: 14 });
     const prevPlayerRef = useRef({ x: CANVAS_SIZE - STEP / 2, y: CANVAS_SIZE - STEP / 2 });
     const bugsRef = useRef<Bug[]>([]);
     const visitedRef = useRef<Set<string>>(new Set());
@@ -70,26 +85,25 @@ export function BugGame({ userName, title }: ProjectProps) {
 
     const startGame = useCallback(() => {
         setPhase("playing");
-        setScore(1);
-        scoreRef.current = 1;
         setFinalScore(0);
-        playerRef.current = { x: CANVAS_SIZE - STEP / 2, y: CANVAS_SIZE - STEP / 2, radius: 10 };
-        prevPlayerRef.current = { x: CANVAS_SIZE - STEP / 2, y: CANVAS_SIZE - STEP / 2 };
+        const startGX = Math.floor(Math.random() * GRID_DIVISIONS);
+        const startGY = Math.floor(Math.random() * GRID_DIVISIONS);
+
+        playerRef.current = { x: startGX * STEP + STEP / 2, y: startGY * STEP + STEP / 2, radius: 14 };
+        prevPlayerRef.current = { x: playerRef.current.x, y: playerRef.current.y };
         visitedRef.current.clear();
-        visitedRef.current.add(`${GRID_DIVISIONS - 1},${GRID_DIVISIONS - 1}`); // 마지막 위치
+        visitedRef.current.add(`${startGX},${startGY}`);
         nextBugIdRef.current = 1;
 
         const startTime = performance.now();
-        // 초기 버그 생성 (나와 최대한 멀리 떨어진 곳에 생성)
-        bugsRef.current = [{
-            id: ++nextBugIdRef.current,
-            x: STEP,
-            y: STEP,
-            vx: 2.0,
-            vy: 2.0,
-            radius: 8,
-            spawnTime: startTime
-        }];
+        // 초기 버그 생성 (4개 모서리 영구 버그: 중앙으로 향함)
+        bugsRef.current = [
+            { id: ++nextBugIdRef.current, x: STEP, y: STEP, vx: INITIAL_BUG_SPEED, vy: INITIAL_BUG_SPEED, radius: BUG_SIZE, spawnTime: startTime, isPermanent: true },
+            { id: ++nextBugIdRef.current, x: CANVAS_SIZE - STEP, y: STEP, vx: -INITIAL_BUG_SPEED, vy: INITIAL_BUG_SPEED, radius: BUG_SIZE, spawnTime: startTime, isPermanent: true },
+            { id: ++nextBugIdRef.current, x: STEP, y: CANVAS_SIZE - STEP, vx: INITIAL_BUG_SPEED, vy: -INITIAL_BUG_SPEED, radius: BUG_SIZE, spawnTime: startTime, isPermanent: true },
+            { id: ++nextBugIdRef.current, x: CANVAS_SIZE - STEP, y: CANVAS_SIZE - STEP, vx: -INITIAL_BUG_SPEED, vy: -INITIAL_BUG_SPEED, radius: BUG_SIZE, spawnTime: startTime, isPermanent: true }
+        ];
+        scoreRef.current = 4;
         lastSplitTimeRef.current = startTime;
 
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -121,44 +135,30 @@ export function BugGame({ userName, title }: ProjectProps) {
 
         // 1. 버그 분열 로직 (1.5초마다)
         const dt = time - lastSplitTimeRef.current;
-        if (dt >= 1500) {
+        if (dt >= SPLIT_INTERVAL) {
             lastSplitTimeRef.current = time;
             const currentBugs = bugsRef.current;
             const newBugs: Bug[] = [];
 
-            if (currentBugs.length === 0) {
-                // [유지] 필드에 벌레가 한 마리도 없으면 새로 하나 생성
-                const margin = 100;
+            // [수정] 모든 벌레가 설정된 주기마다 각각 1마리씩 분열 (영구 벌레 포함)
+            for (const b of currentBugs) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = SPLIT_BUG_SPEED;
+
                 newBugs.push({
                     id: ++nextBugIdRef.current,
-                    x: margin + Math.random() * (CANVAS_SIZE - margin * 2),
-                    y: margin + Math.random() * (CANVAS_SIZE - margin * 2),
-                    vx: (Math.random() - 0.5) * 1.5,
-                    vy: (Math.random() - 0.5) * 1.5,
-                    radius: 8,
+                    x: b.x,
+                    y: b.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    radius: BUG_SIZE * 0.5, // 분열된 버그는 약간 작게
                     spawnTime: time
+                    // isPermanent: false (기본값)
                 });
-            } else {
-                // [수정] 모든 벌레가 1초마다 각각 1마리씩 분열
-                for (const b of currentBugs) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = 1.0; // 분열 후 속도 1.0
-
-                    newBugs.push({
-                        id: ++nextBugIdRef.current,
-                        x: b.x,
-                        y: b.y,
-                        vx: Math.cos(angle) * speed,
-                        vy: Math.sin(angle) * speed,
-                        radius: 6,
-                        spawnTime: time
-                    });
-                }
             }
 
             bugsRef.current.push(...newBugs);
             scoreRef.current += newBugs.length;
-            setScore(scoreRef.current);
         }
 
         // 2. 렌더링 초기화 (프레임 클리어)
@@ -204,34 +204,77 @@ export function BugGame({ userName, title }: ProjectProps) {
         // 4. 버그 이동 및 충돌 체크
         let isGameOver = false;
 
-        // 내 캐릭터(보라색) 렌더링 - 디자인 개선
+        // 내 캐릭터(보라색 사각형) 렌더링 - 그리드 칸에 맞게
         const p = playerRef.current;
-        const pGradient = ctx.createRadialGradient(p.x - 2, p.y - 2, 0, p.x, p.y, p.radius);
-        pGradient.addColorStop(0, "#c084fc");
-        pGradient.addColorStop(1, "#8b5cf6");
+        const pSize = STEP - 4; // 칸보다 약간 작게 실선 처리
+        const halfSize = pSize / 2;
+
+        // 미세하게 떨리는 효과 부여 (겁에 질림)
+        const shakeX = (Math.random() - 0.5) * 1.5;
+        const shakeY = (Math.random() - 0.5) * 1.5;
+
+        ctx.save();
+        ctx.translate(p.x + shakeX, p.y + shakeY);
+
+        // 1. 몸체 (사각형 그라데이션)
+        const pGradient = ctx.createLinearGradient(-halfSize, -halfSize, halfSize, halfSize);
+        pGradient.addColorStop(0, "#c084fc"); // purple-400
+        pGradient.addColorStop(1, "#8b5cf6"); // purple-600
 
         ctx.shadowColor = 'rgba(139, 92, 246, 0.5)';
         ctx.shadowBlur = 10;
+
+        // 둥근 사각형 몸체
+        const r = 6;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.moveTo(-halfSize + r, -halfSize);
+        ctx.lineTo(halfSize - r, -halfSize);
+        ctx.quadraticCurveTo(halfSize, -halfSize, halfSize, -halfSize + r);
+        ctx.lineTo(halfSize, halfSize - r);
+        ctx.quadraticCurveTo(halfSize, halfSize, halfSize - r, halfSize);
+        ctx.lineTo(-halfSize + r, halfSize);
+        ctx.quadraticCurveTo(-halfSize, halfSize, -halfSize, halfSize - r);
+        ctx.lineTo(-halfSize, -halfSize + r);
+        ctx.quadraticCurveTo(-halfSize, -halfSize, -halfSize + r, -halfSize);
         ctx.fillStyle = pGradient;
         ctx.fill();
         ctx.closePath();
 
-        // 캐릭터 눈 (디테일)
+        // 캐릭터 눈 (사각형 얼굴에 맞게 조정)
         ctx.shadowBlur = 0;
         ctx.fillStyle = "white";
         ctx.beginPath();
-        ctx.arc(p.x - 3, p.y - 2, 2, 0, Math.PI * 2);
-        ctx.arc(p.x + 3, p.y - 2, 2, 0, Math.PI * 2);
+        ctx.arc(-4, -2, 4, 0, Math.PI * 2);
+        ctx.arc(4, -2, 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.closePath();
+
         ctx.fillStyle = "black";
         ctx.beginPath();
-        ctx.arc(p.x - 3, p.y - 2, 1, 0, Math.PI * 2);
-        ctx.arc(p.x + 3, p.y - 2, 1, 0, Math.PI * 2);
+        ctx.arc(-4, -2, 1.5, 0, Math.PI * 2);
+        ctx.arc(4, -2, 1.5, 0, Math.PI * 2);
         ctx.fill();
         ctx.closePath();
+
+        // 덜덜 떠는 입
+        ctx.strokeStyle = "rgba(0,0,0,0.6)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(-3, 6);
+        ctx.lineTo(3, 5 + Math.sin(time / 50) * 2);
+        ctx.stroke();
+        ctx.closePath();
+
+        // 식은땀
+        ctx.fillStyle = "#60a5fa";
+        ctx.beginPath();
+        ctx.moveTo(8, -10);
+        ctx.lineTo(10, -6);
+        ctx.lineTo(6, -6);
+        ctx.fill();
+        ctx.closePath();
+
+        ctx.restore();
 
         const activeBugs = bugsRef.current;
         const bugsToRemove = new Set<number>();
@@ -247,26 +290,27 @@ export function BugGame({ userName, title }: ProjectProps) {
             else if (b.y > CANVAS_SIZE - b.radius - WALL_MARGIN) { b.y = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vy = -Math.abs(b.vy); }
         }
 
-        // 2단계: 버그끼리 충돌 체크 (부딪히면 소멸)
+        // 2단계: 버그끼리 충돌 체크 (부딪히면 소멸, 영구 벌레는 생존)
         for (let i = 0; i < activeBugs.length; i++) {
             const b1 = activeBugs[i];
-            const isB1Immune = (time - b1.spawnTime < 250); // 0.25초 무적
-
             for (let j = i + 1; j < activeBugs.length; j++) {
                 const b2 = activeBugs[j];
-                const isB2Immune = (time - b2.spawnTime < 250);
-
                 const dx = b1.x - b2.x;
                 const dy = b1.y - b2.y;
                 const distSq = dx * dx + dy * dy;
                 const minDist = b1.radius + b2.radius;
 
-                if (distSq < minDist * minDist) {
-                    if (isB1Immune || isB2Immune) {
-                        // 한쪽이라도 무적 상태면 서로 통과 (소멸 없음)
+                // [수정] 닿는 순간(<=) 즉시 판정 및 무적 시간을 0.1초로 단축
+                if (distSq <= minDist * minDist) {
+                    if (time - b1.spawnTime < 200 || time - b2.spawnTime < 200) continue;
+
+                    if (b1.isPermanent && b2.isPermanent) {
                         continue;
+                    } else if (b1.isPermanent) {
+                        bugsToRemove.add(b2.id);
+                    } else if (b2.isPermanent) {
+                        bugsToRemove.add(b1.id);
                     } else {
-                        // 둘 다 무적이 아니면 동귀어진 (둘 다 소멸)
                         bugsToRemove.add(b1.id);
                         bugsToRemove.add(b2.id);
                     }
@@ -274,25 +318,26 @@ export function BugGame({ userName, title }: ProjectProps) {
             }
         }
 
-        // 3단계: 소멸된 버그 제외 (점수는 누적이므로 갱신하지 않음)
+        // 3단계: 소멸된 버그 제외
         if (bugsToRemove.size > 0) {
             bugsRef.current = activeBugs.filter(b => !bugsToRemove.has(b.id));
         }
 
-        const timeInSeconds = time / 1000;
-
         // 4단계: 버그 렌더링 및 플레이어 충돌 체크
         for (const b of activeBugs) {
-            // 사용자 요청: 움찔거리는(Pulsing) 효과 제거하여 시각적 안정성 확보
             const currentBRadius = b.radius;
-
             ctx.save();
             ctx.translate(b.x, b.y);
 
-            // 1. 본체 구체 (그라데이션)
+            // 본체 구체 (그라데이션)
             const bGradient = ctx.createRadialGradient(-2, -2, 0, 0, 0, currentBRadius);
-            bGradient.addColorStop(0, "#f87171"); // 밝은 빨강
-            bGradient.addColorStop(1, "#dc2626"); // 어두운 빨강
+            if (b.isPermanent) {
+                bGradient.addColorStop(0, "#60a5fa");
+                bGradient.addColorStop(1, "#2563eb");
+            } else {
+                bGradient.addColorStop(0, "#f87171");
+                bGradient.addColorStop(1, "#dc2626");
+            }
 
             ctx.beginPath();
             ctx.arc(0, 0, currentBRadius, 0, Math.PI * 2);
@@ -300,22 +345,35 @@ export function BugGame({ userName, title }: ProjectProps) {
             ctx.fill();
             ctx.closePath();
 
-            // 3. 상단 하이라이트 (구 형태 강조)
+            // 하이라이트
             ctx.beginPath();
             ctx.arc(-currentBRadius * 0.3, -currentBRadius * 0.3, currentBRadius * 0.2, 0, Math.PI * 2);
             ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
             ctx.fill();
             ctx.closePath();
-
             ctx.restore();
 
-            const bPos = { x: b.x, y: b.y };
-            const p1 = { x: prevPlayerRef.current.x, y: prevPlayerRef.current.y };
-            const p2 = { x: playerRef.current.x, y: playerRef.current.y };
-            const distSq = distToSegmentSq(bPos.x, bPos.y, p1.x, p1.y, p2.x, p2.y);
-            // 사용자 요청: 겹쳐야 죽는 게 아니라 닿기만 해도 죽도록 (-2 마진 제거)
-            const thresholdSq = Math.pow(b.radius + playerRef.current.radius, 2);
-            if (distSq < thresholdSq) isGameOver = true;
+            // [수정] 플레이어(정사각형) vs 버그(원형) 충돌 체크 (AABB vs Circle)
+            // 사용자 요청: 빨간 버그(isPermanent 아님)와 닿았을 때만 게임 오버
+            if (!b.isPermanent) {
+                const halfSize = 14;
+                const px = playerRef.current.x;
+                const py = playerRef.current.y;
+
+                // 사각형 내에서 버그 중심과 가장 가까운 점(closest point) 계산
+                const closestX = Math.max(px - halfSize, Math.min(b.x, px + halfSize));
+                const closestY = Math.max(py - halfSize, Math.min(b.y, py + halfSize));
+
+                // 그 가까운 점과 버그 중심 사이의 거리 확인
+                const cdx = b.x - closestX;
+                const cdy = b.y - closestY;
+                const hitDistSq = cdx * cdx + cdy * cdy;
+
+                // 닿는 순간(<=) 즉시 게임오버
+                if (hitDistSq <= b.radius * b.radius) {
+                    isGameOver = true;
+                }
+            }
         }
 
         // 현재 위치를 이전 위치로 저장
@@ -392,10 +450,12 @@ export function BugGame({ userName, title }: ProjectProps) {
                 </div>
 
                 <div className="order-2 lg:flex-1 min-w-0 flex justify-center">
-                    <div className="relative rounded-2xl border border-border bg-card overflow-hidden w-full flex flex-col p-0 gap-0">
+                    <div className="relative rounded-2xl border border-border bg-card overflow-hidden w-full flex flex-col p-0 gap-0 transition-all duration-300">
+
+
                         {/* 게임 영역 */}
                         <div
-                            className="relative w-full max-w-[480px] mx-auto aspect-square bg-slate-50 dark:bg-zinc-950 rounded-3xl overflow-hidden shadow-inner border-[6px] border-slate-200 dark:border-zinc-900 transition-colors"
+                            className={`relative w-full mx-auto aspect-square bg-slate-50 dark:bg-zinc-950 rounded-3xl overflow-hidden shadow-inner border-[6px] border-slate-200 dark:border-zinc-900 transition-all duration-300 ${showControls ? 'max-w-[480px]' : 'max-w-[640px] my-4'}`}
                             onClick={() => phase !== "playing" && startGame()}
                         >
                             <canvas
@@ -427,54 +487,69 @@ export function BugGame({ userName, title }: ProjectProps) {
                         </div>
 
                         {/* 하단 컨트롤 영역 - 방향키(십자/ㅗ) 배열 배치 */}
-                        <div className="flex flex-col items-center justify-center w-full max-w-[480px] mx-auto pt-4 pb-2 px-2 gap-2">
-                            {/* 윗줄: 상 */}
-                            <div className="flex justify-center w-full">
-                                <Button
-                                    variant={activeKeys["ArrowUp"] ? "default" : "secondary"}
-                                    size="icon"
-                                    className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowUp"] ? "scale-90" : "hover:scale-105"}`}
-                                    onPointerDown={() => { movePlayer(0, -1); setActiveKeys(prev => ({ ...prev, ArrowUp: true })); }}
-                                    onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
-                                    onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
-                                >
-                                    <ChevronDown className="w-10 h-10 rotate-180" />
-                                </Button>
-                            </div>
+                        {showControls && (
+                            <div className="flex flex-col items-center justify-center w-full max-w-[480px] mx-auto pt-4 pb-4 px-2 gap-2 animate-in slide-in-from-bottom-2 duration-300">
+                                {/* 윗줄: 상 */}
+                                <div className="flex justify-center w-full">
+                                    <Button
+                                        variant={activeKeys["ArrowUp"] ? "default" : "secondary"}
+                                        size="icon"
+                                        className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowUp"] ? "scale-90" : "hover:scale-105"}`}
+                                        onPointerDown={() => { movePlayer(0, -1); setActiveKeys(prev => ({ ...prev, ArrowUp: true })); }}
+                                        onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
+                                        onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
+                                    >
+                                        <ChevronDown className="w-10 h-10 rotate-180" />
+                                    </Button>
+                                </div>
 
-                            {/* 아랫줄: 좌 하 우 */}
-                            <div className="flex justify-center gap-2 w-full">
-                                <Button
-                                    variant={activeKeys["ArrowLeft"] ? "default" : "secondary"}
-                                    size="icon"
-                                    className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowLeft"] ? "scale-90" : "hover:scale-105"}`}
-                                    onPointerDown={() => { movePlayer(-1, 0); setActiveKeys(prev => ({ ...prev, ArrowLeft: true })); }}
-                                    onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
-                                    onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
-                                >
-                                    <ChevronDown className="w-10 h-10 rotate-90" />
-                                </Button>
-                                <Button
-                                    variant={activeKeys["ArrowDown"] ? "default" : "secondary"}
-                                    size="icon"
-                                    className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
-                                    onPointerDown={() => { movePlayer(0, 1); setActiveKeys(prev => ({ ...prev, ArrowDown: true })); }}
-                                    onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
-                                    onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
-                                >
-                                    <ChevronDown className="w-10 h-10" />
-                                </Button>
-                                <Button
-                                    variant={activeKeys["ArrowRight"] ? "default" : "secondary"}
-                                    size="icon"
-                                    className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowRight"] ? "scale-90" : "hover:scale-105"}`}
-                                    onPointerDown={() => { movePlayer(1, 0); setActiveKeys(prev => ({ ...prev, ArrowRight: true })); }}
-                                    onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
-                                    onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
-                                >
-                                    <ChevronDown className="w-10 h-10 -rotate-90" />
-                                </Button>
+                                {/* 아랫줄: 좌 하 우 */}
+                                <div className="flex justify-center gap-2 w-full">
+                                    <Button
+                                        variant={activeKeys["ArrowLeft"] ? "default" : "secondary"}
+                                        size="icon"
+                                        className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowLeft"] ? "scale-90" : "hover:scale-105"}`}
+                                        onPointerDown={() => { movePlayer(-1, 0); setActiveKeys(prev => ({ ...prev, ArrowLeft: true })); }}
+                                        onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
+                                        onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
+                                    >
+                                        <ChevronDown className="w-10 h-10 rotate-90" />
+                                    </Button>
+                                    <Button
+                                        variant={activeKeys["ArrowDown"] ? "default" : "secondary"}
+                                        size="icon"
+                                        className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
+                                        onPointerDown={() => { movePlayer(0, 1); setActiveKeys(prev => ({ ...prev, ArrowDown: true })); }}
+                                        onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
+                                        onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
+                                    >
+                                        <ChevronDown className="w-10 h-10" />
+                                    </Button>
+                                    <Button
+                                        variant={activeKeys["ArrowRight"] ? "default" : "secondary"}
+                                        size="icon"
+                                        className={`w-16 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowRight"] ? "scale-90" : "hover:scale-105"}`}
+                                        onPointerDown={() => { movePlayer(1, 0); setActiveKeys(prev => ({ ...prev, ArrowRight: true })); }}
+                                        onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
+                                        onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
+                                    >
+                                        <ChevronDown className="w-10 h-10 -rotate-90" />
+                                    </Button>
+                                </div>
                             </div>
+                        )}
+
+                        {/* 하단 유틸리티 영역: 큰 화면에서만 표시되는 컨트롤 토글 */}
+                        <div className="hidden lg:flex justify-center p-3 border-t border-border bg-muted/10">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowControls(!showControls);
+                                }}
+                                className="text-[11px] font-black text-primary hover:underline px-4 py-1.5 rounded-full bg-primary/5 hover:bg-primary/10 transition-colors"
+                            >
+                                {showControls ? "방향키 버튼 숨기기(화면 크게 보기)" : "방향키 버튼 보이기"}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -516,7 +591,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     const myRankIndex = ranking.findIndex((r) => r.user_name === userName);
                                     const myBestScore = myRankIndex !== -1 ? ranking[myRankIndex].score : undefined;
                                     const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore}점` : undefined;
-                                    const myRank = displayScore !== undefined ? myRankIndex + 1 : null;
+                                    const myRank = (displayScore !== undefined && myRankIndex !== -1) ? myRankIndex + 1 : null;
                                     return (
                                         <KakaoShareButton userName={userName} gameTitle={title!} gameUrl="/works/bug-game" displayScore={displayScore} rank={myRank} />
                                     );
@@ -543,15 +618,15 @@ function HTPSection() {
                 <ul className="space-y-2.5 text-[11px] text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">01</span>
-                        <span><strong>방향키 또는 하단 양쪽에 배치된 화살표 버튼을 눌러 캐릭터를 움직이세요.</strong></span>
+                        <span><strong>방향키 또는 버튼으로 캐릭터를 움직이세요.</strong></span>
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">02</span>
-                        <span><strong>1.5초마다 빨간 덩어리가 무섭게 늘어나요. <br />덩어리끼리 닿아도 사라져요.</strong></span>
+                        <span><strong>1.5초마다 빨간 덩어리가 늘어나요. <br />파란 덩어리는 사라지지 않아요.</strong></span>
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">03</span>
-                        <span><strong>캐릭터가 덩어리에 닿으면 끝나요. <br />모든 덩어리의 수를 누적으로 평가해요</strong>.</span>
+                        <span><strong>덩어리끼리 부딪히면 사라져요. <br />캐릭터가 빨간 덩어리와 부딪히면 끝나요.</strong></span>
                     </li>
                 </ul>
             )}
