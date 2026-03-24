@@ -173,7 +173,7 @@ export function BugGame({ userName, title }: ProjectProps) {
         ctx.font = "900 200px sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillStyle = isDark ? "rgba(255, 255, 255, 0.03)" : "rgba(0, 0, 0, 0.02)";
+        ctx.fillStyle = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)";
         ctx.fillText(scoreRef.current.toString(), CANVAS_SIZE / 2, CANVAS_SIZE / 2);
         ctx.restore();
 
@@ -276,7 +276,7 @@ export function BugGame({ userName, title }: ProjectProps) {
 
         ctx.restore();
 
-        const activeBugs = bugsRef.current;
+        const activeBugs = [...bugsRef.current];
         const bugsToRemove = new Set<number>();
 
         // 1단계: 버그 이동 및 벽 충돌
@@ -284,23 +284,41 @@ export function BugGame({ userName, title }: ProjectProps) {
         for (const b of activeBugs) {
             b.x += b.vx * deltaTimeMult;
             b.y += b.vy * deltaTimeMult;
-            if (b.x < b.radius + WALL_MARGIN) { b.x = b.radius + WALL_MARGIN; b.vx = Math.abs(b.vx); }
-            else if (b.x > CANVAS_SIZE - b.radius - WALL_MARGIN) { b.x = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vx = -Math.abs(b.vx); }
-            if (b.y < b.radius + WALL_MARGIN) { b.y = b.radius + WALL_MARGIN; b.vy = Math.abs(b.vy); }
-            else if (b.y > CANVAS_SIZE - b.radius - WALL_MARGIN) { b.y = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vy = -Math.abs(b.vy); }
+
+            const hitLeft = b.x < b.radius + WALL_MARGIN;
+            const hitRight = b.x > CANVAS_SIZE - b.radius - WALL_MARGIN;
+            const hitTop = b.y < b.radius + WALL_MARGIN;
+            const hitBottom = b.y > CANVAS_SIZE - b.radius - WALL_MARGIN;
+
+            if (hitLeft || hitRight || hitTop || hitBottom) {
+                if (b.isPermanent) {
+                    // 영구 벌레(파란색)는 튕김
+                    if (hitLeft) { b.x = b.radius + WALL_MARGIN; b.vx = Math.abs(b.vx); }
+                    else if (hitRight) { b.x = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vx = -Math.abs(b.vx); }
+                    if (hitTop) { b.y = b.radius + WALL_MARGIN; b.vy = Math.abs(b.vy); }
+                    else if (hitBottom) { b.y = CANVAS_SIZE - b.radius - WALL_MARGIN; b.vy = -Math.abs(b.vy); }
+                } else {
+                    // 일반 벌레(빨간색)는 벽에 닿으면 즉시 소멸
+                    bugsToRemove.add(b.id);
+                }
+            }
         }
 
         // 2단계: 버그끼리 충돌 체크 (부딪히면 소멸, 영구 벌레는 생존)
         for (let i = 0; i < activeBugs.length; i++) {
             const b1 = activeBugs[i];
+            if (bugsToRemove.has(b1.id)) continue;
+
             for (let j = i + 1; j < activeBugs.length; j++) {
                 const b2 = activeBugs[j];
+                if (bugsToRemove.has(b2.id)) continue;
+
                 const dx = b1.x - b2.x;
                 const dy = b1.y - b2.y;
                 const distSq = dx * dx + dy * dy;
                 const minDist = b1.radius + b2.radius;
 
-                // [수정] 닿는 순간(<=) 즉시 판정 및 무적 시간을 0.1초로 단축
+                // 닿는 순간(<=) 즉시 판정 및 무적 시간을 0.2초로 단축
                 if (distSq <= minDist * minDist) {
                     if (time - b1.spawnTime < 200 || time - b2.spawnTime < 200) continue;
 
@@ -324,7 +342,8 @@ export function BugGame({ userName, title }: ProjectProps) {
         }
 
         // 4단계: 버그 렌더링 및 플레이어 충돌 체크
-        for (const b of activeBugs) {
+        // 최신 리스트인 bugsRef.current를 사용합니다.
+        for (const b of bugsRef.current) {
             const currentBRadius = b.radius;
             ctx.save();
             ctx.translate(b.x, b.y);
@@ -467,7 +486,7 @@ export function BugGame({ userName, title }: ProjectProps) {
 
                             {/* 오버레이 (대기/결과) */}
                             {phase !== "playing" && (
-                                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 dark:bg-zinc-900/80 backdrop-blur-[2px] p-4 cursor-pointer transition-colors group">
+                                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/40 dark:bg-zinc-900/60 backdrop-blur-[1px] p-4 cursor-pointer transition-colors group">
                                     {phase === "result" && (
                                         <div className="text-center mb-12 animate-in fade-in zoom-in slide-in-from-bottom-4 duration-300">
                                             <p className="text-lg font-bold text-destructive mb-2 uppercase tracking-widest">GAME OVER</p>
@@ -622,11 +641,11 @@ function HTPSection() {
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">02</span>
-                        <span><strong>1.5초마다 빨간 덩어리가 늘어나요. <br />파란 덩어리는 사라지지 않아요.</strong></span>
+                        <span><strong>1.5초마다 빨간 덩어리가 늘어나요. <br />덩어리끼리 부딪히거나 벽에 닿으면 사라져요.</strong></span>
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">03</span>
-                        <span><strong>덩어리끼리 부딪히면 사라져요. <br />캐릭터가 빨간 덩어리와 부딪히면 끝나요.</strong></span>
+                        <span><strong>캐릭터가 빨간 덩어리와 부딪히면 끝나요.</strong></span>
                     </li>
                 </ul>
             )}
