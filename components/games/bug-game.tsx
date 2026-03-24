@@ -206,6 +206,53 @@ export function BugGame({ userName, title }: ProjectProps) {
             ctx.fillRect(gx * STEP + 1, gy * STEP + 1, STEP - 2, STEP - 2);
         });
 
+        // --- 보너스 아이템 박스 렌더링 (플레이어와 버그보다 아래에 위치하도록 먼저 그림) ---
+        if (itemRef.current) {
+            const it = itemRef.current;
+            const ix = it.gx * STEP + STEP / 2;
+            const iy = it.gy * STEP + STEP / 2;
+            const iSize = STEP - 2; // 칸에 꽉 차게
+
+            // 아이템 타입에 따른 색상 결정
+            let boxColor = "#fbbf24"; // 기본 골드
+            let label = it.value.toString();
+
+            if (it.type === 'cleaner') {
+                boxColor = "#a855f7"; // 보라색 (클리너)
+                label = "???";
+            } else {
+                // 먹은 개수에 따른 동/은/금 진화 (0개 먹었을 때 동색, 1개 먹었을 때 은색, 2개 먹었을 때 금색)
+                if (boxCountRef.current === 0) boxColor = "#b45309"; // Bronze
+                else if (boxCountRef.current === 1) boxColor = "#94a3b8"; // Silver
+                else boxColor = "#fbbf24"; // Gold
+            }
+
+            ctx.save();
+            ctx.translate(ix, iy);
+
+            // 상자 디자인
+            ctx.fillStyle = boxColor;
+            ctx.fillRect(-iSize / 2, -iSize / 2, iSize, iSize);
+
+            // 테두리
+            ctx.strokeStyle = "rgba(0,0,0,0.2)";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(-iSize / 2, -iSize / 2, iSize, iSize);
+
+            // 점수 텍스트 (숫자 크게)
+            ctx.fillStyle = (it.type === 'point' && boxCountRef.current === 1) ? "#000000" : "#ffffff";
+            if (it.type === 'point' && boxCountRef.current === 2) ctx.fillStyle = "#000000"; // Gold에는 검정 글씨
+            if (it.type === 'point' && boxCountRef.current === 0) ctx.fillStyle = "#ffffff"; // Bronze에는 흰 글씨
+            if (it.type === 'cleaner') ctx.fillStyle = "#ffffff"; // Purple에는 흰 글씨
+
+            ctx.font = "bold 14px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(label, 0, 0);
+
+            ctx.restore();
+        }
+
         // 1.5. 시간차(DeltaTime)를 이용한 프레임 독립 이동 (60FPS 기준 정규화)
         // 144Hz 등 고주사율 모니터에서도 벌레 속도가 일정하도록 보정합니다.
         if (lastFrameTimeRef.current === 0) lastFrameTimeRef.current = time;
@@ -386,53 +433,6 @@ export function BugGame({ userName, title }: ProjectProps) {
             ctx.fill();
             ctx.closePath();
             ctx.restore();
-
-            // 4.5단계: 보너스 아이템 박스 렌더링
-            if (itemRef.current) {
-                const it = itemRef.current;
-                const ix = it.gx * STEP + STEP / 2;
-                const iy = it.gy * STEP + STEP / 2;
-                const iSize = STEP - 2; // 칸에 꽉 차게
-
-                // 아이템 타입에 따른 색상 결정
-                let boxColor = "#fbbf24"; // 기본 골드
-                let label = it.value.toString();
-
-                if (it.type === 'cleaner') {
-                    boxColor = "#a855f7"; // 보라색 (클리너)
-                    label = "???";
-                } else {
-                    // 먹은 개수에 따른 동/은/금 진화 (0개 먹었을 때 동색, 1개 먹었을 때 은색, 2개 먹었을 때 금색)
-                    if (boxCountRef.current === 0) boxColor = "#b45309"; // Bronze
-                    else if (boxCountRef.current === 1) boxColor = "#94a3b8"; // Silver
-                    else boxColor = "#fbbf24"; // Gold
-                }
-
-                ctx.save();
-                ctx.translate(ix, iy);
-
-                // 상자 디자인
-                ctx.fillStyle = boxColor;
-                ctx.fillRect(-iSize / 2, -iSize / 2, iSize, iSize);
-
-                // 테두리
-                ctx.strokeStyle = "rgba(0,0,0,0.2)";
-                ctx.lineWidth = 1;
-                ctx.strokeRect(-iSize / 2, -iSize / 2, iSize, iSize);
-
-                // 점수 텍스트 (숫자 크게)
-                ctx.fillStyle = (it.type === 'point' && boxCountRef.current === 1) ? "#000000" : "#ffffff";
-                if (it.type === 'point' && boxCountRef.current === 2) ctx.fillStyle = "#000000"; // Gold에는 검정 글씨
-                if (it.type === 'point' && boxCountRef.current === 0) ctx.fillStyle = "#ffffff"; // Bronze에는 흰 글씨
-                if (it.type === 'cleaner') ctx.fillStyle = "#ffffff"; // Purple에는 흰 글씨
-
-                ctx.font = "bold 14px sans-serif";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(label, 0, 0);
-
-                ctx.restore();
-            }
 
             // [수정] 플레이어(정사각형) vs 버그(원형) 충돌 체크 (AABB vs Circle)
             // 사용자 요청: 빨간 버그(isPermanent 아님)와 닿았을 때만 게임 오버
