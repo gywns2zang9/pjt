@@ -56,6 +56,7 @@ export function BugGame({ userName, title }: ProjectProps) {
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const requestRef = useRef<number>(0);
+    const moveIntervalRef = useRef<any>(null);
 
     // 모바일 기기 감지하여 컨트롤 자동 표시
     useEffect(() => {
@@ -88,6 +89,7 @@ export function BugGame({ userName, title }: ProjectProps) {
     const startGame = useCallback(() => {
         setPhase("playing");
         setFinalScore(0);
+        setActiveKeys({});
         const startGX = Math.floor(Math.random() * GRID_DIVISIONS);
         const startGY = Math.floor(Math.random() * GRID_DIVISIONS);
 
@@ -121,6 +123,7 @@ export function BugGame({ userName, title }: ProjectProps) {
     const endGame = useCallback(() => {
         setPhase("result");
         setFinalScore(scoreRef.current);
+        setActiveKeys({});
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
 
         const fs = scoreRef.current;
@@ -526,6 +529,7 @@ export function BugGame({ userName, title }: ProjectProps) {
             if (phase === "playing") {
                 if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
                     e.preventDefault();
+                    if (e.repeat) return;
                     setActiveKeys(prev => ({ ...prev, [e.key]: true }));
                     switch (e.key) {
                         case "ArrowUp": movePlayer(0, -1); break;
@@ -551,6 +555,47 @@ export function BugGame({ userName, title }: ProjectProps) {
             window.removeEventListener("keyup", handleKeyUp);
         };
     }, [phase, movePlayer, startGame]);
+
+    // 연속 이동 처리 (꾹 누르고 있을 때)
+    useEffect(() => {
+        if (phase !== "playing") {
+            if (moveIntervalRef.current) clearInterval(moveIntervalRef.current);
+            return;
+        }
+
+        const activeDirections = Object.entries(activeKeys)
+            .filter(([key, active]) => active && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key))
+            .map(([key]) => key);
+
+        if (activeDirections.length === 0) {
+            if (moveIntervalRef.current) {
+                clearInterval(moveIntervalRef.current);
+                moveIntervalRef.current = null;
+            }
+            return;
+        }
+
+        // 마지막으로 활성화된 방향을 선택 (객체 키 순서가 유지된다는 가정하에)
+        const currentDir = activeDirections[activeDirections.length - 1];
+
+        if (moveIntervalRef.current) clearInterval(moveIntervalRef.current);
+
+        moveIntervalRef.current = setInterval(() => {
+            switch (currentDir) {
+                case "ArrowUp": movePlayer(0, -1); break;
+                case "ArrowDown": movePlayer(0, 1); break;
+                case "ArrowLeft": movePlayer(-1, 0); break;
+                case "ArrowRight": movePlayer(1, 0); break;
+            }
+        }, 100);
+
+        return () => {
+            if (moveIntervalRef.current) {
+                clearInterval(moveIntervalRef.current);
+                moveIntervalRef.current = null;
+            }
+        };
+    }, [activeKeys, phase, movePlayer]);
 
     return (
         <>
@@ -604,10 +649,21 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowUp"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowUp"] ? "scale-90" : "hover:scale-105"}`}
-                                        onPointerDown={() => { movePlayer(0, -1); setActiveKeys(prev => ({ ...prev, ArrowUp: true })); }}
-                                        onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
-                                        onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowUp: false }))}
+                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform select-none touch-none ${activeKeys["ArrowUp"] ? "scale-90" : "hover:scale-105"}`}
+                                        onContextMenu={(e) => e.preventDefault()}
+                                        onPointerDown={(e) => {
+                                            e.currentTarget.setPointerCapture(e.pointerId);
+                                            movePlayer(0, -1);
+                                            setActiveKeys(prev => ({ ...prev, ArrowUp: true }));
+                                        }}
+                                        onPointerUp={(e) => {
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            setActiveKeys(prev => ({ ...prev, ArrowUp: false }));
+                                        }}
+                                        onPointerCancel={(e) => {
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            setActiveKeys(prev => ({ ...prev, ArrowUp: false }));
+                                        }}
                                     >
                                         <ChevronDown className="w-10 h-10 rotate-180" />
                                     </Button>
@@ -618,30 +674,63 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     <Button
                                         variant={activeKeys["ArrowLeft"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowLeft"] ? "scale-90" : "hover:scale-105"}`}
-                                        onPointerDown={() => { movePlayer(-1, 0); setActiveKeys(prev => ({ ...prev, ArrowLeft: true })); }}
-                                        onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
-                                        onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowLeft: false }))}
+                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform select-none touch-none ${activeKeys["ArrowLeft"] ? "scale-90" : "hover:scale-105"}`}
+                                        onContextMenu={(e) => e.preventDefault()}
+                                        onPointerDown={(e) => {
+                                            e.currentTarget.setPointerCapture(e.pointerId);
+                                            movePlayer(-1, 0);
+                                            setActiveKeys(prev => ({ ...prev, ArrowLeft: true }));
+                                        }}
+                                        onPointerUp={(e) => {
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            setActiveKeys(prev => ({ ...prev, ArrowLeft: false }));
+                                        }}
+                                        onPointerCancel={(e) => {
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            setActiveKeys(prev => ({ ...prev, ArrowLeft: false }));
+                                        }}
                                     >
                                         <ChevronDown className="w-10 h-10 rotate-90" />
                                     </Button>
                                     <Button
                                         variant={activeKeys["ArrowDown"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
-                                        onPointerDown={() => { movePlayer(0, 1); setActiveKeys(prev => ({ ...prev, ArrowDown: true })); }}
-                                        onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
-                                        onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowDown: false }))}
+                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform select-none touch-none ${activeKeys["ArrowDown"] ? "scale-90" : "hover:scale-105"}`}
+                                        onContextMenu={(e) => e.preventDefault()}
+                                        onPointerDown={(e) => {
+                                            e.currentTarget.setPointerCapture(e.pointerId);
+                                            movePlayer(0, 1);
+                                            setActiveKeys(prev => ({ ...prev, ArrowDown: true }));
+                                        }}
+                                        onPointerUp={(e) => {
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            setActiveKeys(prev => ({ ...prev, ArrowDown: false }));
+                                        }}
+                                        onPointerCancel={(e) => {
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            setActiveKeys(prev => ({ ...prev, ArrowDown: false }));
+                                        }}
                                     >
                                         <ChevronDown className="w-10 h-10" />
                                     </Button>
                                     <Button
                                         variant={activeKeys["ArrowRight"] ? "default" : "secondary"}
                                         size="icon"
-                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform ${activeKeys["ArrowRight"] ? "scale-90" : "hover:scale-105"}`}
-                                        onPointerDown={() => { movePlayer(1, 0); setActiveKeys(prev => ({ ...prev, ArrowRight: true })); }}
-                                        onPointerUp={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
-                                        onPointerLeave={() => setActiveKeys(prev => ({ ...prev, ArrowRight: false }))}
+                                        className={`w-24 sm:w-32 h-16 rounded-2xl shadow-xl transition-transform select-none touch-none ${activeKeys["ArrowRight"] ? "scale-90" : "hover:scale-105"}`}
+                                        onContextMenu={(e) => e.preventDefault()}
+                                        onPointerDown={(e) => {
+                                            e.currentTarget.setPointerCapture(e.pointerId);
+                                            movePlayer(1, 0);
+                                            setActiveKeys(prev => ({ ...prev, ArrowRight: true }));
+                                        }}
+                                        onPointerUp={(e) => {
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            setActiveKeys(prev => ({ ...prev, ArrowRight: false }));
+                                        }}
+                                        onPointerCancel={(e) => {
+                                            e.currentTarget.releasePointerCapture(e.pointerId);
+                                            setActiveKeys(prev => ({ ...prev, ArrowRight: false }));
+                                        }}
                                     >
                                         <ChevronDown className="w-10 h-10 -rotate-90" />
                                     </Button>
