@@ -23,7 +23,7 @@ const isSorted = (arr: number[]) => {
 };
 
 const generateShuffledBlocks = () => {
-    let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    let arr = [1, 2, 3, 4, 5, 6, 7, 8];
     do {
         arr = [...arr].sort(() => Math.random() - 0.5);
     } while (isSorted(arr));
@@ -211,9 +211,9 @@ export function SortGame({ userName, title }: ProjectProps) {
 
     const renderBlocks = () => {
         if (phase === "idle") {
-            const previewBlocks = [3, 7, 2, 8, 4, 10, 1, 6, 9, 5];
+            const previewBlocks = [5, 2, 8, 1, 4, 7, 3, 6];
             return previewBlocks.map((val, i) => (
-                <div key={i} className="flex-1 max-w-12 rounded-t-xl bg-muted/30 border-t-2 border-l border-r border-border/50 items-end flex justify-center pb-2 opacity-50" style={{ height: `${10 + (val * 8)}%` }}></div>
+                <div key={i} className="flex-1 max-w-16 rounded-t-xl bg-muted/30 border-t-2 border-l border-r border-border/50 items-end flex justify-center pb-2 opacity-50" style={{ height: `${10 + (val * 11)}%` }}></div>
             ));
         }
 
@@ -234,8 +234,8 @@ export function SortGame({ userName, title }: ProjectProps) {
                 <div
                     key={i}
                     onClick={() => handleBlockClick(i)}
-                    className={`relative flex-1 max-w-16 rounded-t-lg md:rounded-t-2xl border-t-2 border-l border-r transition-all duration-300 flex items-start justify-center pt-2 md:pt-4 ${bgClass} ${!isSelected && !isFinished && phase === 'playing' ? 'hover:scale-105 hover:z-10' : ''}`}
-                    style={{ height: `${10 + (val * 9)}%` }}
+                    className={`relative flex-1 max-w-20 rounded-t-lg md:rounded-t-2xl border-t-2 border-l border-r transition-all duration-300 flex items-start justify-center pt-2 md:pt-4 ${bgClass} ${!isSelected && !isFinished && phase === 'playing' ? 'hover:scale-105 hover:z-10' : ''}`}
+                    style={{ height: `${12 + (val * 8)}%` }}
                 >
                     <span className="text-xs md:text-sm font-black opacity-80">{val}</span>
                 </div>

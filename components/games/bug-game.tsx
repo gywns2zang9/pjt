@@ -28,7 +28,7 @@ interface Bug {
 
 
 const CANVAS_SIZE = 480;
-const GRID_DIVISIONS = 15;
+const GRID_DIVISIONS = 12;
 const STEP = CANVAS_SIZE / GRID_DIVISIONS;
 
 // --- 게임 설정 (여기서 밸런스를 조절하세요) ---
@@ -143,10 +143,20 @@ export function BugGame({ userName, title }: ProjectProps) {
             const currentBugs = bugsRef.current;
             const newBugs: Bug[] = [];
 
-            // 파란버그가 주기마다 각각 1~2마리씩 무작위 분열
+            // 파란버그가 주기마다 점수에 따라 분열 개수 증가
+            let minSpawns = 1;
+            let maxSpawns = 2;
+            if (scoreRef.current >= 2000) {
+                minSpawns = 3;
+                maxSpawns = 4;
+            } else if (scoreRef.current >= 1000) {
+                minSpawns = 2;
+                maxSpawns = 3;
+            }
+
             for (const b of currentBugs) {
                 if (b.isPermanent) {
-                    const numSpawns = Math.floor(Math.random() * 2) + 1; // 1 ~ 2개
+                    const numSpawns = Math.floor(Math.random() * (maxSpawns - minSpawns + 1)) + minSpawns;
                     for (let i = 0; i < numSpawns; i++) {
                         const angle = Math.random() * Math.PI * 2;
                         const speed = SPLIT_BUG_SPEED;
@@ -778,7 +788,7 @@ function HTPSection() {
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">02</span>
-                        <span><strong>2초마다 빨간 덩어리가 생성돼요. <br />덩어리가 벽이나 파란색 덩어리에 부딪히면 사라져요.</strong></span>
+                        <span><strong>2초마다 빨간 덩어리가 생성돼요. <br />덩어리가 벽이나 파란색 덩어리에 닿으면 사라져요.</strong></span>
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">03</span>
