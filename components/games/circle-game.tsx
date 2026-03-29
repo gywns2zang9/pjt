@@ -245,7 +245,7 @@ export function CircleGame({ userName, title }: ProjectProps) {
         const shapeErrorRatio = stdDev / avgR;
 
         let shapeScore = 50;
-        shapeScore = Math.max(0, 50 - (shapeErrorRatio * 75));
+        shapeScore = Math.max(0, 50 - (shapeErrorRatio * 50));
         shapeScore = parseFloat(shapeScore.toFixed(1));
 
         // 중심 일치도 평가 (10점 만점)

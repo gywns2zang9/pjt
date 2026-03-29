@@ -85,7 +85,8 @@ export function EyesGame({ userName, title }: ProjectProps) {
         if (phase === 'playing') {
             const scheduleNext = (currentState: EyeState) => {
                 const nextState = currentState === 'closed' ? 'open' : 'closed';
-                const delay = Math.random() * 4900 + 100;
+                // 감고 있을 때: 0.1초 ~ 5초 무작위 대기 / 뜨고 있을 때: 1초 고정
+                const delay = currentState === 'closed' ? Math.random() * 4900 + 100 : 1000;
 
                 computerTimerRef.current = setTimeout(() => {
                     if (!isPlayingRef.current) return;
@@ -117,7 +118,7 @@ export function EyesGame({ userName, title }: ProjectProps) {
             idleTimeRef.current += delta;
             setIdleTime(idleTimeRef.current);
 
-            if (idleTimeRef.current >= 15) {
+            if (idleTimeRef.current >= 10) {
                 endGame("timeout");
                 return;
             }
@@ -369,15 +370,15 @@ function HTPSection() {
                 <ul className="space-y-3 text-xs text-muted-foreground mt-3 pt-3 border-t border-border/50 animate-in fade-in slide-in-from-top-1 duration-200 font-medium font-sans">
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">01</span>
-                        <span><strong>화면을 누르면 눈을 떠요. <br />PC에서는 스페이스바로도 눈을 뜰 수 있어요.</strong></span>
+                        <span><strong>화면을 누르면 눈이 떠져요. <br />스페이스바로도 눈을 뜰 수 있어요.</strong></span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">02</span>
-                        <span><strong>Bot과 눈을 마주치면 끝나요. <br />15초 동안 눈을 뜨지 않아도 끝나요.</strong></span>
+                        <span><strong>Bot과 눈이 마주치면 끝나요. <br />10초 동안 눈을 뜨지 않아도 끝나요.</strong></span>
                     </li>
                     <li className="flex gap-3">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span><strong>Bot은 0.1초 ~ 5초마다 눈을 뜨거나 감아요.</strong></span>
+                        <span><strong>Bot은 0.1초 ~ 5초마다 눈을 뜨고, <br />1초 뒤에 감아요.</strong></span>
                     </li>
                 </ul>
             )}

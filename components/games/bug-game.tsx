@@ -26,14 +26,6 @@ interface Bug {
     isPermanent?: boolean;
 }
 
-// 점과 선분 사이의 거리 제곱을 구하는 헬퍼 함수
-function distToSegmentSq(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
-    const l2 = Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2);
-    if (l2 === 0) return Math.pow(px - x1, 2) + Math.pow(py - y1, 2);
-    let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
-    t = Math.max(0, Math.min(1, t));
-    return Math.pow(px - (x1 + t * (x2 - x1)), 2) + Math.pow(py - (y1 + t * (y2 - y1)), 2);
-}
 
 const CANVAS_SIZE = 480;
 const GRID_DIVISIONS = 15;
@@ -56,7 +48,6 @@ export function BugGame({ userName, title }: ProjectProps) {
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const requestRef = useRef<number>(0);
-    const moveIntervalRef = useRef<any>(null);
 
     // 모바일 기기 감지하여 컨트롤 자동 표시
     useEffect(() => {
@@ -71,7 +62,7 @@ export function BugGame({ userName, title }: ProjectProps) {
     const bugsRef = useRef<Bug[]>([]);
     const visitedRef = useRef<Set<string>>(new Set());
     const lastSplitTimeRef = useRef<number>(0);
-    const scoreRef = useRef(1); // 버그 수
+    const scoreRef = useRef(0); // 점수
     const nextBugIdRef = useRef(1);
     const lastFrameTimeRef = useRef<number>(0);
     const itemRef = useRef<{ gx: number, gy: number, value: number, type: 'point' | 'cleaner' } | null>(null);
@@ -113,7 +104,7 @@ export function BugGame({ userName, title }: ProjectProps) {
             { id: ++nextBugIdRef.current, x: STEP, y: CANVAS_SIZE - STEP, vx: INITIAL_BUG_SPEED, vy: -INITIAL_BUG_SPEED, radius: BUG_SIZE, spawnTime: startTime, isPermanent: true },
             { id: ++nextBugIdRef.current, x: CANVAS_SIZE - STEP, y: CANVAS_SIZE - STEP, vx: -INITIAL_BUG_SPEED, vy: -INITIAL_BUG_SPEED, radius: BUG_SIZE, spawnTime: startTime, isPermanent: true }
         ];
-        scoreRef.current = 4;
+        scoreRef.current = 0;
         lastSplitTimeRef.current = startTime;
 
         if (requestRef.current) cancelAnimationFrame(requestRef.current);
@@ -146,26 +137,32 @@ export function BugGame({ userName, title }: ProjectProps) {
 
         // 1. 버그 분열 로직 (2초마다)
         const dt = time - lastSplitTimeRef.current;
+
         if (dt >= SPLIT_INTERVAL) {
             lastSplitTimeRef.current = time;
             const currentBugs = bugsRef.current;
             const newBugs: Bug[] = [];
 
-            // [수정] 모든 벌레가 설정된 주기마다 각각 1마리씩 분열 (영구 벌레 포함)
+            // 파란버그가 주기마다 각각 1~2마리씩 무작위 분열
             for (const b of currentBugs) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = SPLIT_BUG_SPEED;
+                if (b.isPermanent) {
+                    const numSpawns = Math.floor(Math.random() * 2) + 1; // 1 ~ 2개
+                    for (let i = 0; i < numSpawns; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = SPLIT_BUG_SPEED;
 
-                newBugs.push({
-                    id: ++nextBugIdRef.current,
-                    x: b.x,
-                    y: b.y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    radius: BUG_SIZE * 0.5, // 분열된 버그는 약간 작게
-                    spawnTime: time
-                    // isPermanent: false (기본값)
-                });
+                        newBugs.push({
+                            id: ++nextBugIdRef.current,
+                            x: b.x,
+                            y: b.y,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            radius: BUG_SIZE * 0.5, // 분열된 버그는 약간 작게
+                            spawnTime: time
+                            // isPermanent: false (기본값)
+                        });
+                    }
+                }
             }
 
             bugsRef.current.push(...newBugs);
@@ -390,8 +387,8 @@ export function BugGame({ userName, title }: ProjectProps) {
                     } else if (b2.isPermanent) {
                         bugsToRemove.add(b1.id);
                     } else {
-                        bugsToRemove.add(b1.id);
-                        bugsToRemove.add(b2.id);
+                        // 빨간 버그끼리는 서로 사라지지 않음
+                        continue;
                     }
                 }
             }
@@ -556,46 +553,6 @@ export function BugGame({ userName, title }: ProjectProps) {
         };
     }, [phase, movePlayer, startGame]);
 
-    // 연속 이동 처리 (꾹 누르고 있을 때)
-    useEffect(() => {
-        if (phase !== "playing") {
-            if (moveIntervalRef.current) clearInterval(moveIntervalRef.current);
-            return;
-        }
-
-        const activeDirections = Object.entries(activeKeys)
-            .filter(([key, active]) => active && ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key))
-            .map(([key]) => key);
-
-        if (activeDirections.length === 0) {
-            if (moveIntervalRef.current) {
-                clearInterval(moveIntervalRef.current);
-                moveIntervalRef.current = null;
-            }
-            return;
-        }
-
-        // 마지막으로 활성화된 방향을 선택 (객체 키 순서가 유지된다는 가정하에)
-        const currentDir = activeDirections[activeDirections.length - 1];
-
-        if (moveIntervalRef.current) clearInterval(moveIntervalRef.current);
-
-        moveIntervalRef.current = setInterval(() => {
-            switch (currentDir) {
-                case "ArrowUp": movePlayer(0, -1); break;
-                case "ArrowDown": movePlayer(0, 1); break;
-                case "ArrowLeft": movePlayer(-1, 0); break;
-                case "ArrowRight": movePlayer(1, 0); break;
-            }
-        }, 100);
-
-        return () => {
-            if (moveIntervalRef.current) {
-                clearInterval(moveIntervalRef.current);
-                moveIntervalRef.current = null;
-            }
-        };
-    }, [activeKeys, phase, movePlayer]);
 
     return (
         <>
@@ -821,7 +778,7 @@ function HTPSection() {
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">02</span>
-                        <span><strong>2초마다 빨간 덩어리가 늘어나요. <br />덩어리끼리 부딪히거나 벽에 닿으면 사라져요.</strong></span>
+                        <span><strong>2초마다 빨간 덩어리가 생성돼요. <br />덩어리가 벽이나 파란색 덩어리에 부딪히면 사라져요.</strong></span>
                     </li>
                     <li className="flex gap-2">
                         <span className="text-primary font-bold shrink-0">03</span>
