@@ -600,7 +600,7 @@ export function SizeGame({ userName, title }: ProjectProps) {
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
-                                            gameUrl="/works/size-game"
+                                            gameUrl="/plays/size-game"
                                             displayScore={displayScore}
                                             rank={myRank}
                                         />

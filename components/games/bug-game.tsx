@@ -792,7 +792,7 @@ export function BugGame({ userName, title }: ProjectProps) {
                                     const displayScore = myBestScore !== undefined && myBestScore > 0 ? `${myBestScore}점` : undefined;
                                     const myRank = (displayScore !== undefined && myRankIndex !== -1) ? myRankIndex + 1 : null;
                                     return (
-                                        <KakaoShareButton userName={userName} gameTitle={title!} gameUrl="/works/bug-game" displayScore={displayScore} rank={myRank} />
+                                        <KakaoShareButton userName={userName} gameTitle={title!} gameUrl="/plays/bug-game" displayScore={displayScore} rank={myRank} />
                                     );
                                 })()}
                             </div>

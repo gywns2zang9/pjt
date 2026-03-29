@@ -95,8 +95,8 @@ export default function HomeClient({
                         style={{ animationDelay: "600ms", animationFillMode: "both" }}
                     >
                         <Link
-                            href="/works"
-                            className="group relative flex items-center gap-3 px-10 py-4 rounded-full text-sm font-bold tracking-widest uppercase transition-all duration-500 hover:scale-105"
+                            href="/plays"
+                            className="group relative flex items-center gap-3 px-10 py-4 rounded-full text-sm font-black tracking-[0.2em] uppercase transition-all duration-500 hover:scale-105 active:scale-95"
                         >
                             <span className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/60 via-blue-400/40 to-primary/60 p-px">
                                 <span className="absolute inset-0 rounded-full bg-slate-950/80 backdrop-blur-sm" />

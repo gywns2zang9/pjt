@@ -12,8 +12,8 @@
 | API Route | `app/api/[game-name]-scores/route.ts` |
 | 프로젝트 메타 | `lib/projects.ts` — `projects` 배열에 `{ id, title }` 추가 |
 | 컴포넌트 등록 | `components/project-registry.tsx` — `projectComponents` 맵에 등록 |
-| Works 목록 통계 | `app/works/page.tsx` — `TABLE_MAP`, `SCORE_ASC` 에 추가 |
-| 로그인 배너 | `app/works/[id]/page.tsx` — `showLoginBanner` 배열에 추가 |
+| Plays/Party 목록 통계 | `app/plays/page.tsx` 또는 `app/party/page.tsx` — `TABLE_MAP`, `SCORE_ASC` 에 추가 |
+| 로그인 배너 | `app/plays/[id]/page.tsx` 또는 `app/party/[id]/page.tsx` — `showLoginBanner` 배열에 추가 |
 | Supabase 테이블 | SQL Editor에서 `[game]_scores` 테이블 + RLS 정책 생성 |
 | 전역 레이아웃 | `app/layout.tsx` — `html` 태그에 `data-scroll-behavior="smooth"` 확인 |
 
@@ -202,9 +202,10 @@ CREATE POLICY "Enable delete for service role"
 - [ ] `app/api/[game-name]-scores/route.ts` — API Route 생성
 - [ ] `lib/projects.ts` — `projects` 배열에 `{ id: "[game-name]", title: "게임명" }` 추가
 - [ ] `components/project-registry.tsx` — `projectComponents`에 컴포넌트 등록
-- [ ] `app/works/page.tsx` → `TABLE_MAP`에 `"[game-name]": "[game]_scores"` 추가
-- [ ] `app/works/page.tsx` → `SCORE_ASC`에 추가 여부 판단 (시간 기반이면 추가)
-- [ ] `app/works/[id]/page.tsx` → `showLoginBanner` 배열에 `"[game-name]"` 추가
+- [ ] `app/plays/page.tsx` 또는 `app/party/page.tsx` → `TABLE_MAP`에 `"[game-name]": "[game]_scores"` 추가
+- [ ] `app/plays/page.tsx` 또는 `app/party/page.tsx` → `SCORE_ASC`에 추가 여부 판단 (시간 기반이면 추가)
+- [ ] `app/plays/[id]/page.tsx` 또는 `app/party/[id]/page.tsx` → `showLoginBanner` 배열에 `"[game-name]"` 추가
+- [ ] `app/api/plays/stats/route.ts` → `TABLE_MAP` 및 `SCORE_ASC` 동기화 확인
 
 ### Supabase (필수)
 - [ ] SQL Editor에서 `[game]_scores` 테이블 생성 (RLS 포함)

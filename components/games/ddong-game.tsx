@@ -474,7 +474,7 @@ export function DdongGame({ userName, title }: ProjectProps) {
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
-                                            gameUrl="/works/ddong-game"
+                                            gameUrl="/plays/ddong-game"
                                             displayScore={displayScore}
                                             rank={myRank}
                                         />

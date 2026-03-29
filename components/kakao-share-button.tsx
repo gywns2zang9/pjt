@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 interface KakaoShareButtonProps {
     userName: string;
     gameTitle: string;
-    gameUrl: string; // ex) /works/size-game
+    gameUrl: string; // ex) /plays/size-game
     displayScore?: string;
     rank?: number | null;
 }

@@ -710,7 +710,7 @@ export function ChosungGame({ userName, gameConfig, title }: ChosungGameProps) {
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
-                                            gameUrl="/works/chosung-game"
+                                            gameUrl="/plays/chosung-game"
                                             displayScore={displayScore}
                                             rank={myRank}
                                         />

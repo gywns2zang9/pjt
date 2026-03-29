@@ -402,7 +402,7 @@ export function SortGame({ userName, title }: ProjectProps) {
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
-                                            gameUrl="/works/sort-game"
+                                            gameUrl="/plays/sort-game"
                                             displayScore={displayScore}
                                             rank={myRank}
                                         />

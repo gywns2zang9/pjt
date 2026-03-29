@@ -27,6 +27,7 @@ const EyesGame = dynamic(() => import("@/components/games/eyes-game").then(m => 
 const ArrowGame = dynamic(() => import("@/components/games/arrow-game").then(m => m.ArrowGame));
 const BalloonGame = dynamic(() => import("@/components/games/balloon-game").then(m => m.BalloonGame));
 const BugGame = dynamic(() => import("@/components/games/bug-game").then(m => m.BugGame));
+const SpeedGameMulti = dynamic(() => import("@/components/games/speed-game-multi").then(m => ({ default: m.SpeedGameMulti })));
 
 // 프로젝트 ID → 컴포넌트 매핑
 // 새 프로젝트 추가 시 여기에도 등록하세요.
@@ -43,5 +44,12 @@ export const projectComponents: Record<string, React.ComponentType<ProjectProps>
     "arrow-game": ArrowGame,
     "balloon-game": BalloonGame,
     "bug-game": BugGame,
+    "speed-game-multi": SpeedGameMulti,
 };
+
+export function ProjectRegistry({ id, userName, gameConfig, title }: { id: string; userName: string; gameConfig?: any; title?: string }) {
+    const Component = projectComponents[id];
+    if (!Component) return <div>Component not found for {id}</div>;
+    return <Component userName={userName} gameConfig={gameConfig} title={title} />;
+}
 

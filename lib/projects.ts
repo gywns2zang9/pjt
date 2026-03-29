@@ -9,6 +9,7 @@ export interface ProjectMeta {
 export interface ProjectConfig {
     id: string;
     show_on_works: boolean;
+    category: 'plays' | 'party';
     sort_order?: number;
     title?: string | null;
     description?: string | null;
@@ -18,6 +19,7 @@ export interface ProjectConfig {
 
 export const DEFAULT_CONFIG: Omit<ProjectConfig, "id"> = {
     show_on_works: true,
+    category: 'plays',
     sort_order: 0,
 };
 
@@ -82,6 +84,10 @@ export const projects: ProjectMeta[] = [
     {
         id: "bug-game",
         title: "버그 게임",
+    },
+    {
+        id: "speed-game-multi",
+        title: "같이 스피드 게임",
     },
 ];
 

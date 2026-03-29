@@ -342,7 +342,7 @@ export function SpeedGame({ userName, title }: ProjectProps) {
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
-                                            gameUrl="/works/speed-game"
+                                            gameUrl="/plays/speed-game"
                                             displayScore={displayScore}
                                             rank={myRank}
                                         />

@@ -14,6 +14,7 @@ function getAdminSupabase() {
 
 type ConfigUpdate = {
     show_on_works?: boolean;
+    category?: 'plays' | 'party';
     sort_order?: number;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     game_config?: Record<string, any>;
@@ -30,8 +31,9 @@ export async function updateProjectConfig(id: string, updates: ConfigUpdate) {
         .upsert({ id, ...updates, updated_at: new Date().toISOString() }, { onConflict: "id" });
     if (error) throw error;
 
-    revalidatePath("/labs");
-    revalidatePath("/works");
+    revalidatePath("/admin");
+    revalidatePath("/plays");
+    revalidatePath("/party");
 }
 
 export async function updateProjectMeta(
@@ -59,9 +61,10 @@ export async function updateProjectMeta(
         );
     if (error) throw error;
 
-    revalidatePath("/labs");
-    revalidatePath(`/labs/${id}`);
-    revalidatePath("/works");
+    revalidatePath("/admin");
+    revalidatePath(`/admin/${id}`);
+    revalidatePath("/plays");
+    revalidatePath("/party");
 }
 
 export async function resetGameRanking(projectId: string) {

@@ -371,7 +371,7 @@ export function TouchGame({ userName, title }: ProjectProps) {
                                             <KakaoShareButton
                                                 userName={userName}
                                                 gameTitle={title!}
-                                                gameUrl="/works/touch-game"
+                                                gameUrl="/plays/touch-game"
                                                 displayScore={displayScore}
                                                 rank={myRank}
                                             />

@@ -18,12 +18,10 @@ interface Props {
     params: Promise<{ id: string }>;
 }
 
-export default async function WorksProjectPage({ params }: Props) {
+export default async function PlaysProjectPage({ params }: { params: Promise<{ id: string }> }) {
     const { id: slug } = await params;
-
     const supabase = await createClient();
 
-    // 🔥 인증 + 프로젝트 설정을 동시에 병렬 조회
     const [
         { data: { user } },
         { data: configs },
@@ -38,14 +36,13 @@ export default async function WorksProjectPage({ params }: Props) {
 
     if (!dbConfig) notFound();
 
-    // 방명록 데이터는 클라이언트에서 비동기로 조회하도록 변경
-
     const project = getProjectById(dbConfig.id);
     if (!project) notFound();
 
     const config: ProjectConfig = {
         id: dbConfig.id,
         show_on_works: true,
+        category: dbConfig.category || 'plays',
         title: dbConfig.title,
         description: dbConfig.description,
         slug: dbConfig.slug,
@@ -60,8 +57,6 @@ export default async function WorksProjectPage({ params }: Props) {
         ? (meta?.full_name ?? meta?.name ?? meta?.preferred_username ?? user.email?.split("@")[0] ?? "익명")
         : "비회원";
 
-
-    // 로그인 안내 배너 표시 조건 (게임류만 표시)
     const showLoginBanner = !user && ["chosung-game", "circle-game", "speed-game", "size-game", "ddong-game", "sort-game", "touch-game", "eyes-game", "arrow-game", "balloon-game", "bug-game"].includes(dbConfig.id);
 
     return (
@@ -70,7 +65,7 @@ export default async function WorksProjectPage({ params }: Props) {
             <main className="flex-1">
                 <Container className="py-12 lg:py-16 space-y-6">
                     <Link
-                        href="/works"
+                        href="/plays"
                         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
                     >
                         ← 목록으로

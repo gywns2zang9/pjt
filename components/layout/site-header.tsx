@@ -21,8 +21,8 @@ async function AdminNavItems() {
 
   return (
     <NavLinks
-      items={[{ href: "/labs", label: "뚝딱~ing" }]}
-      className="flex items-center gap-4 text-sm text-muted-foreground"
+      items={[{ href: "/admin", label: "관리자" }]}
+      className="flex items-center gap-4 text-sm text-yellow-500 font-bold"
     />
   );
 }
@@ -34,22 +34,23 @@ async function AdminNavItems() {
  */
 export function SiteHeader() {
   const defaultNavItems = [
-    { href: "/works", label: "뚝-딱!" },
+    { href: "/plays", label: "혼자 뚝딱" },
+    { href: "/party", label: "같이 뚝딱" },
   ];
 
   return (
-    <header className="border-b border-border/80 bg-background/80 backdrop-blur">
+    <header className="border-b border-border/80 bg-background/80 backdrop-blur sticky top-0 z-50">
       <Container className="flex h-16 items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 md:gap-8">
           <Link
             href="/"
-            className="text-lg font-black tracking-normal hover:text-primary transition-colors pl-1 py-1"
+            className="text-xl font-black tracking-tighter hover:text-primary transition-all active:scale-95"
           >
-            뚝딱실
+            홈
           </Link>
           <NavLinks
             items={defaultNavItems}
-            className="flex items-center gap-4 text-sm text-muted-foreground md:flex"
+            className="flex items-center gap-4 text-xs md:text-sm font-bold text-muted-foreground"
           />
           <Suspense>
             <AdminNavItems />
@@ -65,4 +66,3 @@ export function SiteHeader() {
     </header>
   );
 }
-

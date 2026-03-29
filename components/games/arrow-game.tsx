@@ -380,7 +380,7 @@ export function ArrowGame({ userName, title }: ProjectProps) {
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
-                                            gameUrl="/works/arrow-game"
+                                            gameUrl="/plays/arrow-game"
                                             displayScore={displayScore}
                                             rank={myRank}
                                         />

@@ -6,44 +6,24 @@ import { projects, type ProjectConfig, type ProjectMeta } from "@/lib/projects";
 import { Guestbook } from "@/components/guestbook";
 import ProjectListClient from "@/components/project-list-client";
 
-const TABLE_MAP: Record<string, string> = {
-    "chosung-game": "chosung_scores",
-    "circle-game": "circle_scores",
-    "size-game": "size_scores",
-    "speed-game": "speed_scores",
-    "sort-game": "sort_scores",
-    "ddong-game": "ddong_scores",
-    "touch-game": "touch_scores",
-    "eyes-game": "eyes_scores",
-    "arrow-game": "arrow_scores",
-    "balloon-game": "balloon_scores",
-    "bug-game": "bug_scores",
-};
-
-// 시간 기반(낮을수록 좋은) 게임
-const SCORE_ASC = new Set(["speed-game", "sort-game", "touch-game"]);
-
-// 모든 고유 테이블 이름 추출 (한 번에 병렬 조회하기 위해)
-const ALL_SCORE_TABLES = [...new Set(Object.values(TABLE_MAP))];
-
-export default async function WorksPage() {
+export default async function PartyPage() {
     const supabase = await createClient();
 
-    // 1. 최소한의 프로젝트 설정만 조회 (매우 빠름)
+    // 1. 모든 공개 프로젝트 설정 조회
     const { data: configs } = await supabase.from("project_configs")
         .select("*")
         .eq("show_on_works", true);
 
-    // 2. 유저 정보 (세션 확인 - 필수)
+    // 2. 유저 정보
     const { data: { user } } = await supabase.auth.getUser();
 
-    // 정적 메타와 매핑 (서버에서 구조는 잡아줌)
+    // 정적 메타와 매핑 및 category 필터링
     const initialProjects = (configs ?? [])
-        .map((c: ProjectConfig) => ({
-            config: c,
+        .map((c: any) => ({
+            config: { ...c, category: c.category || 'plays' } as ProjectConfig,
             meta: projects.find((p) => p.id === c.id),
         }))
-        .filter((p) => p.meta) as { config: ProjectConfig; meta: ProjectMeta }[];
+        .filter((p) => p.meta && p.config.category === 'party') as { config: ProjectConfig; meta: ProjectMeta }[];
 
     const meta = user?.user_metadata;
     const userName = user
@@ -56,11 +36,10 @@ export default async function WorksPage() {
             <main className="flex-1">
                 <Container className="py-12 lg:py-16 space-y-8">
                     <div className="space-y-1">
-                        <h1 className="text-2xl font-semibold tracking-tight">뚝-딱!</h1>
-                        <p className="text-muted-foreground">재밌게 즐겨주세요~^^</p>
+                        <h4 className="text-2xl font-semibold tracking-tight">함께 즐겨주세요~^^</h4>
                     </div>
 
-                    <ProjectListClient initialProjects={initialProjects} />
+                    <ProjectListClient initialProjects={initialProjects} baseUrl="/party" />
                 </Container>
 
                 <div className="border-t border-border/50 bg-slate-50/50 dark:bg-slate-900/30 py-16">

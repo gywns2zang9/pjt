@@ -16,9 +16,11 @@ type ProjectStats = {
 type SortOption = "default" | "rank-asc" | "rank-desc";
 
 export default function ProjectListClient({
-    initialProjects
+    initialProjects,
+    baseUrl = "/plays"
 }: {
-    initialProjects: { config: ProjectConfig; meta: ProjectMeta }[]
+    initialProjects: { config: ProjectConfig; meta: ProjectMeta }[];
+    baseUrl?: string;
 }) {
     const [sortBy, setSortBy] = useState<SortOption>("default");
     const [stats, setStats] = useState<Record<string, ProjectStats>>({});
@@ -27,7 +29,7 @@ export default function ProjectListClient({
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const res = await fetch("/api/works/stats");
+                const res = await fetch("/api/plays/stats");
                 if (res.ok) {
                     const data = await res.json();
                     const statsMap: Record<string, ProjectStats> = {};
@@ -110,7 +112,7 @@ export default function ProjectListClient({
                         return (
                             <Link
                                 key={meta.id}
-                                href={`/works/${slug}`}
+                                href={`${baseUrl}/${slug}`}
                                 className="group block rounded-2xl border border-border bg-card p-5 hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-all duration-200"
                             >
                                 <div className="flex items-center justify-between gap-3">

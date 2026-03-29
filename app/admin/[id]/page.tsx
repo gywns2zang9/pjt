@@ -12,7 +12,7 @@ import {
     type ProjectConfig,
 } from "@/lib/projects";
 import { ProjectSettings } from "@/components/labs/project-settings";
-// 랭킹 관리가 있는 프로젝트
+
 const RANKING_PROJECT_IDS = [
     "chosung-game",
     "circle-game",
@@ -31,18 +31,16 @@ interface Props {
     params: Promise<{ id: string }>;
 }
 
-export default async function LabProjectSettingsPage({ params }: Props) {
+export default async function AdminProjectSettingsPage({ params }: Props) {
     const { id } = await params;
     const project = getProjectById(id);
     if (!project) notFound();
 
-    // 관리자 인증
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect("/auth/login");
     if (!checkIsAdmin(user.id)) redirect("/");
 
-    // DB 설정 가져오기
     const { data: dbConfig } = await supabase
         .from("project_configs")
         .select("*")
@@ -53,6 +51,7 @@ export default async function LabProjectSettingsPage({ params }: Props) {
         ? {
             id,
             show_on_works: dbConfig.show_on_works,
+            category: dbConfig.category || 'plays',
             sort_order: dbConfig.sort_order ?? 0,
             title: dbConfig.title,
             description: dbConfig.description,
@@ -64,27 +63,24 @@ export default async function LabProjectSettingsPage({ params }: Props) {
     const hasRanking = RANKING_PROJECT_IDS.includes(id);
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-100 text-foreground dark:from-slate-900 dark:via-slate-950 dark:to-slate-950">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-foreground">
             <SiteHeader />
             <main className="flex-1">
-                <Container className="py-12 lg:py-16 space-y-6">
-                    {/* 헤더 */}
+                <Container className="py-12 lg:py-16 space-y-8">
                     <div className="flex items-center gap-3">
                         <Link
-                            href="/labs"
-                            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                            href="/admin"
+                            className="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 p-2 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-700 transition-all shadow-sm"
+                            title="목록으로"
                         >
-                            ← 관리 패널
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="m15 18-6-6 6-6"/>
+                            </svg>
                         </Link>
-                        <span className="text-muted-foreground/40">/</span>
-                        <span className="text-sm font-medium text-foreground">{displayTitle}</span>
-                    </div>
-
-                    <div className="space-y-1">
-                        <h1 className="text-2xl font-semibold tracking-tight">{displayTitle} 설정</h1>
-                        <p className="text-sm text-muted-foreground">
-                            프로젝트 정보와 게임 설정을 관리합니다.
-                        </p>
+                        <div className="space-y-0.5">
+                            <h1 className="text-xl font-bold tracking-tight">{displayTitle} 설정</h1>
+                            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Project Configuration</p>
+                        </div>
                     </div>
 
                     <ProjectSettings

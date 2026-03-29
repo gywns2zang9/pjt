@@ -36,7 +36,13 @@ export async function POST(req: Request) {
         try {
             const isHome = !project_id || project_id === "home";
             const boardName = isHome ? "방명록" : `[${project_id}] 게시판`;
-            const redirectUrl = isHome ? "https://www.gywns2zang9.dev/" : `https://www.gywns2zang9.dev/works/${project_id}`;
+
+            let baseUrl = "plays";
+            if (!isHome) {
+                const { data: config } = await supabase.from("project_configs").select("category").eq("id", project_id).single();
+                if (config?.category === 'party') baseUrl = "party";
+            }
+            const redirectUrl = isHome ? "https://www.gywns2zang9.dev/" : `https://www.gywns2zang9.dev/${baseUrl}/${project_id}`;
 
             await resend.emails.send({
                 from: "gywns2zang9.dev <onboarding@resend.dev>",

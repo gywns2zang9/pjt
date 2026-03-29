@@ -445,7 +445,7 @@ export function CircleGame({ userName, title }: ProjectProps) {
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
-                                            gameUrl="/works/circle-game"
+                                            gameUrl="/plays/circle-game"
                                             displayScore={displayScore}
                                             rank={myRank}
                                         />

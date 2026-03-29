@@ -31,6 +31,7 @@ interface BalloonCell {
     colorIndex: number;
     popped: boolean;
     popEffect: boolean;
+    boardId: number;
 }
 
 const TIME_LIMIT = 10;
@@ -38,8 +39,7 @@ const GRID_SIZE = 5;
 const GRID_TOTAL = GRID_SIZE * GRID_SIZE; // 25
 const MAX_PER_COLOR = 7;
 
-// ─── 그리드 생성 함수 (순수) ─────────────────────────────────
-function createGrid(): BalloonCell[] {
+function createGrid(boardId: number, setViolets?: (v: number) => void): BalloonCell[] {
     const distribution: number[] = [];
 
     // 최소 1개씩 보장 (7색 × 1 = 7)
@@ -58,7 +58,16 @@ function createGrid(): BalloonCell[] {
         [distribution[i], distribution[j]] = [distribution[j], distribution[i]];
     }
 
-    return distribution.map((colorIndex, id) => ({ id, colorIndex, popped: false, popEffect: false }));
+    let countViolets = 0;
+    const violetIndex = COLORS.length - 1;
+    
+    const grid = distribution.map((colorIndex, id) => {
+        if (colorIndex === violetIndex) countViolets++;
+        return { id, colorIndex, popped: false, popEffect: false, boardId };
+    });
+
+    if (setViolets) setViolets(countViolets);
+    return grid;
 }
 
 // ─── 풍선 렌더링 최적화 컴포넌트 ─────────────────────────────────
@@ -90,9 +99,14 @@ const Balloon = React.memo(({
             )}
             <button
                 disabled={cell.popped || phase !== "playing"}
-                onClick={() => onPop(cell.id, cell.colorIndex)}
+                onPointerDown={(e) => {
+                    // prevent ghost clicks/scroll if necessary, touch-none prevents scroll
+                    if (!cell.popped && phase === "playing") {
+                        onPop(cell.id, cell.colorIndex);
+                    }
+                }}
                 className={`relative w-full h-full transition-all duration-300
-            ${cell.popped ? "scale-0 opacity-0 pointer-events-none" : cell.popEffect ? "scale-125 opacity-0" : "scale-100 opacity-100 hover:scale-110 active:scale-75"}`}
+            ${cell.popped ? "scale-0 opacity-0 pointer-events-none" : cell.popEffect ? "scale-125 opacity-0 pointer-events-none" : "scale-100 opacity-100 hover:scale-110 active:scale-75"}`}
             >
                 {/* 풍선 몸체 (타원) */}
                 <div
@@ -119,7 +133,6 @@ export function BalloonGame({ userName, title }: ProjectProps) {
     const [score, setScore] = useState(0);
     const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
     const [grid, setGrid] = useState<BalloonCell[]>([]);
-    const [currentColorIndex, setCurrentColorIndex] = useState(-1);
     const [bonusAnim, setBonusAnim] = useState<number>(0);
     const [ranking, setRanking] = useState<RankEntry[]>([]);
     const [showAllRanking, setShowAllRanking] = useState(false);
@@ -131,6 +144,10 @@ export function BalloonGame({ userName, title }: ProjectProps) {
     const scoreRef = useRef(0);
     const isPlayingRef = useRef(false);
     const endGameRef = useRef<(reason: "wrong_color" | "timeout") => void>(() => { });
+    const boardIdRef = useRef<number>(0);
+    const poppingRef = useRef<Set<string>>(new Set());
+    const remainingVioletsRef = useRef<number>(0);
+    const currentColorIdxRef = useRef<number>(-1);
 
     // ─── 랭킹 ───────────────────────────────────────────────
     const loadRanking = useCallback(async () => {
@@ -144,12 +161,14 @@ export function BalloonGame({ userName, title }: ProjectProps) {
 
     // ─── 게임 시작 ──────────────────────────────────────────
     const startGame = useCallback(() => {
-        setGrid(createGrid());
+        boardIdRef.current = 1;
+        poppingRef.current.clear();
+        setGrid(createGrid(boardIdRef.current, (v) => { remainingVioletsRef.current = v; }));
         setPhase("playing");
         setScore(0);
         scoreRef.current = 0;
         setTimeLeft(TIME_LIMIT);
-        setCurrentColorIndex(-1);
+        currentColorIdxRef.current = -1;
         setBonusAnim(0);
         setGameOverReason(null);
         isPlayingRef.current = true;
@@ -212,48 +231,56 @@ export function BalloonGame({ userName, title }: ProjectProps) {
     const handlePop = useCallback((id: number, colorIdx: number) => {
         if (phase !== "playing") return;
 
-        const isCorrectColor = (colorIdx === currentColorIndex) || (colorIdx === currentColorIndex + 1);
+        // 더블 탭 및 중복 채점 완벽 방지 (생성된 보드의 고유 id 사용)
+        const key = `${boardIdRef.current}-${id}`;
+        if (poppingRef.current.has(key)) return;
+        poppingRef.current.add(key);
+
+        const currentIndex = currentColorIdxRef.current;
+        const isCorrectColor = (colorIdx === currentIndex) || (colorIdx === currentIndex + 1);
         if (!isCorrectColor) { endGame("wrong_color"); return; }
+
+        // 점수 선반영
+        setScore((prev) => { const ns = prev + 1; scoreRef.current = ns; return ns; });
+        if (colorIdx === currentIndex + 1) currentColorIdxRef.current = colorIdx;
+
+        // 마지막 보라색인지 즉시 확인하여 딜레이 전 시간 보상 우선 지급
+        let isBoardClear = false;
+        if (colorIdx === COLORS.length - 1) {
+            remainingVioletsRef.current -= 1;
+            if (remainingVioletsRef.current <= 0) {
+                isBoardClear = true;
+                endTimeRef.current += 2500;
+                setBonusAnim(Date.now());
+            }
+        }
 
         // 먼저 이펙트 표시
         setGrid((prev) => {
-            const target = prev[id];
-            if (target.popped) return prev;
             const next = [...prev];
-            next[id] = { ...target, popEffect: true };
+            if (next[id]) next[id] = { ...next[id], popEffect: true };
             return next;
         });
 
-        // 짧은 딜레이 후 실제로 제거
+        const currentBoardId = boardIdRef.current;
+
+        // 짧은 딜레이 후 실제로 제거 및 보드 전환 논리
         setTimeout(() => {
             setGrid((prev) => {
-                // 이전 보드에서 등록된 setTimeout 이 새 보드(newGrid) 생성 이후에 실행되는 것을 방지
-                if (!prev[id] || !prev[id].popEffect) return prev;
+                // 이전 보드의 타임아웃은 완벽히 무시
+                if (!prev[id] || prev[id].boardId !== currentBoardId) return prev;
 
                 const next = [...prev];
                 next[id] = { ...next[id], popped: true, popEffect: false };
 
-                // 게임이 끝난 상태라면 상태 정리(popEffect 제거)만 하고 부가 로직(보너스, 새판 등)은 생략
+                // 게임 종료 상태라도 시각적 폭발 이펙트는 꺼지도록 next 반환
                 if (!isPlayingRef.current) return next;
 
-                // 보라색(마지막 색) 풍선이 모두 터졌는지 확인
-                const violetIndex = COLORS.length - 1;
-                const hasRemainingViolet = next.some(c => c.colorIndex === violetIndex && !c.popped);
-                if (!hasRemainingViolet) {
-                    // 모든 풍선을(25개) 전부 터뜨렸는지 확인
-                    const isAllPopped = next.every(c => c.popped);
-                    if (isAllPopped) {
-                        setTimeout(() => {
-                            endTimeRef.current += 2000;
-                            const remaining = (endTimeRef.current - Date.now()) / 1000;
-                            setTimeLeft(remaining);
-                            setBonusAnim(Date.now());
-                        }, 0);
-                    }
-
-                    // 모든 보라 풍선이 터짐 → 새 판 생성, 빨강부터 다시
-                    const newGrid = createGrid();
-                    setCurrentColorIndex(-1);
+                if (isBoardClear) {
+                    // 모든 보라 풍선 터짐 → 새 판 생성, 빨강부터
+                    boardIdRef.current += 1;
+                    const newGrid = createGrid(boardIdRef.current, (v) => { remainingVioletsRef.current = v; });
+                    currentColorIdxRef.current = -1;
                     return newGrid;
                 }
 
@@ -261,10 +288,7 @@ export function BalloonGame({ userName, title }: ProjectProps) {
             });
         }, 200);
 
-        setScore((prev) => { const ns = prev + 1; scoreRef.current = ns; return ns; });
-
-        if (colorIdx === currentColorIndex + 1) setCurrentColorIndex(colorIdx);
-    }, [phase, currentColorIndex, endGame]);
+    }, [phase, endGame]);
 
     // ─── 단축키 ─────────────────────────────────────────────
     useEffect(() => {
@@ -321,7 +345,7 @@ export function BalloonGame({ userName, title }: ProjectProps) {
                                                     key={bonusAnim}
                                                     className="absolute right-full mr-2 text-sm font-black text-emerald-500 drop-shadow-md animate-in slide-in-from-bottom-2 fade-in duration-300"
                                                 >
-                                                    +2.0s
+                                                    +2.5s
                                                 </span>
                                             )}
                                             <span className={`text-sm font-black tabular-nums transition-colors ${phase === "playing" ? timerTextCls : "text-muted-foreground"}`}>
@@ -351,10 +375,10 @@ export function BalloonGame({ userName, title }: ProjectProps) {
                                     <p className="text-[15px] font-black text-red-500 animate-in zoom-in-95 fade-in duration-300">다시 빨간색부터~</p>
                                 )}
                                 {phase === "result" && gameOverReason === "wrong_color" && (
-                                    <p className="text-sm font-bold text-destructive animate-in fade-in duration-200">무지개 몰라?</p>
+                                    <p className="text-sm font-bold text-destructive animate-in fade-in duration-200">무지개 모르세요?</p>
                                 )}
                                 {phase === "result" && gameOverReason === "timeout" && (
-                                    <p className="text-sm font-bold text-orange-500 animate-in fade-in duration-200">아쉽지만 여기까지~</p>
+                                    <p className="text-sm font-bold text-orange-500 animate-in fade-in duration-200">여기까지~</p>
                                 )}
                             </div>
 
@@ -474,7 +498,7 @@ export function BalloonGame({ userName, title }: ProjectProps) {
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
-                                            gameUrl="/works/balloon-game"
+                                            gameUrl="/plays/balloon-game"
                                             displayScore={displayScore}
                                             rank={myRank}
                                         />
@@ -510,7 +534,7 @@ function HTPSection() {
                     </li>
                     <li className="flex items-baseline gap-2">
                         <span className="text-primary font-bold shrink-0 leading-none">03</span>
-                        <span><strong>보라색 풍선들을 모두 터뜨리면 새로운 판이 형성돼요. 25개의 풍선을 모두 터뜨리면 2초가 추가돼요.</strong></span>
+                        <span><strong>보라색 풍선들을 모두 터뜨리면 판이 새로 채워지고 2.5초가 추가돼요.</strong></span>
                     </li>
                 </ul>
             )}

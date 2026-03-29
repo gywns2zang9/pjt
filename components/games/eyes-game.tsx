@@ -312,7 +312,7 @@ export function EyesGame({ userName, title }: ProjectProps) {
                                         <KakaoShareButton
                                             userName={userName}
                                             gameTitle={title!}
-                                            gameUrl="/works/eyes-game"
+                                            gameUrl="/plays/eyes-game"
                                             displayScore={displayScore}
                                             rank={myRank}
                                         />

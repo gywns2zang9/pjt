@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { updateProjectConfig } from "@/app/labs/actions";
+import { updateProjectConfig } from "@/app/admin/actions";
 import {
     type ProjectMeta,
     type ProjectConfig,
@@ -22,12 +22,22 @@ export function ProjectAdminCard({ project, config: initialConfig }: Props) {
     const displayTitle = effectiveTitle(project, config);
     const displayDesc = effectiveDescription(config);
 
-    const handleToggleWorks = () => {
+    const handleTogglePublication = () => {
         const newVal = !config.show_on_works;
         const prev = config;
         setConfig((c) => ({ ...c, show_on_works: newVal }));
         startTransition(async () => {
             try { await updateProjectConfig(project.id, { show_on_works: newVal }); }
+            catch { setConfig(prev); }
+        });
+    };
+
+    const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newCategory = e.target.value as 'plays' | 'party';
+        const prev = config;
+        setConfig((c) => ({ ...c, category: newCategory }));
+        startTransition(async () => {
+            try { await updateProjectConfig(project.id, { category: newCategory }); }
             catch { setConfig(prev); }
         });
     };
@@ -52,20 +62,23 @@ export function ProjectAdminCard({ project, config: initialConfig }: Props) {
             className={`rounded-2xl border bg-card p-5 space-y-4 transition-all duration-200 ${isPending ? "opacity-60 pointer-events-none" : ""
                 } ${config.show_on_works ? "border-primary/30" : "border-border"}`}
         >
-            {/* 헤더 */}
             <div className="flex items-start justify-between gap-3">
                 <div className="space-y-0.5 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                         <h2 className="font-semibold text-base text-foreground">{displayTitle}</h2>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
+                            config.category === 'party' ? 'bg-indigo-500/10 text-indigo-500 border border-indigo-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
+                        }`}>
+                            {config.category === 'party' ? '같이 뚝딱' : '혼자 뚝딱'}
+                        </span>
                     </div>
                     {displayDesc && (
-                        <p className="text-sm text-muted-foreground leading-relaxed">{displayDesc}</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-1">{displayDesc}</p>
                     )}
                 </div>
 
-                {/* 설정 버튼 */}
                 <Link
-                    href={`/labs/${project.id}`}
+                    href={`/admin/${project.id}`}
                     title="설정"
                     className="shrink-0 p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:border-border/80 transition-all"
                 >
@@ -76,38 +89,49 @@ export function ProjectAdminCard({ project, config: initialConfig }: Props) {
                 </Link>
             </div>
 
-
-
-            {/* 뚝-딱! 표시 토글 */}
-            <div className="flex items-center justify-between pt-1 border-t border-border/60">
-                <div>
-                    <p className="text-sm font-medium text-foreground">뚝-딱!에 표시</p>
-                    <p className="text-xs text-muted-foreground">
-                        {config.show_on_works ? "공개됩니다" : "숨겨진 상태"}
-                    </p>
+            <div className="grid gap-4 pt-2 border-t border-border/60">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-medium text-foreground">콘텐츠 관리</p>
+                        <p className="text-[11px] text-muted-foreground">목록 공개 상태 및 위치</p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-4">
+
+                <div className="flex flex-wrap items-center gap-4">
                     <div className="flex items-center gap-2">
-                        <label className="text-xs font-medium text-muted-foreground">순위 정렬</label>
+                        <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">분류</label>
+                        <select
+                            value={config.category}
+                            onChange={handleCategoryChange}
+                            className="text-xs font-semibold bg-background border border-border rounded-lg px-2 py-1 outline-none focus:border-primary transition-all cursor-pointer"
+                        >
+                            <option value="plays">혼자 뚝딱</option>
+                            <option value="party">같이 뚝딱</option>
+                        </select>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs font-medium text-muted-foreground whitespace-nowrap">순서</label>
                         <input
                             type="number"
                             value={config.sort_order ?? 0}
                             onChange={handleSortOrder}
-                            className="w-14 px-2 py-1 text-sm bg-background border border-border rounded outline-none focus:border-primary focus:ring-1 focus:ring-primary/30"
-                            title="낮을수록 먼저 표시됩니다"
+                            className="w-12 px-2 py-1 text-xs font-bold bg-background border border-border rounded-lg outline-none focus:border-primary text-center"
                         />
                     </div>
-                    <button
-                        onClick={handleToggleWorks}
-                        aria-label="뚝-딱 표시 토글"
-                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ${config.show_on_works ? "bg-primary border-primary" : "bg-muted border-muted"
-                            }`}
-                    >
-                        <span
-                            className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 mt-0.5 ${config.show_on_works ? "translate-x-5" : "translate-x-0.5"
+
+                    <div className="flex-1 flex justify-end">
+                        <button
+                            onClick={handleTogglePublication}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 transition-colors duration-200 ${config.show_on_works ? "bg-primary border-primary" : "bg-muted border-muted"
                                 }`}
-                        />
-                    </button>
+                        >
+                            <span
+                                className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform duration-200 mt-0.5 ${config.show_on_works ? "translate-x-5" : "translate-x-0.5"
+                                    }`}
+                            />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
