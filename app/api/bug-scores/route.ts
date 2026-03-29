@@ -7,10 +7,17 @@ export async function GET() {
         .from("bug_scores")
         .select("user_name, score, created_at")
         .order("score", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(100);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(scores);
+    const uniqueRankings = scores?.reduce((acc: any[], curr) => {
+        if (!acc.find(item => item.user_name === curr.user_name)) {
+            acc.push(curr);
+        }
+        return acc;
+    }, []);
+    return NextResponse.json(uniqueRankings ?? []);
 }
 
 export async function POST(request: Request) {

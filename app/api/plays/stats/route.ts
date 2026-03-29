@@ -1,10 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
     const supabase = await createClient();
 
-    // 1. Get current user
     const { data: { user } } = await supabase.auth.getUser();
 
     const TABLE_MAP: Record<string, string> = {
@@ -23,100 +24,66 @@ export async function GET() {
 
     const SCORE_ASC = new Set(["speed-game", "sort-game", "touch-game"]);
 
-    const tablesPayload = Object.keys(TABLE_MAP).map(key => ({
-        id: key,
-        table: TABLE_MAP[key],
-        isAsc: SCORE_ASC.has(key)
-    }));
-
     try {
-        // 1. 전체 통계를 한 번에 시도 (가장 빠름)
-        const { data: statsData, error: rpcError } = await supabase.rpc("get_all_game_stats", {
-            p_tables: tablesPayload,
-            p_user_id: user?.id ?? null
-        });
-
-        if (!rpcError) {
-            return NextResponse.json({
-                stats: statsData,
-                user: user ? {
-                    id: user.id,
-                    email: user.email,
-                    name: user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.user_metadata?.preferred_username ?? user.email?.split("@")[0] ?? "익명"
-                } : null
-            });
-        }
-
-        // 2. RPC 실패 시 (e.g. play_count 컬럼 누락), 개별 테이블별로 안전하게 조회 시도
-        console.warn("RPC failed, falling back to individual table stats fetching. Error:", rpcError);
-
-        const individualStats = await Promise.all(
-            tablesPayload.map(async (t) => {
+        /**
+         * 인게임 랭킹 API와 완전히 동일한 방식으로 순위를 계산합니다.
+         * 1) score 정렬 + created_at DESC (동점 시 최신자 우선)
+         * 2) user_name 기준 1인 1기록 필터
+         * 3) 해당 리스트에서 현재 유저 위치 = 순위
+         */
+        const stats = await Promise.all(
+            Object.entries(TABLE_MAP).map(async ([gameId, table]) => {
                 try {
-                    // 기본 통계 (플레이 횟수)
-                    const { count: totalPlay, error: countErr } = await supabase
-                        .from(t.table)
-                        .select("*", { count: "exact", head: true });
+                    const isAsc = SCORE_ASC.has(gameId);
 
-                    if (countErr) return null;
+                    // 정렬된 전체 랭킹 조회 (인게임 API와 동일한 정렬)
+                    const { data, error } = await supabase
+                        .from(table)
+                        .select("user_id, user_name, score, play_count, created_at")
+                        .order("score", { ascending: isAsc })
+                        .order("created_at", { ascending: false })
+                        .limit(200);
 
-                    let myPlay = 0;
+                    if (error || !data) return { id: gameId, totalPlay: 0, myPlay: 0, myRank: null, totalPlayers: 0 };
+
+                    // 유저별 1개만 남기기 (인게임 API와 동일한 reduce 방식)
+                    const uniqueRankings = data.reduce((acc: typeof data, curr) => {
+                        if (!acc.find(item => item.user_name === curr.user_name)) {
+                            acc.push(curr);
+                        }
+                        return acc;
+                    }, []);
+
+                    const totalPlayers = uniqueRankings.length;
+
                     let myRank: number | null = null;
-                    let totalPlayers = 0;
+                    let myPlay = 0;
 
                     if (user?.id) {
-                        try {
-                            // 내 플레이 횟수 (play_count 컬럼이 있으면 사용, 없으면 COUNT(*)로 대체)
-                            const { data: userData, error: userErr } = await supabase
-                                .from(t.table)
-                                .select("play_count, score")
-                                .eq("user_id", user.id);
-
-                            if (!userErr && userData && userData.length > 0) {
-                                // play_count 컬럼이 있는지 확인 (에러 없이 결과가 왔다면 있는 것)
-                                if (userData[0].hasOwnProperty('play_count')) {
-                                    myPlay = userData.reduce((sum, row) => sum + (row.play_count || 0), 0);
-                                } else {
-                                    myPlay = userData.length;
-                                }
-
-                                // 랭킹 계산 (간단히 자기보다 높은 점수 사람 수 + 1)
-                                const myBestScore = userData.reduce((max, row) => t.isAsc ? Math.min(max, row.score) : Math.max(max, row.score), t.isAsc ? Infinity : -Infinity);
-
-                                const { count: higherCount } = await supabase
-                                    .from(t.table)
-                                    .select("*", { count: "exact", head: true })
-                                    .filter("score", t.isAsc ? "lt" : "gt", myBestScore);
-
-                                myRank = (higherCount ?? 0) + 1;
-                            }
-                        } catch (innerErr) {
-                            console.error(`Failed to fetch user stats for ${t.table}:`, innerErr);
+                        // 유저 순위: 정렬된 리스트에서의 인덱스 + 1 (인게임과 동일)
+                        const myIndex = uniqueRankings.findIndex(r => r.user_id === user.id);
+                        if (myIndex !== -1) {
+                            myRank = myIndex + 1;
+                            myPlay = uniqueRankings[myIndex].play_count ?? 0;
                         }
-
-                        // 명수 계산
-                        const { count: distinctPlayers } = await supabase
-                            .from(t.table)
-                            .select("user_id", { count: "exact", head: true });
-                        totalPlayers = distinctPlayers ?? 0;
                     }
 
                     return {
-                        id: t.id,
-                        totalPlay: totalPlay ?? 0,
+                        id: gameId,
+                        totalPlay: totalPlayers,
                         myPlay,
                         myRank,
                         totalPlayers
                     };
                 } catch (err) {
-                    console.error(`Failed to fetch stats for ${t.table}:`, err);
-                    return null;
+                    console.error(`Failed to fetch stats for ${table}:`, err);
+                    return { id: gameId, totalPlay: 0, myPlay: 0, myRank: null, totalPlayers: 0 };
                 }
             })
         );
 
         return NextResponse.json({
-            stats: individualStats.filter(s => s !== null),
+            stats,
             user: user ? {
                 id: user.id,
                 email: user.email,

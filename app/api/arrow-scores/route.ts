@@ -16,7 +16,13 @@ export async function GET() {
         .limit(100);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data ?? []);
+    const uniqueRankings = data?.reduce((acc: any[], curr) => {
+        if (!acc.find(item => item.user_name === curr.user_name)) {
+            acc.push(curr);
+        }
+        return acc;
+    }, []);
+    return NextResponse.json(uniqueRankings ?? []);
 }
 
 // POST: 점수 저장

@@ -192,10 +192,12 @@ export function SortGame({ userName, title }: ProjectProps) {
 
                 if (isDigit || isNumpad) {
                     const digitStr = isDigit ? e.key : e.code.replace("Numpad", "");
-                    const val = digitStr === "0" ? 10 : parseInt(digitStr);
-                    const index = blocks.indexOf(val);
-                    if (index !== -1) {
-                        handleBlockClick(index);
+                    const val = parseInt(digitStr);
+                    if (val >= 1 && val <= 8) {
+                        const index = blocks.indexOf(val);
+                        if (index !== -1) {
+                            handleBlockClick(index);
+                        }
                     }
                 }
             }
