@@ -91,9 +91,9 @@ export function ArrowGame({ userName, title }: ProjectProps) {
             const delta = (t - lastTickRef.current) / 1000;
             lastTickRef.current = t;
 
-            // 각도: 30° → 75° (+1.5°/클릭), 속도: 100 → 25 (-2.5/클릭)
+            // 각도: 30° → 75° (+1.5°/클릭), 속도: 85 → 25 (-2/클릭)
             const currentAngleDeg = Math.min(75, 30 + (scoreRef.current * 1.5));
-            const totalSpeed = Math.max(25, 100 - scoreRef.current * 2.5);
+            const totalSpeed = Math.max(25, 85 - scoreRef.current * 2);
             const angleRad = (currentAngleDeg * Math.PI) / 180;
 
             const vx = totalSpeed * Math.cos(angleRad);
